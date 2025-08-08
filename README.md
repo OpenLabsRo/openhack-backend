@@ -1,1 +1,1 @@
-# openhack-backend
+# The OpenHack Backend API
