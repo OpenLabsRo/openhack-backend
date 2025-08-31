@@ -4,6 +4,7 @@ import (
 	"backend/accounts"
 	"backend/db"
 	"backend/env"
+	"backend/teams"
 	"fmt"
 	"log"
 
@@ -26,6 +27,7 @@ func main() {
 	})
 
 	accounts.Endpoints(app)
+	teams.Endpoints(app)
 
 	if app.Listen(fmt.Sprintf(":%v", env.PORT), fiber.ListenConfig{
 		EnablePrefork: env.PREFORK,

@@ -13,6 +13,7 @@ var Ctx = context.Background()
 var Client *mongo.Client
 
 var Accounts *mongo.Collection
+var Teams *mongo.Collection
 
 func InitDB() error {
 	var err error
@@ -28,6 +29,7 @@ func InitDB() error {
 
 	// loading collections
 	Accounts = GetCollection("accounts", Client)
+	Teams = GetCollection("teams", Client)
 
 	fmt.Println("Connected to MongoDB")
 	return nil

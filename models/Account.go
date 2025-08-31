@@ -21,6 +21,8 @@ type Account struct {
 	Password string `json:"password" bson:"password"`
 
 	AccountFields `bson:",inline"`
+
+	TeamID string `json:"teamID" bson:"teamID"`
 }
 
 type AccountFields struct {
@@ -94,9 +96,9 @@ func (acc *Account) Initialize() (err error) {
 	return
 }
 
-func (acc *Account) Get(id string) (err error) {
+func (acc *Account) Get() (err error) {
 	err = db.Accounts.FindOne(db.Ctx, bson.M{
-		"id": id,
+		"id": acc.ID,
 	}).Decode(&acc)
 
 	return err
@@ -182,6 +184,42 @@ func (acc *Account) EditFields(
 	acc.Skills = fields.Skills
 	acc.TshirtSize = fields.TshirtSize
 	acc.DietaryRestrictions = fields.DietaryRestrictions
+
+	return
+}
+
+func (acc *Account) AddToTeam(teamID string) (err error) {
+	_, err = db.Accounts.UpdateOne(db.Ctx, bson.M{
+		"id": acc.ID,
+	}, bson.M{
+		"$set": bson.M{
+			"teamID": teamID,
+		},
+	})
+
+	if err != nil {
+		return
+	}
+
+	acc.TeamID = teamID
+
+	return
+}
+
+func (acc *Account) RemoveFromTeam(teamID string) (err error) {
+	_, err = db.Accounts.UpdateOne(db.Ctx, bson.M{
+		"id": acc.ID,
+	}, bson.M{
+		"$set": bson.M{
+			"teamID": "",
+		},
+	})
+
+	if err != nil {
+		return
+	}
+
+	acc.TeamID = ""
 
 	return
 }
