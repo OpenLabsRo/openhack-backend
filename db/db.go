@@ -15,7 +15,7 @@ var Client *mongo.Client
 var Accounts *mongo.Collection
 var Teams *mongo.Collection
 
-func InitDB() error {
+func InitDB(deployment string) error {
 	var err error
 
 	Client, err = mongo.Connect(
@@ -28,13 +28,13 @@ func InitDB() error {
 	}
 
 	// loading collections
-	Accounts = GetCollection("accounts", Client)
-	Teams = GetCollection("teams", Client)
+	Accounts = GetCollection(deployment, "accounts", Client)
+	Teams = GetCollection(deployment, "teams", Client)
 
 	fmt.Println("Connected to MongoDB")
 	return nil
 }
 
-func GetCollection(collectionName string, client *mongo.Client) *mongo.Collection {
-	return client.Database("dev").Collection(collectionName)
+func GetCollection(database string, collectionName string, client *mongo.Client) *mongo.Collection {
+	return client.Database(database).Collection(collectionName)
 }
