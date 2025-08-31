@@ -5,6 +5,7 @@ import (
 	"backend/internal/utils"
 	"encoding/json"
 	"errors"
+	"net/http"
 
 	"github.com/gofiber/fiber/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -24,7 +25,7 @@ func Endpoints(app *fiber.App) {
 
 		err := account.Initialize()
 		if err != nil {
-			return utils.Error(c, err)
+			return utils.Error(c, http.StatusInternalServerError, err)
 		}
 
 		return c.JSON(account)
@@ -44,7 +45,7 @@ func Endpoints(app *fiber.App) {
 
 		err := account.CreatePassword(body.Password)
 		if err != nil {
-			return utils.Error(c, err)
+			return utils.Error(c, http.StatusInternalServerError, err)
 		}
 
 		token := account.GenToken()
@@ -69,7 +70,7 @@ func Endpoints(app *fiber.App) {
 			[]byte(account.Password),
 			[]byte(body.Password),
 		) != nil {
-			return utils.Error(c, errors.New("incorrect password"))
+			return utils.Error(c, http.StatusUnauthorized, errors.New("incorrect password"))
 		}
 
 		token := account.GenToken()
