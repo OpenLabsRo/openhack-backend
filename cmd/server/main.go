@@ -1,7 +1,8 @@
 package main
 
 import (
-	"backend/env"
+	"backend/internal"
+	"backend/internal/env"
 	"fmt"
 	"log"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func main() {
-	app := SetupApp("dev")
+	app := internal.SetupApp("dev")
 
 	if app.Listen(fmt.Sprintf(":%v", env.PORT), fiber.ListenConfig{
 		EnablePrefork: env.PREFORK,

@@ -1,8 +1,8 @@
 package accounts
 
 import (
-	"backend/models"
-	"backend/utils"
+	"backend/internal/models"
+	"backend/internal/utils"
 	"encoding/json"
 	"errors"
 
@@ -24,7 +24,7 @@ func Endpoints(app *fiber.App) {
 
 		err := account.Initialize()
 		if err != nil {
-			return utils.Error(c, errors.New("could not initialize account"))
+			return utils.Error(c, err)
 		}
 
 		return c.JSON(account)
@@ -89,14 +89,16 @@ func Endpoints(app *fiber.App) {
 		return c.JSON(account)
 	})
 
-	accounts.Post("/edit", models.AccountMiddleware, func(c fiber.Ctx) error {
-		var fields models.AccountFields
-		json.Unmarshal(c.Body(), &fields)
+	accounts.Patch("/", models.AccountMiddleware, func(c fiber.Ctx) error {
+		var body struct {
+			Name string `json:"name" bson:"name"`
+		}
+		json.Unmarshal(c.Body(), &body)
 
 		account := models.Account{}
 		utils.GetLocals(c, "account", &account)
 
-		account.EditFields(fields)
+		account.EditName(body.Name)
 
 		token := account.GenToken()
 

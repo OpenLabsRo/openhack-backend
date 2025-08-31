@@ -1,9 +1,8 @@
 package db
 
 import (
-	"backend/env"
+	"backend/internal/env"
 	"context"
-	"fmt"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -31,7 +30,6 @@ func InitDB(deployment string) error {
 	Accounts = GetCollection(deployment, "accounts", Client)
 	Teams = GetCollection(deployment, "teams", Client)
 
-	fmt.Println("Connected to MongoDB")
 	return nil
 }
 

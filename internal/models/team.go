@@ -1,8 +1,8 @@
 package models
 
 import (
-	"backend/db"
-	"backend/utils"
+	"backend/internal/db"
+	"backend/internal/utils"
 	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"

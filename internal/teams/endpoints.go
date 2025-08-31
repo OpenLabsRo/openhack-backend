@@ -1,10 +1,11 @@
 package teams
 
 import (
-	"backend/models"
-	"backend/utils"
+	"backend/internal/models"
+	"backend/internal/utils"
 	"encoding/json"
 	"errors"
+	"net/http"
 
 	"github.com/gofiber/fiber/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -25,12 +26,12 @@ func Endpoints(app *fiber.App) {
 		utils.GetLocals(c, "account", &account)
 
 		if account.TeamID != "" {
-			return utils.Error(c, errors.New("user already has a team"))
+			return utils.Error(c, http.StatusConflict, errors.New("user already has a team"))
 		}
 
 		err := team.Create(account.ID)
 		if err != nil {
-			return utils.Error(c, errors.New("could not create team"))
+			return utils.Error(c, http.StatusInternalServerError, errors.New("could not create team"))
 		}
 
 		account.AddToTeam(team.ID)
@@ -48,7 +49,7 @@ func Endpoints(app *fiber.App) {
 		utils.GetLocals(c, "account", &account)
 
 		if account.TeamID == "" {
-			return utils.Error(c, errors.New("account does not belong to a team"))
+			return utils.Error(c, http.StatusConflict, errors.New("account does not belong to a team"))
 		}
 
 		var body struct {
@@ -59,12 +60,12 @@ func Endpoints(app *fiber.App) {
 		team := models.Team{ID: account.TeamID}
 		err := team.ChangeName(body.Name)
 		if err != nil {
-			return utils.Error(c, errors.New("could not change name of the team"))
+			return utils.Error(c, http.StatusInternalServerError, errors.New("could not change name of the team"))
 		}
 
 		err = team.Get()
 		if err != nil {
-			return utils.Error(c, err)
+			return utils.Error(c, http.StatusInternalServerError, err)
 		}
 
 		return c.JSON(team)
@@ -76,7 +77,7 @@ func Endpoints(app *fiber.App) {
 		err := team.Get()
 		if err != nil {
 			// return utils.Error(c, errors.New("could not find team"))
-			return utils.Error(c, err)
+			return utils.Error(c, http.StatusNotFound, err)
 		}
 
 		// unmarshal the body
@@ -84,18 +85,18 @@ func Endpoints(app *fiber.App) {
 		utils.GetLocals(c, "account", &account)
 
 		if account.TeamID != "" {
-			return utils.Error(c, errors.New("you already belong to a team"))
+			return utils.Error(c, http.StatusConflict, errors.New("you already belong to a team"))
 		}
 
 		// adding the member to the team
 		err = team.AddMember(account.ID)
 		if err != nil {
-			return utils.Error(c, err)
+			return utils.Error(c, http.StatusInternalServerError, err)
 		}
 
 		err = account.AddToTeam(team.ID)
 		if err != nil {
-			return utils.Error(c, errors.New("could not join the team"))
+			return utils.Error(c, http.StatusInternalServerError, errors.New("could not join the team"))
 		}
 
 		token := account.GenToken()
@@ -113,7 +114,7 @@ func Endpoints(app *fiber.App) {
 		err := team.Get()
 		if err != nil {
 			// return utils.Error(c, errors.New("could not find team"))
-			return utils.Error(c, err)
+			return utils.Error(c, http.StatusNotFound, err)
 		}
 
 		// unmarshal the body
@@ -123,12 +124,12 @@ func Endpoints(app *fiber.App) {
 		// removing the member to the team
 		err = team.RemoveMember(account.ID)
 		if err != nil {
-			return utils.Error(c, err)
+			return utils.Error(c, http.StatusInternalServerError, err)
 		}
 
 		err = account.RemoveFromTeam(team.ID)
 		if err != nil {
-			return utils.Error(c, errors.New("could not leave the team"))
+			return utils.Error(c, http.StatusInternalServerError, errors.New("could not leave the team"))
 		}
 
 		token := account.GenToken()
@@ -151,18 +152,18 @@ func Endpoints(app *fiber.App) {
 		team := models.Team{ID: account.TeamID}
 		err := team.Get()
 		if err != nil {
-			return utils.Error(c, errors.New("could not find team"))
+			return utils.Error(c, http.StatusNotFound, errors.New("could not find team"))
 		}
 
 		// removing the member to the team
 		err = team.RemoveMember(accountToRemove.ID)
 		if err != nil {
-			return utils.Error(c, err)
+			return utils.Error(c, http.StatusInternalServerError, err)
 		}
 
 		err = accountToRemove.RemoveFromTeam(team.ID)
 		if err != nil {
-			return utils.Error(c, errors.New("could not leave the team"))
+			return utils.Error(c, http.StatusInternalServerError, errors.New("could not leave the team"))
 		}
 
 		return c.Status(200).SendString("OK")
@@ -176,17 +177,17 @@ func Endpoints(app *fiber.App) {
 		err := team.Get()
 
 		if len(team.Members) > 1 {
-			return utils.Error(c, errors.New("teammates still in team"))
+			return utils.Error(c, http.StatusConflict, errors.New("teammates still in team"))
 		}
 
 		err = account.RemoveFromTeam(account.TeamID)
 		if err != nil {
-			return utils.Error(c, errors.New("could not remove from team"))
+			return utils.Error(c, http.StatusInternalServerError, errors.New("could not remove from team"))
 		}
 
 		err = team.Delete()
 		if err != nil {
-			return utils.Error(c, errors.New("could not delete"))
+			return utils.Error(c, http.StatusInternalServerError, errors.New("could not delete"))
 		}
 
 		token := account.GenToken()

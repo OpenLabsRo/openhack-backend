@@ -1,10 +1,10 @@
-package main
+package internal
 
 import (
-	"backend/accounts"
-	"backend/db"
-	"backend/env"
-	"backend/teams"
+	"backend/internal/accounts"
+	"backend/internal/db"
+	"backend/internal/env"
+	"backend/internal/teams"
 	"log"
 
 	"github.com/gofiber/fiber/v3"

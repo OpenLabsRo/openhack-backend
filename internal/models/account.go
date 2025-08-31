@@ -1,10 +1,12 @@
 package models
 
 import (
-	"backend/db"
-	"backend/env"
-	"backend/utils"
+	"backend/internal/db"
+	"backend/internal/env"
+	"backend/internal/errmsg"
+	"backend/internal/utils"
 	"errors"
+	"net/http"
 	"strings"
 	"time"
 
@@ -20,17 +22,9 @@ type Account struct {
 	Email    string `json:"email" bson:"email"`
 	Password string `json:"password" bson:"password"`
 
-	AccountFields `bson:",inline"`
+	Name string `json:"name" bson:"name"`
 
 	TeamID string `json:"teamID" bson:"teamID"`
-}
-
-type AccountFields struct {
-	Name                string   `json:"name" bson:"name"`
-	Roles               []string `json:"roles" bson:"roles"`
-	Skills              string   `json:"skills" bson:"skills"`
-	TshirtSize          string   `json:"tshirtSize" bson:"tshirtSize"`
-	DietaryRestrictions string   `json:"dietaryRestrictions" bson:"dietaryRestrictions"`
 }
 
 func (acc Account) GenToken() string {
@@ -67,13 +61,13 @@ func AccountMiddleware(c fiber.Ctx) error {
 			token = tokens[1]
 		}
 		if token == "" {
-			return utils.Error(c, errors.New("no token"))
+			return utils.Error(c, http.StatusUnauthorized, errors.New("no token"))
 		}
 
 		var account Account
 		err := account.ParseToken(token)
 		if err != nil {
-			return utils.Error(c, errors.New("a aparut o eroare"))
+			return utils.Error(c, http.StatusInternalServerError, errors.New("could not parse token"))
 		}
 
 		c.Locals("id", account.ID)
@@ -81,17 +75,43 @@ func AccountMiddleware(c fiber.Ctx) error {
 	}
 
 	if token == "" {
-		return utils.Error(c, errors.New("no token"))
+		return utils.Error(c, http.StatusUnauthorized, errors.New("no token"))
 	}
 
 	return c.Next()
 }
 
+func (acc *Account) CheckByEmail() (err error) {
+	checkAcc := Account{}
+
+	db.Accounts.FindOne(db.Ctx, bson.M{
+		"email": acc.Email,
+	}).Decode(&checkAcc)
+
+	if checkAcc.Name != "" {
+		return errors.New(errmsg.AccountInitializeAlreadyExists)
+	}
+
+	return
+}
+
 func (acc *Account) Initialize() (err error) {
 	acc.ID = utils.GenID(6)
-	acc.Roles = []string{}
+
+	err = acc.CheckByEmail()
+	if err != nil {
+		return err
+	}
 
 	_, err = db.Accounts.InsertOne(db.Ctx, acc)
+
+	return
+}
+
+func (acc *Account) Delete() (err error) {
+	_, err = db.Accounts.DeleteOne(db.Ctx, bson.M{
+		"id": acc.ID,
+	})
 
 	return
 }
@@ -136,7 +156,7 @@ func (acc *Account) CreatePassword(password string) (err error) {
 	exists, hasPassword := acc.ExistsAndHasPassword()
 
 	if !exists {
-		return errors.New("the link is incorrect")
+		return errors.New(errmsg.AccountRegisterNotExist)
 	}
 
 	if hasPassword {
@@ -160,30 +180,21 @@ func (acc *Account) CreatePassword(password string) (err error) {
 	return
 }
 
-func (acc *Account) EditFields(
-	fields AccountFields) (err error) {
+func (acc *Account) EditName(
+	name string) (err error) {
 
 	_, err = db.Accounts.UpdateOne(db.Ctx, bson.M{
 		"id": acc.ID,
 	}, bson.M{
 		"$set": bson.M{
-			"name":                fields.Name,
-			"roles":               fields.Roles,
-			"skills":              fields.Skills,
-			"tshirtSize":          fields.TshirtSize,
-			"dietaryRestrictions": fields.DietaryRestrictions,
-		},
+			"name": name},
 	})
 
 	if err != nil {
 		return
 	}
 
-	acc.Name = fields.Name
-	acc.Roles = fields.Roles
-	acc.Skills = fields.Skills
-	acc.TshirtSize = fields.TshirtSize
-	acc.DietaryRestrictions = fields.DietaryRestrictions
+	acc.Name = name
 
 	return
 }

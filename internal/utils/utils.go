@@ -7,8 +7,8 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-func Error(c fiber.Ctx, err error) error {
-	return c.Status(401).JSON(map[string]string{
+func Error(c fiber.Ctx, statusCode int, err error) error {
+	return c.Status(statusCode).JSON(map[string]string{
 		"message": err.Error(),
 	})
 }
