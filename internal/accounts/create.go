@@ -5,8 +5,6 @@ import (
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
-	"errors"
-	"net/http"
 
 	"github.com/gofiber/fiber/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,9 +15,9 @@ func AccountInitialize(c fiber.Ctx) error {
 	var account models.Account
 	json.Unmarshal(c.Body(), &account)
 
-	err := account.Initialize()
-	if err != nil {
-		return utils.Error(c, http.StatusConflict, err)
+	serr := account.Initialize()
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
 	}
 
 	return c.JSON(account)
@@ -37,9 +35,9 @@ func AccountRegister(c fiber.Ctx) error {
 		ID: id,
 	}
 
-	err := account.CreatePassword(body.Password)
-	if err != nil {
-		return utils.Error(c, http.StatusNotFound, errors.New(errmsg.AccountRegisterNotExist))
+	serr := account.CreatePassword(body.Password)
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
 	}
 
 	token := account.GenToken()
@@ -58,13 +56,18 @@ func AccountLogin(c fiber.Ctx) error {
 	json.Unmarshal(c.Body(), &body)
 
 	account := models.Account{}
-	account.GetByEmail(body.Email)
+	serr := account.GetByEmail(body.Email)
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
+	}
 
 	if bcrypt.CompareHashAndPassword(
 		[]byte(account.Password),
 		[]byte(body.Password),
 	) != nil {
-		return utils.Error(c, http.StatusUnauthorized, errors.New(errmsg.AccountLoginWrongPassword))
+		return utils.StatusError(c,
+			errmsg.AccountLoginWrongPassword,
+		)
 	}
 
 	token := account.GenToken()

@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"backend/internal/errmsg"
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
@@ -10,7 +11,6 @@ import (
 )
 
 func AccountEdit(c fiber.Ctx) error {
-
 	var body struct {
 		Name string `json:"name" bson:"name"`
 	}
@@ -19,7 +19,10 @@ func AccountEdit(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
 
-	account.EditName(body.Name)
+	err := account.EditName(body.Name)
+	if err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError)
+	}
 
 	token := account.GenToken()
 

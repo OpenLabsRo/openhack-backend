@@ -7,12 +7,6 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-func Error(c fiber.Ctx, statusCode int, err error) error {
-	return c.Status(statusCode).JSON(map[string]string{
-		"message": err.Error(),
-	})
-}
-
 func GetLocals(c fiber.Ctx, name string, result interface{}) {
 	json.Unmarshal([]byte(fmt.Sprintf("%v", c.Locals(name))), &result)
 }

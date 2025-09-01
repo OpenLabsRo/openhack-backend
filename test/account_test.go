@@ -73,7 +73,7 @@ func TestAccountInitializeDuplicateEmail(t *testing.T) {
 
 	bodyBytes, statusCode := API_AccountInitialize(t, payload)
 
-	require.Equal(t, http.StatusConflict, statusCode)
+	require.Equal(t, errmsg.AccountExists.StatusCode, statusCode)
 
 	// unmarshaling the error message
 	var body struct {
@@ -82,7 +82,7 @@ func TestAccountInitializeDuplicateEmail(t *testing.T) {
 	err := json.Unmarshal(bodyBytes, &body)
 	require.NoError(t, err)
 
-	require.Equal(t, errmsg.AccountInitializeAlreadyExists, body.Message)
+	require.Equal(t, errmsg.AccountExists.Message, body.Message)
 }
 
 func TestAccountRegister(t *testing.T) {
@@ -114,7 +114,33 @@ func TestAccountRegister(t *testing.T) {
 	require.NotEmpty(t, body.Token, "expected token to be set")
 }
 
-func TestAccountRegisterNotExist(t *testing.T) {
+func TestAccountRegisterExists(t *testing.T) {
+	// request payload
+	payload := struct {
+		Password string `json:"password"`
+	}{
+		Password: "testingpassword",
+	}
+
+	bodyBytes, statusCode := API_AccountRegister(
+		t, testAccount.ID, payload,
+	)
+
+	// status code
+	require.Equal(t, errmsg.AccountExists.StatusCode, statusCode)
+
+	// decode response
+	var body struct {
+		Message string `json:"message"`
+	}
+	err := json.Unmarshal(bodyBytes, &body)
+	require.NoError(t, err)
+
+	// assertions
+	require.Equal(t, errmsg.AccountExists.Message, body.Message)
+}
+
+func TestAccountRegisterNotExists(t *testing.T) {
 	// request payload
 	payload := struct {
 		Password string `json:"password"`
@@ -127,7 +153,7 @@ func TestAccountRegisterNotExist(t *testing.T) {
 	)
 
 	// status code
-	require.Equal(t, http.StatusNotFound, statusCode)
+	require.Equal(t, errmsg.AccountNotExists.StatusCode, statusCode)
 
 	// decode response
 	var body struct {
@@ -137,7 +163,7 @@ func TestAccountRegisterNotExist(t *testing.T) {
 	require.NoError(t, err)
 
 	// assertions
-	require.Equal(t, errmsg.AccountRegisterNotExist, body.Message)
+	require.Equal(t, errmsg.AccountNotExists.Message, body.Message)
 }
 
 func TestAccountLogin(t *testing.T) {
@@ -188,7 +214,7 @@ func TestAccountLoginWrongPassword(t *testing.T) {
 	)
 
 	// status code
-	require.Equal(t, http.StatusUnauthorized, statusCode)
+	require.Equal(t, errmsg.AccountLoginWrongPassword.StatusCode, statusCode)
 
 	// decode response
 	var body struct {
@@ -198,7 +224,35 @@ func TestAccountLoginWrongPassword(t *testing.T) {
 	require.NoError(t, err)
 
 	// assertions
-	require.Equal(t, errmsg.AccountLoginWrongPassword, body.Message)
+	require.Equal(t, errmsg.AccountLoginWrongPassword.Message, body.Message)
+}
+
+func TestAccountLoginWrongEmail(t *testing.T) {
+	// request payload
+	payload := struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}{
+		Email:    "wrongemail@example.com",
+		Password: testAccount.Password,
+	}
+
+	bodyBytes, statusCode := API_AccountLogin(
+		t, payload,
+	)
+
+	// status code
+	require.Equal(t, errmsg.AccountNotExists.StatusCode, statusCode)
+
+	// decode response
+	var body struct {
+		Message string `json:"message"`
+	}
+	err := json.Unmarshal(bodyBytes, &body)
+	require.NoError(t, err)
+
+	// assertions
+	require.Equal(t, errmsg.AccountNotExists.Message, body.Message)
 }
 
 func TestAccountEdit(t *testing.T) {
@@ -247,7 +301,7 @@ func TestAccountEditNoToken(t *testing.T) {
 	)
 
 	// status code
-	require.Equal(t, http.StatusUnauthorized, statusCode)
+	require.Equal(t, errmsg.AccountNoToken.StatusCode, statusCode)
 
 	// decode response
 	var body struct {
@@ -257,7 +311,7 @@ func TestAccountEditNoToken(t *testing.T) {
 	require.NoError(t, err)
 
 	// assertions
-	require.Equal(t, errmsg.AccountNoToken, body.Message)
+	require.Equal(t, errmsg.AccountNoToken.Message, body.Message)
 }
 
 func TestAccountCleanup(t *testing.T) {

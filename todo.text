@@ -1,12 +1,4 @@
 so i have to check all errors on all the paths
-maybe even split endpoints into routes and handler files
-depending on the functionality
-
-i have to write some helper functions for the
-integration test suite
-
-and then have to assemble the tests
-and write negative path test cases
 
 then i have to write the flag system with sqlite3
 i'd say that that is the best way to go about doing it

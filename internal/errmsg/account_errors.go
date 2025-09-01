@@ -1,8 +1,25 @@
 package errmsg
 
-var AccountInitializeAlreadyExists = "account already exists"
-var AccountRegisterNotExist = "account does not exist"
+import (
+	"net/http"
+)
 
-var AccountLoginWrongPassword = "wrong password"
+var AccountExists = NewStatusError(
+	http.StatusConflict,
+	"account already exists",
+)
 
-var AccountNoToken = "you are not logged in"
+var AccountNotExists = NewStatusError(
+	http.StatusNotFound,
+	"account does not exist",
+)
+
+var AccountLoginWrongPassword = NewStatusError(
+	http.StatusUnauthorized,
+	"wrong password",
+)
+
+var AccountNoToken = NewStatusError(
+	http.StatusUnauthorized,
+	"you are not logged in",
+)

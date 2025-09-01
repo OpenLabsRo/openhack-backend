@@ -5,8 +5,6 @@ import (
 	"backend/internal/env"
 	"backend/internal/errmsg"
 	"backend/internal/utils"
-	"errors"
-	"net/http"
 	"strings"
 	"time"
 
@@ -61,13 +59,15 @@ func AccountMiddleware(c fiber.Ctx) error {
 			token = tokens[1]
 		}
 		if token == "" {
-			return utils.Error(c, http.StatusUnauthorized, errors.New(errmsg.AccountNoToken))
+			return utils.StatusError(c,
+				errmsg.AccountNoToken,
+			)
 		}
 
 		var account Account
 		err := account.ParseToken(token)
 		if err != nil {
-			return utils.Error(c, http.StatusUnauthorized, errors.New(errmsg.AccountNoToken))
+
 		}
 
 		c.Locals("id", account.ID)
@@ -75,13 +75,15 @@ func AccountMiddleware(c fiber.Ctx) error {
 	}
 
 	if token == "" {
-		return utils.Error(c, http.StatusUnauthorized, errors.New(errmsg.AccountNoToken))
+		return utils.StatusError(c,
+			errmsg.AccountNoToken,
+		)
 	}
 
 	return c.Next()
 }
 
-func (acc *Account) CheckByEmail() (err error) {
+func (acc *Account) CheckByEmail() (serr errmsg.StatusError) {
 	checkAcc := Account{}
 
 	db.Accounts.FindOne(db.Ctx, bson.M{
@@ -89,21 +91,24 @@ func (acc *Account) CheckByEmail() (err error) {
 	}).Decode(&checkAcc)
 
 	if checkAcc.Name != "" {
-		return errors.New(errmsg.AccountInitializeAlreadyExists)
+		return errmsg.AccountExists
 	}
 
 	return
 }
 
-func (acc *Account) Initialize() (err error) {
+func (acc *Account) Initialize() (serr errmsg.StatusError) {
 	acc.ID = utils.GenID(6)
 
-	err = acc.CheckByEmail()
-	if err != nil {
-		return err
+	serr = acc.CheckByEmail()
+	if serr != errmsg.EmptyStatusError {
+		return serr
 	}
 
-	_, err = db.Accounts.InsertOne(db.Ctx, acc)
+	_, err := db.Accounts.InsertOne(db.Ctx, acc)
+	if err != nil {
+		return errmsg.InternalServerError
+	}
 
 	return
 }
@@ -124,12 +129,16 @@ func (acc *Account) Get() (err error) {
 	return err
 }
 
-func (acc *Account) GetByEmail(email string) (err error) {
-	err = db.Accounts.FindOne(db.Ctx, bson.M{
+func (acc *Account) GetByEmail(email string) (serr errmsg.StatusError) {
+	db.Accounts.FindOne(db.Ctx, bson.M{
 		"email": email,
 	}).Decode(&acc)
 
-	return err
+	if acc.ID == "" {
+		return errmsg.AccountNotExists
+	}
+
+	return serr
 }
 
 func (acc *Account) ExistsAndHasPassword() (exists bool, has bool) {
@@ -150,20 +159,20 @@ func (acc *Account) ExistsAndHasPassword() (exists bool, has bool) {
 	return
 }
 
-func (acc *Account) CreatePassword(password string) (err error) {
+func (acc *Account) CreatePassword(password string) (serr errmsg.StatusError) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), 12)
 
 	exists, hasPassword := acc.ExistsAndHasPassword()
 
 	if !exists {
-		return errors.New(errmsg.AccountRegisterNotExist)
+		return errmsg.AccountNotExists
 	}
 
 	if hasPassword {
-		return errors.New("there is already an account registered")
+		return errmsg.AccountExists
 	}
 
-	_, err = db.Accounts.UpdateOne(db.Ctx, bson.M{
+	_, err := db.Accounts.UpdateOne(db.Ctx, bson.M{
 		"id": acc.ID,
 	}, bson.M{
 		"$set": bson.M{
@@ -172,7 +181,7 @@ func (acc *Account) CreatePassword(password string) (err error) {
 	})
 
 	if err != nil {
-		return
+		return errmsg.InternalServerError
 	}
 
 	acc.Password = string(hashedPassword)
@@ -180,8 +189,7 @@ func (acc *Account) CreatePassword(password string) (err error) {
 	return
 }
 
-func (acc *Account) EditName(
-	name string) (err error) {
+func (acc *Account) EditName(name string) (err error) {
 
 	_, err = db.Accounts.UpdateOne(db.Ctx, bson.M{
 		"id": acc.ID,
