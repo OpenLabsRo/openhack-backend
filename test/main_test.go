@@ -13,6 +13,9 @@ var (
 	testAccount  models.Account
 	testPassword string
 	testToken    string
+
+	testSuperUser      models.SuperUser
+	testSuperUserToken string
 )
 
 func init() {

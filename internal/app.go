@@ -4,6 +4,7 @@ import (
 	"backend/internal/accounts"
 	"backend/internal/db"
 	"backend/internal/env"
+	"backend/internal/superusers"
 	"backend/internal/teams"
 	"log"
 
@@ -28,6 +29,7 @@ func SetupApp(deployment string) *fiber.App {
 
 	accounts.Routes(app)
 	teams.Routes(app)
+	superusers.Routes(app)
 
 	return app
 }

@@ -1,0 +1,44 @@
+package test
+
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"net/http"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func API_SuperUsersLogin(
+	t *testing.T, payload struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}) (bodyBytes []byte, statusCode int) {
+
+	// marshalling the payload into JSON
+	sendBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	req, err := http.NewRequest(
+		"POST",
+		"/superusers/login",
+		bytes.NewBuffer(sendBytes),
+	)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	// send request to the shared app
+	res, err := app.Test(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	statusCode = res.StatusCode
+
+	bodyBytes, err = io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err) // or handle error normally
+	}
+
+	return
+}

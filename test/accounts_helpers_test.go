@@ -14,7 +14,7 @@ import (
 // I think what would help me best is
 // to flesh out the API calls here, to clear anything i might need
 
-func API_AccountInitialize(t *testing.T, payload struct {
+func API_AccountsInitialize(t *testing.T, payload struct {
 	Email string `json:"email"`
 	Name  string `json:"name"`
 }) (bodyBytes []byte, statusCode int) {
@@ -45,7 +45,7 @@ func API_AccountInitialize(t *testing.T, payload struct {
 	return
 }
 
-func API_AccountRegister(
+func API_AccountsRegister(
 	t *testing.T, accountID string, payload struct {
 		Password string `json:"password"`
 	}) (bodyBytes []byte, statusCode int) {
@@ -76,7 +76,7 @@ func API_AccountRegister(
 	return
 }
 
-func API_AccountLogin(
+func API_AccountsLogin(
 	t *testing.T, payload struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -109,7 +109,7 @@ func API_AccountLogin(
 	return
 }
 
-func API_AccountEdit(
+func API_AccountsEdit(
 	t *testing.T, token string, payload struct {
 		Name string `json:"name"`
 	}) (bodyBytes []byte, statusCode int) {

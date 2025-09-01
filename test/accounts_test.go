@@ -24,7 +24,7 @@ func AccountCleanup() {
 	testToken = ""
 }
 
-func TestAccountPing(t *testing.T) {
+func TestAccountsPing(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/accounts/ping", nil)
 	resp, err := app.Test(req)
 	if err != nil {
@@ -37,7 +37,7 @@ func TestAccountPing(t *testing.T) {
 	assert.Equal(t, string(bodyBytes), "PONG")
 }
 
-func TestAccountInitialize(t *testing.T) {
+func TestAccountsInitialize(t *testing.T) {
 	// request payload
 	payload := struct {
 		Email string `json:"email"`
@@ -47,7 +47,7 @@ func TestAccountInitialize(t *testing.T) {
 		Name:  "Test Initialize",
 	}
 
-	bodyBytes, statusCode := API_AccountInitialize(t, payload)
+	bodyBytes, statusCode := API_AccountsInitialize(t, payload)
 
 	// status code
 	require.Equal(t, http.StatusOK, statusCode)
@@ -62,7 +62,7 @@ func TestAccountInitialize(t *testing.T) {
 	require.Equal(t, payload.Name, testAccount.Name, "name should match")
 }
 
-func TestAccountInitializeDuplicateEmail(t *testing.T) {
+func TestAccountsInitializeDuplicateEmail(t *testing.T) {
 	payload := struct {
 		Email string `json:"email"`
 		Name  string `json:"name"`
@@ -71,7 +71,7 @@ func TestAccountInitializeDuplicateEmail(t *testing.T) {
 		Name:  "Test Initialize",
 	}
 
-	bodyBytes, statusCode := API_AccountInitialize(t, payload)
+	bodyBytes, statusCode := API_AccountsInitialize(t, payload)
 
 	require.Equal(t, errmsg.AccountExists.StatusCode, statusCode)
 
@@ -85,7 +85,7 @@ func TestAccountInitializeDuplicateEmail(t *testing.T) {
 	require.Equal(t, errmsg.AccountExists.Message, body.Message)
 }
 
-func TestAccountRegister(t *testing.T) {
+func TestAccountsRegister(t *testing.T) {
 	// request payload
 	payload := struct {
 		Password string `json:"password"`
@@ -94,7 +94,7 @@ func TestAccountRegister(t *testing.T) {
 	}
 	testPassword = payload.Password
 
-	bodyBytes, statusCode := API_AccountRegister(
+	bodyBytes, statusCode := API_AccountsRegister(
 		t, testAccount.ID, payload,
 	)
 
@@ -114,7 +114,7 @@ func TestAccountRegister(t *testing.T) {
 	require.NotEmpty(t, body.Token, "expected token to be set")
 }
 
-func TestAccountRegisterExists(t *testing.T) {
+func TestAccountsRegisterExists(t *testing.T) {
 	// request payload
 	payload := struct {
 		Password string `json:"password"`
@@ -122,7 +122,7 @@ func TestAccountRegisterExists(t *testing.T) {
 		Password: "testingpassword",
 	}
 
-	bodyBytes, statusCode := API_AccountRegister(
+	bodyBytes, statusCode := API_AccountsRegister(
 		t, testAccount.ID, payload,
 	)
 
@@ -140,7 +140,7 @@ func TestAccountRegisterExists(t *testing.T) {
 	require.Equal(t, errmsg.AccountExists.Message, body.Message)
 }
 
-func TestAccountRegisterNotExists(t *testing.T) {
+func TestAccountsRegisterNotExists(t *testing.T) {
 	// request payload
 	payload := struct {
 		Password string `json:"password"`
@@ -148,7 +148,7 @@ func TestAccountRegisterNotExists(t *testing.T) {
 		Password: "testingpassword",
 	}
 
-	bodyBytes, statusCode := API_AccountRegister(
+	bodyBytes, statusCode := API_AccountsRegister(
 		t, "123", payload,
 	)
 
@@ -166,7 +166,7 @@ func TestAccountRegisterNotExists(t *testing.T) {
 	require.Equal(t, errmsg.AccountNotExists.Message, body.Message)
 }
 
-func TestAccountLogin(t *testing.T) {
+func TestAccountsLogin(t *testing.T) {
 	// request payload
 	payload := struct {
 		Email    string `json:"email"`
@@ -176,7 +176,7 @@ func TestAccountLogin(t *testing.T) {
 		Password: testPassword,
 	}
 
-	bodyBytes, statusCode := API_AccountLogin(
+	bodyBytes, statusCode := API_AccountsLogin(
 		t, payload,
 	)
 
@@ -199,7 +199,7 @@ func TestAccountLogin(t *testing.T) {
 	testAccount = body.Account
 }
 
-func TestAccountLoginWrongPassword(t *testing.T) {
+func TestAccountsLoginWrongPassword(t *testing.T) {
 	// request payload
 	payload := struct {
 		Email    string `json:"email"`
@@ -209,7 +209,7 @@ func TestAccountLoginWrongPassword(t *testing.T) {
 		Password: "wrongpassword",
 	}
 
-	bodyBytes, statusCode := API_AccountLogin(
+	bodyBytes, statusCode := API_AccountsLogin(
 		t, payload,
 	)
 
@@ -227,7 +227,7 @@ func TestAccountLoginWrongPassword(t *testing.T) {
 	require.Equal(t, errmsg.AccountLoginWrongPassword.Message, body.Message)
 }
 
-func TestAccountLoginWrongEmail(t *testing.T) {
+func TestAccountsLoginWrongEmail(t *testing.T) {
 	// request payload
 	payload := struct {
 		Email    string `json:"email"`
@@ -237,7 +237,7 @@ func TestAccountLoginWrongEmail(t *testing.T) {
 		Password: testAccount.Password,
 	}
 
-	bodyBytes, statusCode := API_AccountLogin(
+	bodyBytes, statusCode := API_AccountsLogin(
 		t, payload,
 	)
 
@@ -255,7 +255,7 @@ func TestAccountLoginWrongEmail(t *testing.T) {
 	require.Equal(t, errmsg.AccountNotExists.Message, body.Message)
 }
 
-func TestAccountEdit(t *testing.T) {
+func TestAccountsEdit(t *testing.T) {
 	// request payload
 	payload := struct {
 		Name string `json:"name"`
@@ -263,7 +263,7 @@ func TestAccountEdit(t *testing.T) {
 		Name: "Updated Name",
 	}
 
-	bodyBytes, statusCode := API_AccountEdit(
+	bodyBytes, statusCode := API_AccountsEdit(
 		t, testToken, payload,
 	)
 
@@ -288,7 +288,7 @@ func TestAccountEdit(t *testing.T) {
 	testAccount = body.Account
 }
 
-func TestAccountEditNoToken(t *testing.T) {
+func TestAccountsEditNoToken(t *testing.T) {
 	// request payload
 	payload := struct {
 		Name string `json:"name"`
@@ -296,7 +296,7 @@ func TestAccountEditNoToken(t *testing.T) {
 		Name: "Updated Name",
 	}
 
-	bodyBytes, statusCode := API_AccountEdit(
+	bodyBytes, statusCode := API_AccountsEdit(
 		t, "", payload,
 	)
 
@@ -314,7 +314,7 @@ func TestAccountEditNoToken(t *testing.T) {
 	require.Equal(t, errmsg.AccountNoToken.Message, body.Message)
 }
 
-func TestAccountCleanup(t *testing.T) {
+func TestAccountsCleanup(t *testing.T) {
 	t.Cleanup(func() {
 		AccountCleanup()
 	})
