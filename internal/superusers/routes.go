@@ -48,4 +48,14 @@ func Routes(app *fiber.App) {
 		})
 	})
 
+	superusers.Get("/whoami", models.SuperUserMiddleware, func(c fiber.Ctx) error {
+		su := models.SuperUser{}
+
+		utils.GetLocals(c, "superuser", &su)
+
+		return c.JSON(bson.M{
+			"superuser": su,
+		})
+	})
+
 }

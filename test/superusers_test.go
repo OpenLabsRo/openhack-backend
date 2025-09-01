@@ -114,3 +114,23 @@ func TestSuperUsersLoginWrongEmail(t *testing.T) {
 	// assertions
 	require.Equal(t, errmsg.AccountNotExists.Message, body.Message)
 }
+
+func TestSuperUsersWhoAmI(t *testing.T) {
+	bodyBytes, statusCode := API_SuperUsersWhoAmI(
+		t, testSuperUserToken,
+	)
+
+	// status code
+	require.Equal(t, http.StatusOK, statusCode)
+
+	// decode response
+	var body struct {
+		SuperUser models.SuperUser `json:"superuser"`
+	}
+	err := json.Unmarshal(bodyBytes, &body)
+	require.NoError(t, err)
+
+	// assertions
+	require.Equal(t, body.SuperUser.Username, env.SUPERUSER_USERNAME)
+
+}

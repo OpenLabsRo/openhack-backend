@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"testing"
@@ -27,6 +28,33 @@ func API_SuperUsersLogin(
 	)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
+
+	// send request to the shared app
+	res, err := app.Test(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	statusCode = res.StatusCode
+
+	bodyBytes, err = io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err) // or handle error normally
+	}
+
+	return
+}
+
+func API_SuperUsersWhoAmI(
+	t *testing.T, token string) (bodyBytes []byte, statusCode int) {
+
+	req, err := http.NewRequest(
+		"GET",
+		"/superusers/whoami",
+		bytes.NewBuffer([]byte("")),
+	)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	// send request to the shared app
 	res, err := app.Test(req)
