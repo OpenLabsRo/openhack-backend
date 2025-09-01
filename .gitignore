@@ -4,3 +4,4 @@ bin
 .env
 backend
 todo.txt
+*/env
