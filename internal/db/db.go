@@ -3,6 +3,7 @@ package db
 import (
 	"backend/internal/env"
 	"context"
+	"log"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -21,8 +22,13 @@ func InitDB(deployment string) error {
 		Ctx,
 		options.Client().ApplyURI(env.MONGO_URI),
 	)
-
 	if err != nil {
+		return err
+	}
+
+	err = Client.Ping(Ctx, nil)
+	if err != nil {
+		log.Fatal("COULD NOT CONNECT TO MONGODB")
 		return err
 	}
 

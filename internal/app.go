@@ -15,6 +15,7 @@ func SetupApp(deployment string) *fiber.App {
 
 	if err := db.InitDB(deployment); err != nil {
 		log.Fatal("Could not connect to MongoDB")
+		return nil
 	}
 
 	app.Get("/ping", func(c fiber.Ctx) error {
