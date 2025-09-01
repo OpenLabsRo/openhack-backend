@@ -3,7 +3,6 @@ package test
 import (
 	"backend/internal/errmsg"
 	"backend/internal/models"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,14 +14,14 @@ import (
 )
 
 func AccountCleanup() {
-	err := accounts[0].Delete()
+	err := testAccount.Delete()
 	if err != nil {
 		fmt.Printf("failed to delete account: %v", err)
 	}
 
-	accounts = []models.Account{}
-	passwords = []string{}
-	tokens = []string{}
+	testAccount = models.Account{}
+	testPassword = ""
+	testToken = ""
 }
 
 func TestAccountPing(t *testing.T) {
@@ -40,193 +39,166 @@ func TestAccountPing(t *testing.T) {
 
 func TestAccountInitialize(t *testing.T) {
 	// request payload
-	payload := map[string]string{
-		"email": "testaccount1@openhack.ro",
-		"name":  "Test Initialize",
+	payload := struct {
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}{
+		Email: "testaccount1@openhack.ro",
+		Name:  "Test Initialize",
 	}
 
-	// marshal to JSON
-	bodyBytes, err := json.Marshal(payload)
-	require.NoError(t, err)
-
-	req, err := http.NewRequest("POST", "/accounts/initialize", bytes.NewBuffer(bodyBytes))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-
-	// send request to the shared app
-	resp, err := app.Test(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
+	bodyBytes, statusCode := API_AccountInitialize(t, payload)
 
 	// status code
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, statusCode)
 
-	// decode response
-	var acc models.Account
-	err = json.NewDecoder(resp.Body).Decode(&acc)
-	require.NoError(t, err)
+	// unmarshaling the body
+	err := json.Unmarshal(bodyBytes, &testAccount)
+	assert.NoError(t, err)
 
 	// assertions
-	require.NotEmpty(t, acc.ID, "expected ID to be set")
-	require.Equal(t, payload["email"], acc.Email, "email should match")
-	require.Equal(t, payload["name"], acc.Name, "name should match")
-
-	accounts = append(accounts, acc)
-	marshaled, err := json.Marshal(accounts[0])
-
-	fmt.Printf("Account: %s", string(marshaled))
+	require.NotEmpty(t, testAccount.ID, "expected ID to be set")
+	require.Equal(t, payload.Email, testAccount.Email, "email should match")
+	require.Equal(t, payload.Name, testAccount.Name, "name should match")
 }
 
 func TestAccountInitializeDuplicateEmail(t *testing.T) {
-	payload := map[string]string{
-		"email": accounts[0].Email,
-		"name":  "Duplicate User",
+	payload := struct {
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}{
+		Email: testAccount.Email,
+		Name:  "Test Initialize",
 	}
 
-	// marshal to JSON
-	bodyBytes, err := json.Marshal(payload)
-	require.NoError(t, err)
+	bodyBytes, statusCode := API_AccountInitialize(t, payload)
 
-	req, err := http.NewRequest("POST", "/accounts/initialize", bytes.NewBuffer(bodyBytes))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
+	require.Equal(t, http.StatusConflict, statusCode)
 
-	// send request to the shared app
-	resp, err := app.Test(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-
-	var respBody struct {
+	// unmarshaling the error message
+	var body struct {
 		Message string `json:"message"`
 	}
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	err := json.Unmarshal(bodyBytes, &body)
 	require.NoError(t, err)
 
-	require.Equal(t, errmsg.AccountInitializeAlreadyExists, respBody.Message, "message should match")
+	require.Equal(t, errmsg.AccountInitializeAlreadyExists, body.Message)
 }
 
 func TestAccountRegister(t *testing.T) {
 	// request payload
-	payload := map[string]string{
-		"password": "testingpassword",
+	payload := struct {
+		Password string `json:"password"`
+	}{
+		Password: "testingpassword",
 	}
-	passwords = append(passwords, payload["password"])
+	testPassword = payload.Password
 
-	// marshal to JSON
-	bodyBytes, err := json.Marshal(payload)
-	require.NoError(t, err)
-
-	req, err := http.NewRequest("POST",
-		fmt.Sprintf("/accounts/register?id=%v", accounts[0].ID),
-		bytes.NewBuffer(bodyBytes))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-
-	// send request to the shared app
-	resp, err := app.Test(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
+	bodyBytes, statusCode := API_AccountRegister(
+		t, testAccount.ID, payload,
+	)
 
 	// status code
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, statusCode)
 
 	// decode response
-	var respBody struct {
+	var body struct {
 		Account models.Account `json:"account"`
 		Token   string         `json:"token"`
 	}
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	err := json.Unmarshal(bodyBytes, &body)
 	require.NoError(t, err)
 
 	// assertions
-	require.NotEmpty(t, respBody.Account.ID, "expected ID to be set")
-	require.NotEmpty(t, respBody.Token, "expected token to be set")
-
-	tokens = append(tokens, respBody.Token)
-	fmt.Println("Token:", respBody.Token)
+	require.NotEmpty(t, body.Account.Password, "expected password to be set")
+	require.NotEmpty(t, body.Token, "expected token to be set")
 }
 
 func TestAccountRegisterNotExist(t *testing.T) {
 	// request payload
-	payload := map[string]string{
-		"password": "testingpassword",
+	payload := struct {
+		Password string `json:"password"`
+	}{
+		Password: "testingpassword",
 	}
-	passwords = append(passwords, payload["password"])
 
-	// marshal to JSON
-	bodyBytes, err := json.Marshal(payload)
-	require.NoError(t, err)
-
-	req, err := http.NewRequest("POST",
-		"/accounts/register?id=123",
-		bytes.NewBuffer(bodyBytes))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-
-	// send request to the shared app
-	resp, err := app.Test(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
+	bodyBytes, statusCode := API_AccountRegister(
+		t, "123", payload,
+	)
 
 	// status code
-	require.Equal(t, http.StatusNotFound, resp.StatusCode)
+	require.Equal(t, http.StatusNotFound, statusCode)
 
 	// decode response
-	var respBody struct {
-		Error string `json:"error"`
+	var body struct {
+		Message string `json:"message"`
 	}
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	err := json.Unmarshal(bodyBytes, &body)
 	require.NoError(t, err)
 
 	// assertions
-	require.Equal(t, errmsg.AccountRegisterNotExist, respBody.Error)
+	require.Equal(t, errmsg.AccountRegisterNotExist, body.Message)
 }
 
 func TestAccountLogin(t *testing.T) {
 	// request payload
-	payload := map[string]string{
-		"email":    accounts[0].Email,
-		"password": passwords[0],
+	payload := struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}{
+		Email:    testAccount.Email,
+		Password: testPassword,
 	}
 
-	// marshal to JSON
-	bodyBytes, err := json.Marshal(payload)
-	require.NoError(t, err)
-
-	req, err := http.NewRequest("POST",
-		"/accounts/login",
-		bytes.NewBuffer(bodyBytes))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-
-	// send request to the shared app
-	resp, err := app.Test(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
+	bodyBytes, statusCode := API_AccountLogin(
+		t, payload,
+	)
 
 	// status code
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, statusCode)
 
 	// decode response
-	var respBody struct {
+	var body struct {
 		Account models.Account `json:"account"`
 		Token   string         `json:"token"`
 	}
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	err := json.Unmarshal(bodyBytes, &body)
 	require.NoError(t, err)
 
 	// assertions
-	require.NotEmpty(t, respBody.Account.ID, "expected ID to be set")
-	require.NotEmpty(t, respBody.Token, "expected token to be set")
+	require.NotEmpty(t, body.Account.ID, "expected ID to be set")
+	require.NotEmpty(t, body.Token, "expected token to be set")
 
-	tokens[0] = respBody.Token
-	fmt.Println("Token:", tokens[0])
+	testToken = body.Token
+	testAccount = body.Account
+}
 
-	accounts[0] = respBody.Account
-	marshaled, err := json.Marshal(accounts[0])
-	fmt.Printf("Account: %s \n", string(marshaled))
+func TestAccountLoginWrongPassword(t *testing.T) {
+	// request payload
+	payload := struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}{
+		Email:    testAccount.Email,
+		Password: "wrongpassword",
+	}
+
+	bodyBytes, statusCode := API_AccountLogin(
+		t, payload,
+	)
+
+	// status code
+	require.Equal(t, http.StatusUnauthorized, statusCode)
+
+	// decode response
+	var body struct {
+		Message string `json:"message"`
+	}
+	err := json.Unmarshal(bodyBytes, &body)
+	require.NoError(t, err)
+
+	// assertions
+	require.Equal(t, errmsg.AccountLoginWrongPassword, body.Message)
 }
 
 func TestAccountEdit(t *testing.T) {
@@ -237,46 +209,58 @@ func TestAccountEdit(t *testing.T) {
 		Name: "Updated Name",
 	}
 
-	// marshal to JSON
-	bodyBytes, err := json.Marshal(payload)
-	require.NoError(t, err)
-
-	req, err := http.NewRequest("PATCH",
-		"/accounts",
-		bytes.NewBuffer(bodyBytes))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", tokens[0]))
-
-	// send request to the shared app
-	resp, err := app.Test(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
+	bodyBytes, statusCode := API_AccountEdit(
+		t, testToken, payload,
+	)
 
 	// status code
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, statusCode)
 
 	// decode response
-	var respBody struct {
+	var body struct {
 		Account models.Account `json:"account"`
 		Token   string         `json:"token"`
 	}
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	err := json.Unmarshal(bodyBytes, &body)
 	require.NoError(t, err)
 
 	// assertions
-	require.NotEmpty(t, respBody.Account.ID, "expected ID to be set")
-	require.NotEmpty(t, respBody.Token, "expected token to be set")
-	require.Equal(t, respBody.Account.Name, payload.Name, "expected name to be equal to payload")
+	require.NotEmpty(t, body.Account.ID, "expected ID to be set")
+	require.NotEmpty(t, body.Token, "expected token to be set")
+	require.Equal(t, body.Account.Name, payload.Name, "expected name to be equal to payload")
 
-	// updating the account
-	tokens[0] = respBody.Token
-	fmt.Println("Token:", tokens[0])
+	// updating the account and token
+	testToken = body.Token
+	testAccount = body.Account
+}
 
-	accounts[0] = respBody.Account
-	marshaled, err := json.Marshal(accounts[0])
-	fmt.Printf("Account: %s \n", string(marshaled))
+func TestAccountEditNoToken(t *testing.T) {
+	// request payload
+	payload := struct {
+		Name string `json:"name"`
+	}{
+		Name: "Updated Name",
+	}
 
+	bodyBytes, statusCode := API_AccountEdit(
+		t, "", payload,
+	)
+
+	// status code
+	require.Equal(t, http.StatusUnauthorized, statusCode)
+
+	// decode response
+	var body struct {
+		Message string `json:"message"`
+	}
+	err := json.Unmarshal(bodyBytes, &body)
+	require.NoError(t, err)
+
+	// assertions
+	require.Equal(t, errmsg.AccountNoToken, body.Message)
+}
+
+func TestAccountCleanup(t *testing.T) {
 	t.Cleanup(func() {
 		AccountCleanup()
 	})

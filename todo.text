@@ -1,0 +1,39 @@
+so i have to check all errors on all the paths
+maybe even split endpoints into routes and handler files
+depending on the functionality
+
+i have to write some helper functions for the
+integration test suite
+
+and then have to assemble the tests
+and write negative path test cases
+
+then i have to write the flag system with sqlite3
+i'd say that that is the best way to go about doing it
+
+and then continue on to project submission
+
+and maybe even split the structs in the models package
+into repositories
+as in the functions that are run are based on the collection itself
+and the structs are just representations of that data
+
+next steps are to think about the judging process,
+the judging accounts
+
+and then maybe some administrative tasks
+to change the flags,
+see all participants
+see the completion status on all the launched projects
+
+see the teams with the most endpoints
+add them to public voting list
+which i will also have to do
+
+then have to start building the frontend
+first, with the authentication, make that work
+with all the paths
+all the state management
+and all the error codes, and display them nicely
+i think svelte runes will be fantastic for that
+!!! really important, i should really use typescript for that

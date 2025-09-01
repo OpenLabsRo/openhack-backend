@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	app       *fiber.App
-	accounts  []models.Account
-	passwords []string
-	tokens    []string
+	app          *fiber.App
+	testAccount  models.Account
+	testPassword string
+	testToken    string
 )
 
 func init() {

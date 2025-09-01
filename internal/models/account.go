@@ -61,13 +61,13 @@ func AccountMiddleware(c fiber.Ctx) error {
 			token = tokens[1]
 		}
 		if token == "" {
-			return utils.Error(c, http.StatusUnauthorized, errors.New("no token"))
+			return utils.Error(c, http.StatusUnauthorized, errors.New(errmsg.AccountNoToken))
 		}
 
 		var account Account
 		err := account.ParseToken(token)
 		if err != nil {
-			return utils.Error(c, http.StatusInternalServerError, errors.New("could not parse token"))
+			return utils.Error(c, http.StatusUnauthorized, errors.New(errmsg.AccountNoToken))
 		}
 
 		c.Locals("id", account.ID)
@@ -75,7 +75,7 @@ func AccountMiddleware(c fiber.Ctx) error {
 	}
 
 	if token == "" {
-		return utils.Error(c, http.StatusUnauthorized, errors.New("no token"))
+		return utils.Error(c, http.StatusUnauthorized, errors.New(errmsg.AccountNoToken))
 	}
 
 	return c.Next()

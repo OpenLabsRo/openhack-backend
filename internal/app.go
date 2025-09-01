@@ -25,8 +25,8 @@ func SetupApp(deployment string) *fiber.App {
 		return c.SendString(env.VERSION)
 	})
 
-	accounts.Endpoints(app)
-	teams.Endpoints(app)
+	accounts.Routes(app)
+	teams.Routes(app)
 
 	return app
 }
