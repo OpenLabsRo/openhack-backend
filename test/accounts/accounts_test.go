@@ -1,27 +1,67 @@
-package test
+package accounts
 
 import (
+	"backend/internal"
+	"backend/internal/env"
 	"backend/internal/errmsg"
 	"backend/internal/models"
+
+	"backend/test/helpers"
+
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"testing"
 
+	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func AccountCleanup() {
-	err := testAccount.Delete()
-	if err != nil {
-		fmt.Printf("failed to delete account: %v", err)
-	}
+var (
+	app          *fiber.App
+	testAccount  models.Account
+	testPassword string
+	testToken    string
 
-	testAccount = models.Account{}
-	testPassword = ""
-	testToken = ""
+	testSuperUser      models.SuperUser
+	testSuperUserToken string
+)
+
+func TestAccountsSetup(t *testing.T) {
+	app = internal.SetupApp("dev")
+
+	bodyBytes, statusCode := helpers.API_SuperUsersLogin(
+		app, t, struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+		}{
+			Username: env.SUPERUSER_USERNAME,
+			Password: env.SUPERUSER_PASSWORD,
+		},
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
+	var body struct {
+		SuperUser models.SuperUser `json:"superuser"`
+		Token     string           `json:"token"`
+	}
+	json.Unmarshal(bodyBytes, &body)
+
+	bodyBytes, statusCode = helpers.API_SuperUsersAccountsInitialize(
+		app, t, struct {
+			Email string `json:"email"`
+			Name  string `json:"name"`
+		}{
+			Email: "accountstesting@example.com",
+			Name:  "Test Initialize",
+		}, body.Token,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
+	// unmarshaling the body
+	json.Unmarshal(bodyBytes, &testAccount)
 }
 
 func TestAccountsPing(t *testing.T) {
@@ -37,54 +77,6 @@ func TestAccountsPing(t *testing.T) {
 	assert.Equal(t, string(bodyBytes), "PONG")
 }
 
-func TestAccountsInitialize(t *testing.T) {
-	// request payload
-	payload := struct {
-		Email string `json:"email"`
-		Name  string `json:"name"`
-	}{
-		Email: "testaccount1@openhack.ro",
-		Name:  "Test Initialize",
-	}
-
-	bodyBytes, statusCode := API_AccountsInitialize(t, payload)
-
-	// status code
-	require.Equal(t, http.StatusOK, statusCode)
-
-	// unmarshaling the body
-	err := json.Unmarshal(bodyBytes, &testAccount)
-	assert.NoError(t, err)
-
-	// assertions
-	require.NotEmpty(t, testAccount.ID, "expected ID to be set")
-	require.Equal(t, payload.Email, testAccount.Email, "email should match")
-	require.Equal(t, payload.Name, testAccount.Name, "name should match")
-}
-
-func TestAccountsInitializeDuplicateEmail(t *testing.T) {
-	payload := struct {
-		Email string `json:"email"`
-		Name  string `json:"name"`
-	}{
-		Email: testAccount.Email,
-		Name:  "Test Initialize",
-	}
-
-	bodyBytes, statusCode := API_AccountsInitialize(t, payload)
-
-	require.Equal(t, errmsg.AccountExists.StatusCode, statusCode)
-
-	// unmarshaling the error message
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	require.Equal(t, errmsg.AccountExists.Message, body.Message)
-}
-
 func TestAccountsRegister(t *testing.T) {
 	// request payload
 	payload := struct {
@@ -94,8 +86,8 @@ func TestAccountsRegister(t *testing.T) {
 	}
 	testPassword = payload.Password
 
-	bodyBytes, statusCode := API_AccountsRegister(
-		t, testAccount.ID, payload,
+	bodyBytes, statusCode := helpers.API_AccountsRegister(
+		app, t, testAccount.ID, payload,
 	)
 
 	// status code
@@ -122,8 +114,8 @@ func TestAccountsRegisterExists(t *testing.T) {
 		Password: "testingpassword",
 	}
 
-	bodyBytes, statusCode := API_AccountsRegister(
-		t, testAccount.ID, payload,
+	bodyBytes, statusCode := helpers.API_AccountsRegister(
+		app, t, testAccount.ID, payload,
 	)
 
 	// status code
@@ -148,8 +140,8 @@ func TestAccountsRegisterNotExists(t *testing.T) {
 		Password: "testingpassword",
 	}
 
-	bodyBytes, statusCode := API_AccountsRegister(
-		t, "123", payload,
+	bodyBytes, statusCode := helpers.API_AccountsRegister(
+		app, t, "123", payload,
 	)
 
 	// status code
@@ -176,8 +168,8 @@ func TestAccountsLogin(t *testing.T) {
 		Password: testPassword,
 	}
 
-	bodyBytes, statusCode := API_AccountsLogin(
-		t, payload,
+	bodyBytes, statusCode := helpers.API_AccountsLogin(
+		app, t, payload,
 	)
 
 	// status code
@@ -209,8 +201,8 @@ func TestAccountsLoginWrongPassword(t *testing.T) {
 		Password: "wrongpassword",
 	}
 
-	bodyBytes, statusCode := API_AccountsLogin(
-		t, payload,
+	bodyBytes, statusCode := helpers.API_AccountsLogin(
+		app, t, payload,
 	)
 
 	// status code
@@ -237,8 +229,8 @@ func TestAccountsLoginWrongEmail(t *testing.T) {
 		Password: testAccount.Password,
 	}
 
-	bodyBytes, statusCode := API_AccountsLogin(
-		t, payload,
+	bodyBytes, statusCode := helpers.API_AccountsLogin(
+		app, t, payload,
 	)
 
 	// status code
@@ -263,8 +255,8 @@ func TestAccountsEdit(t *testing.T) {
 		Name: "Updated Name",
 	}
 
-	bodyBytes, statusCode := API_AccountsEdit(
-		t, testToken, payload,
+	bodyBytes, statusCode := helpers.API_AccountsEdit(
+		app, t, testToken, payload,
 	)
 
 	// status code
@@ -296,10 +288,9 @@ func TestAccountsEditNoToken(t *testing.T) {
 		Name: "Updated Name",
 	}
 
-	bodyBytes, statusCode := API_AccountsEdit(
-		t, "", payload,
+	bodyBytes, statusCode := helpers.API_AccountsEdit(
+		app, t, "", payload,
 	)
-
 	// status code
 	require.Equal(t, errmsg.AccountNoToken.StatusCode, statusCode)
 
@@ -315,7 +306,12 @@ func TestAccountsEditNoToken(t *testing.T) {
 }
 
 func TestAccountsCleanup(t *testing.T) {
-	t.Cleanup(func() {
-		AccountCleanup()
-	})
+	err := testAccount.Delete()
+	if err != nil {
+		fmt.Printf("failed to delete account: %v", err)
+	}
+
+	testAccount = models.Account{}
+	testPassword = ""
+	testToken = ""
 }

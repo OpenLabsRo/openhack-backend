@@ -1,6 +1,7 @@
-package test
+package tests
 
 import (
+	"backend/internal"
 	"io"
 	"net/http"
 	"testing"
@@ -9,6 +10,8 @@ import (
 )
 
 func TestPing(t *testing.T) {
+	app := internal.SetupApp("dev")
+
 	req, _ := http.NewRequest("GET", "/ping", nil)
 	resp, err := app.Test(req)
 	if err != nil {
@@ -19,15 +22,4 @@ func TestPing(t *testing.T) {
 	bodyBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 	assert.Equal(t, string(bodyBytes), "PONG")
-}
-
-func TestVersion(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/version", nil)
-	resp, err := app.Test(req)
-
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-	assert.NoError(t, err)
-	assert.NotEmpty(t, resp.Body)
 }

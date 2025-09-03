@@ -22,7 +22,6 @@ func Routes(app *fiber.App) {
 	})
 
 	// create
-	accounts.Post("/initialize", AccountInitialize)
 	accounts.Post("/register", AccountRegister)
 	accounts.Post("/login", AccountLogin)
 

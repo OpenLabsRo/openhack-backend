@@ -11,18 +11,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func AccountInitialize(c fiber.Ctx) error {
-	var account models.Account
-	json.Unmarshal(c.Body(), &account)
-
-	serr := account.Initialize()
-	if serr != errmsg.EmptyStatusError {
-		return utils.StatusError(c, serr)
-	}
-
-	return c.JSON(account)
-}
-
 func AccountRegister(c fiber.Ctx) error {
 	id := c.Query("id")
 
