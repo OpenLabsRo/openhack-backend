@@ -81,7 +81,7 @@ func (su *SuperUser) Get(username string) (serr errmsg.StatusError) {
 	}).Decode(&su)
 
 	if su.Password == "" {
-		return errmsg.AccountNotExists
+		return errmsg.SuperUserNotExists
 	}
 
 	return

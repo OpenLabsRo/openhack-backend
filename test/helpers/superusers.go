@@ -13,11 +13,19 @@ import (
 )
 
 func API_SuperUsersLogin(
+	t *testing.T,
 	app *fiber.App,
-	t *testing.T, payload struct {
+	username string,
+	password string,
+) (bodyBytes []byte, statusCode int) {
+	// payload
+	payload := struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
-	}) (bodyBytes []byte, statusCode int) {
+	}{
+		Username: username,
+		Password: password,
+	}
 
 	// marshalling the payload into JSON
 	sendBytes, err := json.Marshal(payload)
@@ -75,13 +83,21 @@ func API_SuperUsersWhoAmI(
 }
 
 func API_SuperUsersAccountsInitialize(
+	t *testing.T,
 	app *fiber.App,
-	t *testing.T, payload struct {
-		Email string `json:"email"`
-		Name  string `json:"name"`
-	},
+	email string,
+	name string,
 	token string,
 ) (bodyBytes []byte, statusCode int) {
+	// payload
+	payload := struct {
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}{
+		Email: email,
+		Name:  name,
+	}
+
 	// marshalling the payload into JSON
 	sendBytes, err := json.Marshal(payload)
 	require.NoError(t, err)

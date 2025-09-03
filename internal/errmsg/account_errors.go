@@ -4,22 +4,24 @@ import (
 	"net/http"
 )
 
-var AccountExists = NewStatusError(
-	http.StatusConflict,
-	"account already exists",
-)
+var (
+	AccountNotInitialized = NewStatusError(
+		http.StatusNotFound,
+		"account not initialized - talk to the administrator",
+	)
 
-var AccountNotExists = NewStatusError(
-	http.StatusNotFound,
-	"account does not exist",
-)
+	AccountAlreadyRegistered = NewStatusError(
+		http.StatusConflict,
+		"account already registered",
+	)
 
-var AccountLoginWrongPassword = NewStatusError(
-	http.StatusUnauthorized,
-	"wrong password",
-)
+	AccountLoginWrongPassword = NewStatusError(
+		http.StatusUnauthorized,
+		"wrong password",
+	)
 
-var AccountNoToken = NewStatusError(
-	http.StatusUnauthorized,
-	"you are not logged in",
+	AccountNoToken = NewStatusError(
+		http.StatusUnauthorized,
+		"you are not logged in",
+	)
 )

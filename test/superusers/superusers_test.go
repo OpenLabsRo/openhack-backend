@@ -45,17 +45,11 @@ func TestSuperUsersPing(t *testing.T) {
 }
 
 func TestSuperUsersLogin(t *testing.T) {
-	// request payload
-	payload := struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}{
-		Username: env.SUPERUSER_USERNAME,
-		Password: env.SUPERUSER_PASSWORD,
-	}
-
 	bodyBytes, statusCode := helpers.API_SuperUsersLogin(
-		app, t, payload,
+		t,
+		app,
+		env.SUPERUSER_PASSWORD,
+		env.SUPERUSER_PASSWORD,
 	)
 
 	// status code
@@ -78,17 +72,11 @@ func TestSuperUsersLogin(t *testing.T) {
 }
 
 func TestSuperUsersLoginWrongPassword(t *testing.T) {
-	// request payload
-	payload := struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}{
-		Username: env.SUPERUSER_USERNAME,
-		Password: "wrongpassword",
-	}
-
 	bodyBytes, statusCode := helpers.API_SuperUsersLogin(
-		app, t, payload,
+		t,
+		app,
+		env.SUPERUSER_USERNAME,
+		"wrongpassword",
 	)
 
 	// status code
@@ -106,21 +94,15 @@ func TestSuperUsersLoginWrongPassword(t *testing.T) {
 }
 
 func TestSuperUsersLoginWrongEmail(t *testing.T) {
-	// request payload
-	payload := struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}{
-		Username: "wrongusername",
-		Password: env.SUPERUSER_PASSWORD,
-	}
-
 	bodyBytes, statusCode := helpers.API_SuperUsersLogin(
-		app, t, payload,
+		t,
+		app,
+		"wrongusername",
+		env.SUPERUSER_PASSWORD,
 	)
 
 	// status code
-	require.Equal(t, errmsg.AccountNotExists.StatusCode, statusCode)
+	require.Equal(t, errmsg.SuperUserNotExists.StatusCode, statusCode)
 
 	// decode response
 	var body struct {
@@ -130,7 +112,7 @@ func TestSuperUsersLoginWrongEmail(t *testing.T) {
 	require.NoError(t, err)
 
 	// assertions
-	require.Equal(t, errmsg.AccountNotExists.Message, body.Message)
+	require.Equal(t, errmsg.SuperUserNotExists.Message, body.Message)
 }
 
 func TestSuperUsersWhoAmI(t *testing.T) {
@@ -153,17 +135,15 @@ func TestSuperUsersWhoAmI(t *testing.T) {
 }
 
 func TestSuperUsersAccountsInitialize(t *testing.T) {
-	// request payload
-	payload := struct {
-		Email string `json:"email"`
-		Name  string `json:"name"`
-	}{
-		Email: "initializeaccounttest@example.com",
-		Name:  "Test Initialize",
-	}
+	testAccountEmail := "initializeaccounttest@example.com"
+	testAccountName := "Test Initialize"
 
 	bodyBytes, statusCode := helpers.API_SuperUsersAccountsInitialize(
-		app, t, payload, testSuperUserToken,
+		t,
+		app,
+		testAccountEmail,
+		testAccountName,
+		testSuperUserToken,
 	)
 
 	// status code
@@ -175,24 +155,20 @@ func TestSuperUsersAccountsInitialize(t *testing.T) {
 
 	// assertions
 	require.NotEmpty(t, testAccount.ID, "expected ID to be set")
-	require.Equal(t, payload.Email, testAccount.Email, "email should match")
-	require.Equal(t, payload.Name, testAccount.Name, "name should match")
+	require.Equal(t, testAccountEmail, testAccount.Email, "email should match")
+	require.Equal(t, testAccountName, testAccount.Name, "name should match")
 }
 
 func TestSuperUsersAccountsInitializeDuplicateEmail(t *testing.T) {
-	payload := struct {
-		Email string `json:"email"`
-		Name  string `json:"name"`
-	}{
-		Email: testAccount.Email,
-		Name:  "Test Initialize",
-	}
-
 	bodyBytes, statusCode := helpers.API_SuperUsersAccountsInitialize(
-		app, t, payload, testSuperUserToken,
+		t,
+		app,
+		testAccount.Email,
+		"Test Initialize",
+		testSuperUserToken,
 	)
 
-	require.Equal(t, errmsg.AccountExists.StatusCode, statusCode)
+	require.Equal(t, errmsg.AccountAlreadyInitialized.StatusCode, statusCode)
 
 	// unmarshaling the error message
 	var body struct {
@@ -201,7 +177,7 @@ func TestSuperUsersAccountsInitializeDuplicateEmail(t *testing.T) {
 	err := json.Unmarshal(bodyBytes, &body)
 	require.NoError(t, err)
 
-	require.Equal(t, errmsg.AccountExists.Message, body.Message)
+	require.Equal(t, errmsg.AccountAlreadyInitialized.Message, body.Message)
 }
 
 func TestSuperUsersAccountsCleanup(t *testing.T) {

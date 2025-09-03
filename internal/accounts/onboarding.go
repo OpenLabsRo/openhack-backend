@@ -11,19 +11,45 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func AccountRegister(c fiber.Ctx) error {
-	id := c.Query("id")
-
+func AccountCheck(c fiber.Ctx) error {
 	var body struct {
+		Email string `json:"email" bson:"email"`
+	}
+	json.Unmarshal(c.Body(), &body)
+
+	// checking if the account is initialized
+	account := models.Account{}
+	serr := account.GetByEmail(body.Email)
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
+	}
+
+	// if the account already has a password, it's registered
+	// if the account doesn't have a password, redirect to the registration page
+	return c.JSON(bson.M{
+		"registered": account.Password != "",
+	})
+}
+
+func AccountRegister(c fiber.Ctx) error {
+	var body struct {
+		Email    string `json:"email" bson:"email"`
 		Password string `json:"password" bson:"password"`
 	}
 	json.Unmarshal(c.Body(), &body)
 
-	account := models.Account{
-		ID: id,
+	// checking again if the account is initialized
+	account := models.Account{}
+	serr := account.GetByEmail(body.Email)
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
 	}
 
-	serr := account.CreatePassword(body.Password)
+	if account.Password != "" {
+		return utils.StatusError(c, errmsg.AccountAlreadyRegistered)
+	}
+
+	serr = account.CreatePassword(body.Password)
 	if serr != errmsg.EmptyStatusError {
 		return utils.StatusError(c, serr)
 	}

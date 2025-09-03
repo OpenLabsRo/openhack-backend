@@ -52,7 +52,8 @@ func AccountMiddleware(c fiber.Ctx) error {
 
 	authHeader := c.Get("Authorization")
 
-	if string(authHeader) != "" && strings.HasPrefix(string(authHeader), "Bearer") {
+	if string(authHeader) != "" &&
+		strings.HasPrefix(string(authHeader), "Bearer") {
 
 		tokens := strings.Fields(string(authHeader))
 		if len(tokens) == 2 {
@@ -83,27 +84,14 @@ func AccountMiddleware(c fiber.Ctx) error {
 	return c.Next()
 }
 
-func (acc *Account) CheckByEmail() (serr errmsg.StatusError) {
-	checkAcc := Account{}
-
-	db.Accounts.FindOne(db.Ctx, bson.M{
-		"email": acc.Email,
-	}).Decode(&checkAcc)
-
-	if checkAcc.Name != "" {
-		return errmsg.AccountExists
-	}
-
-	return
-}
-
 func (acc *Account) Initialize() (serr errmsg.StatusError) {
-	acc.ID = utils.GenID(6)
+	_ = acc.GetByEmail(acc.Email)
 
-	serr = acc.CheckByEmail()
-	if serr != errmsg.EmptyStatusError {
-		return serr
+	if acc.ID != "" {
+		return errmsg.AccountAlreadyInitialized
 	}
+
+	acc.ID = utils.GenID(6)
 
 	_, err := db.Accounts.InsertOne(db.Ctx, acc)
 	if err != nil {
@@ -135,7 +123,7 @@ func (acc *Account) GetByEmail(email string) (serr errmsg.StatusError) {
 	}).Decode(&acc)
 
 	if acc.ID == "" {
-		return errmsg.AccountNotExists
+		return errmsg.AccountNotInitialized
 	}
 
 	return serr
@@ -161,16 +149,6 @@ func (acc *Account) ExistsAndHasPassword() (exists bool, has bool) {
 
 func (acc *Account) CreatePassword(password string) (serr errmsg.StatusError) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), 12)
-
-	exists, hasPassword := acc.ExistsAndHasPassword()
-
-	if !exists {
-		return errmsg.AccountNotExists
-	}
-
-	if hasPassword {
-		return errmsg.AccountExists
-	}
 
 	_, err := db.Accounts.UpdateOne(db.Ctx, bson.M{
 		"id": acc.ID,
