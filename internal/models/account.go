@@ -59,6 +59,7 @@ func AccountMiddleware(c fiber.Ctx) error {
 		if len(tokens) == 2 {
 			token = tokens[1]
 		}
+
 		if token == "" {
 			return utils.StatusError(c,
 				errmsg.AccountNoToken,
@@ -68,7 +69,15 @@ func AccountMiddleware(c fiber.Ctx) error {
 		var account Account
 		err := account.ParseToken(token)
 		if err != nil {
+			return utils.StatusError(
+				c, errmsg.AccountNoToken,
+			)
+		}
 
+		if account.ID == "" {
+			return utils.StatusError(
+				c, errmsg.AccountNoToken,
+			)
 		}
 
 		c.Locals("id", account.ID)

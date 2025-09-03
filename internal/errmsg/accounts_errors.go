@@ -24,4 +24,9 @@ var (
 		http.StatusUnauthorized,
 		"you are not logged in",
 	)
+
+	AccountNotFound = NewStatusError(
+		http.StatusNotFound,
+		"account not found",
+	)
 )

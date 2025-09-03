@@ -2,8 +2,8 @@ package models
 
 import (
 	"backend/internal/db"
+	"backend/internal/errmsg"
 	"backend/internal/utils"
-	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -16,6 +16,7 @@ type Team struct {
 
 func (t *Team) Create(firstMember string) (err error) {
 	t.ID = utils.GenID(6)
+	t.Name = "New Team"
 	t.Members = []string{
 		firstMember,
 	}
@@ -43,27 +44,16 @@ func (t *Team) ChangeMembers(newMembers []string) (err error) {
 	return
 }
 
-func (t *Team) AddMember(newMember string) (err error) {
+func (t *Team) AddMember(newMember string) (serr errmsg.StatusError) {
 	if len(t.Members) == 4 {
-		return errors.New("maximum size of a team reached")
-	}
-
-	exists := false
-	for _, v := range t.Members {
-		if v == newMember {
-			exists = true
-		}
-	}
-
-	if exists {
-		return errors.New("cannot add to team - teammate already exists ")
+		return errmsg.TeamFull
 	}
 
 	newMembers := append(t.Members, newMember)
 
-	err = t.ChangeMembers(newMembers)
+	err := t.ChangeMembers(newMembers)
 	if err != nil {
-		return
+		return errmsg.InternalServerError
 	}
 
 	t.Members = newMembers
@@ -71,7 +61,7 @@ func (t *Team) AddMember(newMember string) (err error) {
 	return
 }
 
-func (t *Team) RemoveMember(removeMember string) (err error) {
+func (t *Team) RemoveMember(removeMember string) (serr errmsg.StatusError) {
 	newMembers := []string{}
 
 	for _, v := range t.Members {
@@ -80,13 +70,9 @@ func (t *Team) RemoveMember(removeMember string) (err error) {
 		}
 	}
 
-	if len(t.Members) == len(newMembers) {
-		return errors.New("could not remove from team - teammate does not exist ")
-	}
-
-	err = t.ChangeMembers(newMembers)
+	err := t.ChangeMembers(newMembers)
 	if err != nil {
-		return
+		return errmsg.InternalServerError
 	}
 
 	t.Members = newMembers
@@ -104,17 +90,21 @@ func (t *Team) Delete() (err error) {
 	return
 }
 
-func (t *Team) ChangeName(name string) (err error) {
-	_, err = db.Teams.UpdateOne(db.Ctx, bson.M{
+func (t *Team) ChangeName(name string) (serr errmsg.StatusError) {
+	err := db.Teams.FindOneAndUpdate(db.Ctx, bson.M{
 		"id": t.ID,
 	}, bson.M{
 		"$set": bson.M{
 			"name": name,
 		},
-	})
+	}).Decode(t)
 
 	if err != nil {
-		return
+		return errmsg.InternalServerError
+	}
+
+	if t.Name == "" {
+		return errmsg.TeamNotFound
 	}
 
 	t.Name = name

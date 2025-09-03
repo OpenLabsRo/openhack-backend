@@ -20,11 +20,11 @@ import (
 )
 
 var (
-	app              *fiber.App
-	testAccount      models.Account
-	testAccountEmail string = "accountstesting@example.com"
-	testPassword     string = "testingpassword"
-	testToken        string
+	app                 *fiber.App
+	testAccount         models.Account
+	testAccountEmail    string = "accountstesting@example.com"
+	testAccountPassword string = "testingpassword"
+	testAccountToken    string
 )
 
 func TestAccountsPing(t *testing.T) {
@@ -110,7 +110,7 @@ func TestAccountsRegister(t *testing.T) {
 		t,
 		app,
 		testAccount.Email,
-		testPassword,
+		testAccountPassword,
 	)
 
 	// status code
@@ -202,7 +202,7 @@ func TestAccountsLogin(t *testing.T) {
 		t,
 		app,
 		testAccount.Email,
-		testPassword,
+		testAccountPassword,
 	)
 
 	// status code
@@ -220,7 +220,7 @@ func TestAccountsLogin(t *testing.T) {
 	require.NotEmpty(t, body.Account.ID, "expected ID to be set")
 	require.NotEmpty(t, body.Token, "expected token to be set")
 
-	testToken = body.Token
+	testAccountToken = body.Token
 	testAccount = body.Account
 }
 
@@ -276,7 +276,7 @@ func TestAccountsEdit(t *testing.T) {
 		t,
 		app,
 		"Updated Name",
-		testToken,
+		testAccountToken,
 	)
 
 	// status code
@@ -296,7 +296,7 @@ func TestAccountsEdit(t *testing.T) {
 	require.Equal(t, body.Account.Name, updatedName, "expected name to be equal to payload")
 
 	// updating the account and token
-	testToken = body.Token
+	testAccountToken = body.Token
 	testAccount = body.Account
 }
 
@@ -330,6 +330,6 @@ func TestAccountsCleanup(t *testing.T) {
 	}
 
 	testAccount = models.Account{}
-	testPassword = ""
-	testToken = ""
+	testAccountPassword = ""
+	testAccountToken = ""
 }

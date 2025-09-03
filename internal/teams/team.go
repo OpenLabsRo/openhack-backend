@@ -1,15 +1,36 @@
 package teams
 
 import (
+	"backend/internal/errmsg"
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
-	"errors"
-	"net/http"
 
 	"github.com/gofiber/fiber/v3"
 	"go.mongodb.org/mongo-driver/bson"
 )
+
+func TeamGet(c fiber.Ctx) error {
+	account := models.Account{}
+	utils.GetLocals(c, "account", &account)
+
+	if account.TeamID == "" {
+		return utils.StatusError(
+			c, errmsg.AccountHasNoTeam,
+		)
+	}
+
+	team := models.Team{ID: account.TeamID}
+	err := team.Get()
+
+	if err != nil {
+		return utils.StatusError(
+			c, errmsg.InternalServerError,
+		)
+	}
+
+	return c.JSON(team)
+}
 
 func TeamCreate(c fiber.Ctx) error {
 	var team models.Team
@@ -19,12 +40,16 @@ func TeamCreate(c fiber.Ctx) error {
 	utils.GetLocals(c, "account", &account)
 
 	if account.TeamID != "" {
-		return utils.Error(c, http.StatusConflict, errors.New("user already has a team"))
+		return utils.StatusError(
+			c, errmsg.AccountAlreadyHasTeam,
+		)
 	}
 
 	err := team.Create(account.ID)
 	if err != nil {
-		return utils.Error(c, http.StatusInternalServerError, errors.New("could not create team"))
+		return utils.StatusError(
+			c, errmsg.InternalServerError,
+		)
 	}
 
 	account.AddToTeam(team.ID)
@@ -37,12 +62,14 @@ func TeamCreate(c fiber.Ctx) error {
 	})
 }
 
-func TeamUpdate(c fiber.Ctx) error {
+func TeamChange(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
 
 	if account.TeamID == "" {
-		return utils.Error(c, http.StatusConflict, errors.New("account does not belong to a team"))
+		return utils.StatusError(
+			c, errmsg.AccountHasNoTeam,
+		)
 	}
 
 	var body struct {
@@ -51,14 +78,11 @@ func TeamUpdate(c fiber.Ctx) error {
 	json.Unmarshal(c.Body(), &body)
 
 	team := models.Team{ID: account.TeamID}
-	err := team.ChangeName(body.Name)
-	if err != nil {
-		return utils.Error(c, http.StatusInternalServerError, errors.New("could not change name of the team"))
-	}
-
-	err = team.Get()
-	if err != nil {
-		return utils.Error(c, http.StatusInternalServerError, err)
+	serr := team.ChangeName(body.Name)
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(
+			c, serr,
+		)
 	}
 
 	return c.JSON(team)
@@ -72,17 +96,23 @@ func TeamDelete(c fiber.Ctx) error {
 	err := team.Get()
 
 	if len(team.Members) > 1 {
-		return utils.Error(c, http.StatusConflict, errors.New("teammates still in team"))
+		return utils.StatusError(
+			c, errmsg.TeamNotEmpty,
+		)
 	}
 
 	err = account.RemoveFromTeam(account.TeamID)
 	if err != nil {
-		return utils.Error(c, http.StatusInternalServerError, errors.New("could not remove from team"))
+		return utils.StatusError(
+			c, errmsg.InternalServerError,
+		)
 	}
 
 	err = team.Delete()
 	if err != nil {
-		return utils.Error(c, http.StatusInternalServerError, errors.New("could not delete"))
+		return utils.StatusError(
+			c, errmsg.InternalServerError,
+		)
 	}
 
 	token := account.GenToken()

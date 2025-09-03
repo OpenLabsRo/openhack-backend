@@ -13,8 +13,9 @@ func Routes(app *fiber.App) {
 		return c.SendString("PONG")
 	})
 
-	teams.Post("/", models.AccountMiddleware, TeamCreate)
-	teams.Patch("/", models.AccountMiddleware, TeamUpdate)
+	teams.Get("", models.AccountMiddleware, TeamGet)
+	teams.Post("", models.AccountMiddleware, TeamCreate)
+	teams.Patch("", models.AccountMiddleware, TeamChange)
 	teams.Delete("", models.AccountMiddleware, TeamDelete)
 
 	teams.Patch("/join", models.AccountMiddleware, TeamJoin)
