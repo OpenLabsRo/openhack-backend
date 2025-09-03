@@ -5,11 +5,13 @@ import (
 	"context"
 	"log"
 
+	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var Ctx = context.Background()
+var RDB *redis.Client
 var Client *mongo.Client
 
 var Accounts *mongo.Collection
@@ -45,4 +47,40 @@ func InitDB(deployment string) error {
 
 func GetCollection(database string, collectionName string, client *mongo.Client) *mongo.Collection {
 	return client.Database(database).Collection(collectionName)
+}
+
+func InitCache() error {
+	var err error
+
+	RDB = redis.NewClient(&redis.Options{
+		Addr:     "127.0.0.1:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	err = RDB.Ping(Ctx).Err()
+	if err != nil {
+		log.Fatal("COULD NOT CONNECT TO REDIS")
+		return err
+	}
+
+	return nil
+}
+
+func Set(key string, value string) error {
+	err := RDB.Set(Ctx, key, value, 0).Err()
+
+	return err
+}
+
+func Get(key string) (string, error) {
+	val, err := RDB.Get(Ctx, key).Result()
+
+	return val, err
+}
+
+func Del(key string) error {
+	_, err := RDB.Del(Ctx, key).Result()
+
+	return err
 }

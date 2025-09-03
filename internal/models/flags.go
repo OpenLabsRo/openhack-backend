@@ -2,6 +2,7 @@ package models
 
 import (
 	"backend/internal/db"
+	"encoding/json"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -11,7 +12,26 @@ type Flags struct {
 }
 
 func (f *Flags) Get() (err error) {
-	return db.Flags.FindOne(db.Ctx, bson.M{}).Decode(&f)
+	// we're going to try the cache
+	cache, _ := db.Get("flags")
+	if cache == "" {
+		err = db.Flags.
+			FindOne(db.Ctx, bson.M{}).
+			Decode(&f)
+
+		if err != nil {
+			return
+		}
+
+		bytes, _ := json.Marshal(f)
+
+		db.Set("flags", string(bytes))
+
+		return
+	}
+
+	err = json.Unmarshal([]byte(cache), &f)
+	return
 }
 
 func (f *Flags) Set(flag string, value bool) (err error) {
@@ -28,6 +48,9 @@ func (f *Flags) Set(flag string, value bool) (err error) {
 	}
 
 	f.Flags[flag] = value
+
+	bytes, _ := json.Marshal(f)
+	db.Set("flags", string(bytes))
 
 	return
 }
@@ -52,6 +75,9 @@ func (f *Flags) Unset(flag string) (err error) {
 		}
 	}
 	f.Flags = newFlags
+
+	bytes, _ := json.Marshal(f)
+	db.Set("flags", string(bytes))
 
 	return
 }

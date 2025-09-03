@@ -19,6 +19,11 @@ func SetupApp(deployment string) *fiber.App {
 		return nil
 	}
 
+	if err := db.InitCache(); err != nil {
+		log.Fatal("Could not connect to Redis")
+		return nil
+	}
+
 	app.Get("/ping", func(c fiber.Ctx) error {
 		return c.SendString("PONG")
 	})
