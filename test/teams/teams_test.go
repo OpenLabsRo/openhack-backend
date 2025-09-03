@@ -327,8 +327,6 @@ func TestTeamLeaveHasNoTeam(t *testing.T) {
 	require.Equal(t, errmsg.AccountHasNoTeam.Message, body.Message)
 }
 
-// have to find out how to do leave team not found
-
 func TestTeamKick(t *testing.T) {
 	for i := 2; i <= 3; i++ {
 		_, statusCode := helpers.API_TeamsKick(

@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func TeamGet(c fiber.Ctx) error {
+func TeamGetHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
 
@@ -32,7 +32,7 @@ func TeamGet(c fiber.Ctx) error {
 	return c.JSON(team)
 }
 
-func TeamCreate(c fiber.Ctx) error {
+func TeamCreateHandler(c fiber.Ctx) error {
 	var team models.Team
 	json.Unmarshal(c.Body(), &team)
 
@@ -62,7 +62,7 @@ func TeamCreate(c fiber.Ctx) error {
 	})
 }
 
-func TeamChange(c fiber.Ctx) error {
+func TeamChangeHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
 
@@ -88,7 +88,7 @@ func TeamChange(c fiber.Ctx) error {
 	return c.JSON(team)
 }
 
-func TeamDelete(c fiber.Ctx) error {
+func TeamDeleteHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
 

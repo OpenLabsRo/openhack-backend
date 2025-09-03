@@ -26,4 +26,7 @@ func Routes(app *fiber.App) {
 
 	superusers.Post("/login", loginHandler)
 	superusers.Post("/accounts/initialize", models.SuperUserMiddleware, initializeAccountHandler)
+	superusers.Get("/flags", models.SuperUserMiddleware, flagsGetHandler)
+	superusers.Post("/flags", models.SuperUserMiddleware, flagsSetHandler)
+	superusers.Delete("/flags", models.SuperUserMiddleware, flagsUnsetHandler)
 }

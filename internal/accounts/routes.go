@@ -22,10 +22,10 @@ func Routes(app *fiber.App) {
 	})
 
 	// create
-	accounts.Post("/check", AccountCheck)
-	accounts.Post("/register", AccountRegister)
-	accounts.Post("/login", AccountLogin)
+	accounts.Post("/check", AccountCheckHandler)
+	accounts.Post("/register", AccountRegisterHandler)
+	accounts.Post("/login", AccountLoginHandler)
 
 	// edit
-	accounts.Patch("/", models.AccountMiddleware, AccountEdit)
+	accounts.Patch("/", models.AccountMiddleware, AccountEditHandler)
 }

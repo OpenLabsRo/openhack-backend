@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func TeamJoin(c fiber.Ctx) error {
+func TeamJoinHandler(c fiber.Ctx) error {
 	// get all info on the team
 	team := models.Team{ID: c.Query("id")}
 	err := team.Get()
@@ -52,7 +52,7 @@ func TeamJoin(c fiber.Ctx) error {
 	})
 }
 
-func TeamLeave(c fiber.Ctx) error {
+func TeamLeaveHandler(c fiber.Ctx) error {
 	// unmarshal the body
 	var account models.Account
 	utils.GetLocals(c, "account", &account)
@@ -92,7 +92,7 @@ func TeamLeave(c fiber.Ctx) error {
 	})
 }
 
-func TeamKick(c fiber.Ctx) error {
+func TeamKickHandler(c fiber.Ctx) error {
 	// getting the local account
 	var account models.Account
 	utils.GetLocals(c, "account", &account)

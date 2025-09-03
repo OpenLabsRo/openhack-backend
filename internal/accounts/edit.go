@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func AccountEdit(c fiber.Ctx) error {
+func AccountEditHandler(c fiber.Ctx) error {
 	var body struct {
 		Name string `json:"name" bson:"name"`
 	}

@@ -23,6 +23,12 @@ func (f *Flags) Set(flag string, value bool) (err error) {
 		},
 	)
 
+	if err != nil {
+		return err
+	}
+
+	f.Flags[flag] = value
+
 	return
 }
 
@@ -34,6 +40,18 @@ func (f *Flags) Unset(flag string) (err error) {
 			},
 		},
 	)
+
+	if err != nil {
+		return err
+	}
+
+	newFlags := map[string]bool{}
+	for k, v := range f.Flags {
+		if k != flag {
+			newFlags[k] = v
+		}
+	}
+	f.Flags = newFlags
 
 	return
 }

@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func AccountCheck(c fiber.Ctx) error {
+func AccountCheckHandler(c fiber.Ctx) error {
 	var body struct {
 		Email string `json:"email" bson:"email"`
 	}
@@ -31,7 +31,7 @@ func AccountCheck(c fiber.Ctx) error {
 	})
 }
 
-func AccountRegister(c fiber.Ctx) error {
+func AccountRegisterHandler(c fiber.Ctx) error {
 	var body struct {
 		Email    string `json:"email" bson:"email"`
 		Password string `json:"password" bson:"password"`
@@ -62,7 +62,7 @@ func AccountRegister(c fiber.Ctx) error {
 	})
 }
 
-func AccountLogin(c fiber.Ctx) error {
+func AccountLoginHandler(c fiber.Ctx) error {
 	var body struct {
 		Email    string `json:"email" bson:"email"`
 		Password string `json:"password" bson:"password"`
