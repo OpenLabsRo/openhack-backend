@@ -94,11 +94,36 @@ func (fstage *FlagStage) Create() (err error) {
 
 	_, err = db.FlagStages.InsertOne(db.Ctx, fstage)
 
+	// --- updating the cache
+	// -- first the flagstage itself
 	bytes, err := json.Marshal(fstage)
 	if err != nil {
 		return
 	}
 	err = db.CacheSetBytes("flagstage:"+fstage.ID, bytes)
+	if err != nil {
+		return
+	}
+
+	// -- and then the flagstages
+
+	// getting the flagStages before
+	flagStages := []FlagStage{}
+	fstagesBytes, _ := db.CacheGetBytes("flagstages")
+	err = json.Unmarshal(fstagesBytes, &flagStages)
+	if err != nil {
+		return
+	}
+
+	// -- changing the flagStages and marshaling
+	flagStages = append(flagStages, *fstage)
+	fstagesBytes, err = json.Marshal(flagStages)
+	if err != nil {
+		return
+	}
+
+	// -- writing them to the cache
+	err = db.CacheSetBytes("flagstages", fstagesBytes)
 	if err != nil {
 		return
 	}
@@ -111,7 +136,35 @@ func (fstage *FlagStage) Delete() (err error) {
 		"id": fstage.ID,
 	})
 
+	// ---  updating the cache
+	// -- first deleting the flagstage itself
 	err = db.CacheDel("flagstage:" + fstage.ID)
+	if err != nil {
+		return
+	}
+
+	// -- getting the previous flagstages
+	flagStages := []FlagStage{}
+	fstagesBytes, _ := db.CacheGetBytes("flagstages")
+	err = json.Unmarshal(fstagesBytes, &flagStages)
+	if err != nil {
+		return
+	}
+
+	// -- changing the flagStages and marshaling
+	newFlagStages := []FlagStage{}
+	for _, v := range flagStages {
+		if v.ID != fstage.ID {
+			newFlagStages = append(newFlagStages, v)
+		}
+	}
+	fstagesBytes, err = json.Marshal(newFlagStages)
+	if err != nil {
+		return
+	}
+
+	// -- writing them to the cache
+	err = db.CacheSetBytes("flagstages", fstagesBytes)
 	if err != nil {
 		return
 	}

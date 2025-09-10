@@ -70,21 +70,19 @@ func InitCache() error {
 }
 
 func CacheSet(key string, value string) error {
-	err := RDB.Set(Ctx, key, value, 0).Err()
-
-	return err
+	return RDB.Set(Ctx, key, value, 0).Err()
 }
 
 func CacheSetBytes(key string, value []byte) error {
-	err := RDB.Set(Ctx, key, value, 0).Err()
-
-	return err
+	return RDB.Set(Ctx, key, value, 0).Err()
 }
 
 func CacheGet(key string) (string, error) {
-	val, err := RDB.Get(Ctx, key).Result()
+	return RDB.Get(Ctx, key).Result()
+}
 
-	return val, err
+func CacheGetBytes(key string) ([]byte, error) {
+	return RDB.Get(Ctx, key).Bytes()
 }
 
 func CacheDel(key string) error {
