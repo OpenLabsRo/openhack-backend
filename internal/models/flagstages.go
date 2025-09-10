@@ -4,8 +4,10 @@ import (
 	"backend/internal/db"
 	"backend/internal/errmsg"
 	"backend/internal/utils"
+	"encoding/json"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type FlagStage struct {
@@ -15,13 +17,73 @@ type FlagStage struct {
 	TurnOn  []string `json:"turnon" bson:"turnon"`
 }
 
-func (fstage *FlagStage) Get() (serr errmsg.StatusError) {
-	err := db.FlagStages.FindOne(db.Ctx, bson.M{
-		"id": fstage.ID,
-	}).Decode(fstage)
+func GetFlagStages() (fstages []FlagStage, err error) {
+	fstages = []FlagStage{}
+	cache, _ := db.CacheGet("flagstages")
 
-	if err != nil {
-		return errmsg.FlagStageNotFound
+	if cache == "" {
+		cursor := &mongo.Cursor{}
+		cursor, err = db.FlagStages.Find(db.Ctx, bson.M{})
+		if err != nil {
+			return
+		}
+		defer cursor.Close(db.Ctx)
+
+		if err = cursor.All(db.Ctx, &fstages); err != nil {
+			return
+		}
+
+		bytes := []byte{}
+		bytes, err = json.Marshal(fstages)
+		if err != nil {
+			return
+		}
+		err = db.CacheSetBytes("flagstages", bytes)
+		if err != nil {
+			return
+		}
+
+		// now setting the cache for each and every flagstage
+		for _, v := range fstages {
+			bytes, err = json.Marshal(v)
+			if err != nil {
+				return
+			}
+			err = db.CacheSetBytes("flagstage:"+v.ID, bytes)
+			if err != nil {
+				return
+			}
+		}
+
+		return
+	}
+
+	err = json.Unmarshal([]byte(cache), &fstages)
+
+	return
+}
+
+func (fstage *FlagStage) Get() (serr errmsg.StatusError) {
+	cache, _ := db.CacheGet("flagstage:" + fstage.ID)
+
+	if cache == "" {
+		err := db.FlagStages.FindOne(db.Ctx, bson.M{
+			"id": fstage.ID,
+		}).Decode(fstage)
+
+		if err != nil {
+			return errmsg.FlagStageNotFound
+		}
+
+		bytes := []byte{}
+		bytes, err = json.Marshal(fstage)
+		if err != nil {
+			return
+		}
+		err = db.CacheSetBytes("flagstage:"+fstage.ID, bytes)
+		if err != nil {
+			return
+		}
 	}
 
 	return errmsg.EmptyStatusError
@@ -32,6 +94,15 @@ func (fstage *FlagStage) Create() (err error) {
 
 	_, err = db.FlagStages.InsertOne(db.Ctx, fstage)
 
+	bytes, err := json.Marshal(fstage)
+	if err != nil {
+		return
+	}
+	err = db.CacheSetBytes("flagstage:"+fstage.ID, bytes)
+	if err != nil {
+		return
+	}
+
 	return
 }
 
@@ -39,6 +110,11 @@ func (fstage *FlagStage) Delete() (err error) {
 	_, err = db.FlagStages.DeleteOne(db.Ctx, bson.M{
 		"id": fstage.ID,
 	})
+
+	err = db.CacheDel("flagstage:" + fstage.ID)
+	if err != nil {
+		return
+	}
 
 	*fstage = FlagStage{}
 
@@ -69,20 +145,6 @@ func (fstage *FlagStage) Execute() (err error) {
 
 	err = flags.SetBulk(instructions)
 	if err != nil {
-		return
-	}
-
-	return
-}
-
-func GetFlagStages() (fstages []FlagStage, err error) {
-	cursor, err := db.FlagStages.Find(db.Ctx, bson.M{})
-	if err != nil {
-		return
-	}
-	defer cursor.Close(db.Ctx)
-
-	if err = cursor.All(db.Ctx, &fstages); err != nil {
 		return
 	}
 

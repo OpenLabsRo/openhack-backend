@@ -37,7 +37,7 @@ func FlagsMiddlewareBuilder(flags []string) fiber.Handler {
 
 func (f *Flags) Get() (err error) {
 	// we're going to try the cache
-	cache, _ := db.Get("flags")
+	cache, _ := db.CacheGet("flags")
 	if cache == "" {
 		err = db.Flags.
 			FindOne(db.Ctx, bson.M{}).
@@ -49,7 +49,7 @@ func (f *Flags) Get() (err error) {
 
 		bytes, _ := json.Marshal(f)
 
-		db.Set("flags", string(bytes))
+		db.CacheSetBytes("flags", bytes)
 
 		return
 	}
@@ -74,7 +74,7 @@ func (f *Flags) Set(flag string, value bool) (err error) {
 	f.Flags[flag] = value
 
 	bytes, _ := json.Marshal(f)
-	db.Set("flags", string(bytes))
+	db.CacheSetBytes("flags", bytes)
 
 	return
 }
@@ -99,7 +99,7 @@ func (f *Flags) SetBulk(rawFlags map[string]bool) (err error) {
 	maps.Copy(f.Flags, rawFlags)
 
 	bytes, _ := json.Marshal(f)
-	db.Set("flags", string(bytes))
+	db.CacheSetBytes("flags", bytes)
 
 	return
 }
@@ -126,7 +126,7 @@ func (f *Flags) Unset(flag string) (err error) {
 	f.Flags = newFlags
 
 	bytes, _ := json.Marshal(f)
-	db.Set("flags", string(bytes))
+	db.CacheSetBytes("flags", bytes)
 
 	return
 }

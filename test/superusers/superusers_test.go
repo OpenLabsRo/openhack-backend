@@ -194,7 +194,7 @@ func TestSuperUsersFlagsGet(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, statusCode)
 
-	var body map[string]bool
+	var body models.Flags
 	err := json.Unmarshal(bodyBytes, &body)
 	require.NoError(t, err)
 }

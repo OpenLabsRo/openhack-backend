@@ -17,7 +17,7 @@ func flagsGetHandler(c fiber.Ctx) error {
 		return utils.StatusError(c, errmsg.InternalServerError)
 	}
 
-	return c.JSON(flags.Flags)
+	return c.JSON(flags)
 }
 
 func flagsSetHandler(c fiber.Ctx) error {
