@@ -115,15 +115,11 @@ func TestTeamsChangeHasNoTeam(t *testing.T) {
 		testAccountTokens[0],
 	)
 
-	require.Equal(t, errmsg.AccountHasNoTeam.StatusCode, statusCode)
-
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	require.Equal(t, errmsg.AccountHasNoTeam.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountHasNoTeam,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestTeamsGetHasNoTeam(t *testing.T) {
@@ -133,15 +129,11 @@ func TestTeamsGetHasNoTeam(t *testing.T) {
 		testAccountTokens[0],
 	)
 
-	require.Equal(t, errmsg.AccountHasNoTeam.StatusCode, statusCode)
-
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	require.Equal(t, errmsg.AccountHasNoTeam.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountHasNoTeam,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestTeamsCreate(t *testing.T) {
@@ -175,15 +167,11 @@ func TestTeamsCreateAlreadyHasTeam(t *testing.T) {
 		testAccountTokens[0],
 	)
 
-	require.Equal(t, errmsg.AccountAlreadyHasTeam.StatusCode, statusCode)
-
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	require.Equal(t, errmsg.AccountAlreadyHasTeam.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountAlreadyHasTeam,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestTeamsChange(t *testing.T) {
@@ -212,15 +200,11 @@ func TestTeamsJoinNotFound(t *testing.T) {
 		testAccountTokens[1],
 	)
 
-	require.Equal(t, errmsg.TeamNotFound.StatusCode, statusCode)
-
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	require.Equal(t, errmsg.TeamNotFound.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.TeamNotFound,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 // 1 and 2 join 0 team
@@ -257,15 +241,11 @@ func TestTeamsJoinTeamFull(t *testing.T) {
 		testAccountTokens[4],
 	)
 
-	require.Equal(t, errmsg.TeamFull.StatusCode, statusCode)
-
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	require.Equal(t, errmsg.TeamFull.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.TeamFull,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestTeamsJoinAlreadyHasTeam(t *testing.T) {
@@ -276,15 +256,11 @@ func TestTeamsJoinAlreadyHasTeam(t *testing.T) {
 		testAccountTokens[1],
 	)
 
-	require.Equal(t, errmsg.AccountAlreadyHasTeam.StatusCode, statusCode)
-
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	require.Equal(t, errmsg.AccountAlreadyHasTeam.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountAlreadyHasTeam,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestTeamsLeave(t *testing.T) {
@@ -316,15 +292,11 @@ func TestTeamLeaveHasNoTeam(t *testing.T) {
 		testAccountTokens[1],
 	)
 
-	require.Equal(t, errmsg.AccountHasNoTeam.StatusCode, statusCode)
-
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	require.Equal(t, errmsg.AccountHasNoTeam.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountHasNoTeam,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestTeamKick(t *testing.T) {
@@ -348,15 +320,11 @@ func TestTeamKickAccountNotFound(t *testing.T) {
 		testAccountTokens[0],
 	)
 
-	require.Equal(t, errmsg.AccountNotFound.StatusCode, statusCode)
-
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	require.Equal(t, errmsg.AccountNotFound.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountNotFound,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestTeamsDelete(t *testing.T) {

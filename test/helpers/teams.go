@@ -1,10 +1,7 @@
 package helpers
 
 import (
-	"bytes"
 	"encoding/json"
-	"io"
-	"net/http"
 	"testing"
 
 	"github.com/gofiber/fiber/v3"
@@ -16,29 +13,13 @@ func API_TeamsGet(
 	app *fiber.App,
 	token string,
 ) (bodyBytes []byte, statusCode int) {
-	// sending the request
-	req, err := http.NewRequest(
+
+	return RequestRunner(t, app,
 		"GET",
 		"/teams",
-		bytes.NewBuffer([]byte{}),
+		[]byte{},
+		&token,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }
 
 func API_TeamsCreate(
@@ -46,29 +27,13 @@ func API_TeamsCreate(
 	app *fiber.App,
 	token string,
 ) (bodyBytes []byte, statusCode int) {
-	// sending the request
-	req, err := http.NewRequest(
+
+	return RequestRunner(t, app,
 		"POST",
 		"/teams",
-		bytes.NewBuffer([]byte{}),
+		[]byte{},
+		&token,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }
 
 func API_TeamsChange(
@@ -88,29 +53,12 @@ func API_TeamsChange(
 	sendBytes, err := json.Marshal(payload)
 	require.NoError(t, err)
 
-	// sending the request
-	req, err := http.NewRequest(
+	return RequestRunner(t, app,
 		"PATCH",
 		"/teams",
-		bytes.NewBuffer(sendBytes),
+		sendBytes,
+		&token,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }
 
 func API_TeamsDelete(
@@ -118,29 +66,13 @@ func API_TeamsDelete(
 	app *fiber.App,
 	token string,
 ) (bodyBytes []byte, statusCode int) {
-	// sending the request
-	req, err := http.NewRequest(
+
+	return RequestRunner(t, app,
 		"DELETE",
 		"/teams",
-		bytes.NewBuffer([]byte{}),
+		[]byte{},
+		&token,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }
 
 func API_TeamsJoin(
@@ -149,29 +81,13 @@ func API_TeamsJoin(
 	teamID string,
 	token string,
 ) (bodyBytes []byte, statusCode int) {
-	// sending the request
-	req, err := http.NewRequest(
+
+	return RequestRunner(t, app,
 		"PATCH",
 		"/teams/join?id="+teamID,
-		bytes.NewBuffer([]byte{}),
+		[]byte{},
+		&token,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }
 
 func API_TeamsLeave(
@@ -179,29 +95,13 @@ func API_TeamsLeave(
 	app *fiber.App,
 	token string,
 ) (bodyBytes []byte, statusCode int) {
-	// sending the request
-	req, err := http.NewRequest(
+
+	return RequestRunner(t, app,
 		"PATCH",
 		"/teams/leave",
-		bytes.NewBuffer([]byte{}),
+		[]byte{},
+		&token,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }
 
 func API_TeamsKick(
@@ -210,27 +110,11 @@ func API_TeamsKick(
 	accountID string,
 	token string,
 ) (bodyBytes []byte, statusCode int) {
-	// sending the request
-	req, err := http.NewRequest(
+
+	return RequestRunner(t, app,
 		"PATCH",
 		"/teams/kick?id="+accountID,
-		bytes.NewBuffer([]byte{}),
+		[]byte{},
+		&token,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }

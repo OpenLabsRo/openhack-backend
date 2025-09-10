@@ -1,11 +1,7 @@
 package helpers
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
 	"testing"
 
 	"github.com/gofiber/fiber/v3"
@@ -31,55 +27,24 @@ func API_SuperUsersLogin(
 	sendBytes, err := json.Marshal(payload)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(
+	return RequestRunner(t, app,
 		"POST",
 		"/superusers/login",
-		bytes.NewBuffer(sendBytes),
+		sendBytes,
+		nil,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }
 
 func API_SuperUsersWhoAmI(
 	app *fiber.App,
 	t *testing.T, token string) (bodyBytes []byte, statusCode int) {
 
-	req, err := http.NewRequest(
+	return RequestRunner(t, app,
 		"GET",
 		"/superusers/whoami",
-		bytes.NewBuffer([]byte("")),
+		[]byte{},
+		&token,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }
 
 func API_SuperUsersAccountsInitialize(
@@ -102,26 +67,92 @@ func API_SuperUsersAccountsInitialize(
 	sendBytes, err := json.Marshal(payload)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(
+	return RequestRunner(t, app,
 		"POST",
 		"/superusers/accounts/initialize",
-		bytes.NewBuffer(sendBytes),
+		sendBytes,
+		&token,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+}
 
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
+func API_SuperUsersFlagsGet(
+	t *testing.T,
+	app *fiber.App,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	// marshalling the payload into JSON
 
-	statusCode = res.StatusCode
+	return RequestRunner(t, app,
+		"GET",
+		"/superusers/flags",
+		[]byte{},
+		&token,
+	)
+}
 
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
+func API_SuperUsersFlagsSet(
+	t *testing.T,
+	app *fiber.App,
+	flag string,
+	value bool,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	// marshalling the payload into JSON
+	payload := struct {
+		Flag  string `json:"flag"`
+		Value bool   `json:"value"`
+	}{
+		Flag:  flag,
+		Value: value,
 	}
-	defer res.Body.Close()
 
-	return
+	// marshalling the paylaod into JSON
+	sendBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	return RequestRunner(t, app,
+		"POST",
+		"/superusers/flags",
+		sendBytes,
+		&token,
+	)
+}
+
+func API_SuperUsersFlagsUnset(
+	t *testing.T,
+	app *fiber.App,
+	flag string,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	// marshalling the payload into JSON
+	payload := struct {
+		Flag  string `json:"flag"`
+		Value bool   `json:"value"`
+	}{
+		Flag: flag,
+	}
+
+	// marshalling the paylaod into JSON
+	sendBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	return RequestRunner(t, app,
+		"DELETE",
+		"/superusers/flags",
+		sendBytes,
+		&token,
+	)
+}
+
+func API_SuperUsersFlagsMiddleware(
+	t *testing.T,
+	app *fiber.App,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	return RequestRunner(t, app,
+		"GET",
+		"/superusers/flags/test",
+		[]byte{},
+		&token,
+	)
 }

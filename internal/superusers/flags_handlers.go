@@ -4,6 +4,7 @@ import (
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
+	"net/http"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -57,4 +58,8 @@ func flagsUnsetHandler(c fiber.Ctx) error {
 	}
 
 	return c.JSON(flags.Flags)
+}
+
+func flagsTestHandler(c fiber.Ctx) error {
+	return c.Status(http.StatusOK).SendString("it passed")
 }

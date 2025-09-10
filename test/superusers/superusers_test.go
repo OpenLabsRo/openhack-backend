@@ -79,18 +79,11 @@ func TestSuperUsersLoginWrongPassword(t *testing.T) {
 		"wrongpassword",
 	)
 
-	// status code
-	require.Equal(t, errmsg.AccountLoginWrongPassword.StatusCode, statusCode)
-
-	// decode response
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	// assertions
-	require.Equal(t, errmsg.AccountLoginWrongPassword.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountLoginWrongPassword,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestSuperUsersLoginWrongEmail(t *testing.T) {
@@ -101,18 +94,11 @@ func TestSuperUsersLoginWrongEmail(t *testing.T) {
 		env.SUPERUSER_PASSWORD,
 	)
 
-	// status code
-	require.Equal(t, errmsg.SuperUserNotExists.StatusCode, statusCode)
-
-	// decode response
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	// assertions
-	require.Equal(t, errmsg.SuperUserNotExists.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.SuperUserNotExists,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestSuperUsersWhoAmI(t *testing.T) {
@@ -168,16 +154,11 @@ func TestSuperUsersAccountsInitializeDuplicateEmail(t *testing.T) {
 		testSuperUserToken,
 	)
 
-	require.Equal(t, errmsg.AccountAlreadyInitialized.StatusCode, statusCode)
-
-	// unmarshaling the error message
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	require.Equal(t, errmsg.AccountAlreadyInitialized.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountAlreadyInitialized,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestSuperUsersAccountsCleanup(t *testing.T) {
@@ -186,4 +167,83 @@ func TestSuperUsersAccountsCleanup(t *testing.T) {
 		fmt.Printf("failed to delete account: %v", err)
 	}
 	testAccount = models.Account{}
+}
+
+func TestSuperUsersFlagsGet(t *testing.T) {
+	bodyBytes, statusCode := helpers.API_SuperUsersFlagsGet(
+		t,
+		app,
+		testSuperUserToken,
+	)
+
+	require.Equal(t, http.StatusOK, statusCode)
+
+	var body map[string]bool
+	err := json.Unmarshal(bodyBytes, &body)
+	require.NoError(t, err)
+}
+
+func TestSuperUsersFlagsSet(t *testing.T) {
+	bodyBytes, statusCode := helpers.API_SuperUsersFlagsSet(
+		t,
+		app,
+		"test",
+		false,
+		testSuperUserToken,
+	)
+
+	require.Equal(t, http.StatusOK, statusCode)
+
+	var body map[string]bool
+	err := json.Unmarshal(bodyBytes, &body)
+	require.NoError(t, err)
+	require.Equal(t, body["test"], false)
+}
+
+func TestSuperUsersFlagsMiddlewareFlagRequired(t *testing.T) {
+	bodyBytes, statusCode := helpers.API_SuperUsersFlagsMiddleware(
+		t,
+		app,
+		testSuperUserToken,
+	)
+
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.FlagRequired,
+		bodyBytes,
+		statusCode,
+	)
+
+	helpers.API_SuperUsersFlagsSet(
+		t,
+		app,
+		"test",
+		true,
+		testSuperUserToken,
+	)
+}
+
+func TestSuperUsersFlagsMiddleware(t *testing.T) {
+	_, statusCode := helpers.API_SuperUsersFlagsMiddleware(
+		t,
+		app,
+		testSuperUserToken,
+	)
+
+	require.Equal(t, http.StatusOK, statusCode)
+}
+
+func TestSuperUsersFlagsUnset(t *testing.T) {
+	bodyBytes, statusCode := helpers.API_SuperUsersFlagsSet(
+		t,
+		app,
+		"test",
+		true,
+		testSuperUserToken,
+	)
+
+	require.Equal(t, http.StatusOK, statusCode)
+
+	var body map[string]bool
+	err := json.Unmarshal(bodyBytes, &body)
+	require.NoError(t, err)
 }

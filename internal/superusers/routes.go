@@ -24,9 +24,20 @@ func Routes(app *fiber.App) {
 		})
 	})
 
+	// login for supersusers
 	superusers.Post("/login", loginHandler)
+
+	// initializing accounts
 	superusers.Post("/accounts/initialize", models.SuperUserMiddleware, initializeAccountHandler)
+
+	// flags
 	superusers.Get("/flags", models.SuperUserMiddleware, flagsGetHandler)
 	superusers.Post("/flags", models.SuperUserMiddleware, flagsSetHandler)
 	superusers.Delete("/flags", models.SuperUserMiddleware, flagsUnsetHandler)
+
+	// testing the flags middleware
+	superusers.Get("/flags/test", models.SuperUserMiddleware, models.FlagsMiddlewareBuilder([]string{
+		"test",
+	}), flagsTestHandler)
+
 }

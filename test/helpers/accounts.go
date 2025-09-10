@@ -1,11 +1,7 @@
 package helpers
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
 	"testing"
 
 	"github.com/gofiber/fiber/v3"
@@ -28,27 +24,12 @@ func API_AccountsCheck(
 	sendBytes, err := json.Marshal(payload)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(
+	return RequestRunner(t, app,
 		"POST",
 		"/accounts/check",
-		bytes.NewBuffer(sendBytes),
+		sendBytes,
+		nil,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }
 
 func API_AccountsRegister(
@@ -70,27 +51,12 @@ func API_AccountsRegister(
 	sendBytes, err := json.Marshal(payload)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(
+	return RequestRunner(t, app,
 		"POST",
 		"/accounts/register",
-		bytes.NewBuffer(sendBytes),
+		sendBytes,
+		nil,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }
 
 func API_AccountsLogin(
@@ -112,27 +78,12 @@ func API_AccountsLogin(
 	sendBytes, err := json.Marshal(payload)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(
+	return RequestRunner(t, app,
 		"POST",
 		"/accounts/login",
-		bytes.NewBuffer(sendBytes),
+		sendBytes,
+		nil,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }
 
 func API_AccountsEdit(
@@ -152,26 +103,10 @@ func API_AccountsEdit(
 	sendBytes, err := json.Marshal(payload)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(
+	return RequestRunner(t, app,
 		"PATCH",
 		"/accounts",
-		bytes.NewBuffer(sendBytes),
+		sendBytes,
+		&token,
 	)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
-
-	// send request to the shared app
-	res, err := app.Test(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	statusCode = res.StatusCode
-
-	bodyBytes, err = io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err) // or handle error normally
-	}
-
-	return
 }

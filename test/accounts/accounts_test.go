@@ -49,14 +49,11 @@ func TestAccountsCheckNotInitialized(t *testing.T) {
 		testAccountEmail,
 	)
 
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	require.Equal(t, errmsg.AccountNotInitialized.StatusCode, statusCode)
-	require.Equal(t, errmsg.AccountNotInitialized.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountNotInitialized,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestAccountsSetup(t *testing.T) {
@@ -161,18 +158,11 @@ func TestAccountsRegisterAlreadyRegistered(t *testing.T) {
 		payload.Password,
 	)
 
-	// status code
-	require.Equal(t, errmsg.AccountAlreadyRegistered.StatusCode, statusCode)
-
-	// decode response
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	// assertions
-	require.Equal(t, errmsg.AccountAlreadyRegistered.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountAlreadyRegistered,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestAccountsRegisterNotInitialized(t *testing.T) {
@@ -183,18 +173,11 @@ func TestAccountsRegisterNotInitialized(t *testing.T) {
 		"testingpassword",
 	)
 
-	// status code
-	require.Equal(t, errmsg.AccountNotInitialized.StatusCode, statusCode)
-
-	// decode response
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	// assertions
-	require.Equal(t, errmsg.AccountNotInitialized.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountNotInitialized,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestAccountsLogin(t *testing.T) {
@@ -225,7 +208,6 @@ func TestAccountsLogin(t *testing.T) {
 }
 
 func TestAccountsLoginWrongPassword(t *testing.T) {
-
 	bodyBytes, statusCode := helpers.API_AccountsLogin(
 		t,
 		app,
@@ -233,18 +215,11 @@ func TestAccountsLoginWrongPassword(t *testing.T) {
 		"wrongpassword",
 	)
 
-	// status code
-	require.Equal(t, errmsg.AccountLoginWrongPassword.StatusCode, statusCode)
-
-	// decode response
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	// assertions
-	require.Equal(t, errmsg.AccountLoginWrongPassword.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountLoginWrongPassword,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestAccountsLoginWrongEmail(t *testing.T) {
@@ -255,18 +230,11 @@ func TestAccountsLoginWrongEmail(t *testing.T) {
 		testAccount.Password,
 	)
 
-	// status code
-	require.Equal(t, errmsg.AccountNotInitialized.StatusCode, statusCode)
-
-	// decode response
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	// assertions
-	require.Equal(t, errmsg.AccountNotInitialized.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountNotInitialized,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestAccountsEdit(t *testing.T) {
@@ -309,18 +277,12 @@ func TestAccountsEditNoToken(t *testing.T) {
 		updatedName,
 		"",
 	)
-	// status code
-	require.Equal(t, errmsg.AccountNoToken.StatusCode, statusCode)
 
-	// decode response
-	var body struct {
-		Message string `json:"message"`
-	}
-	err := json.Unmarshal(bodyBytes, &body)
-	require.NoError(t, err)
-
-	// assertions
-	require.Equal(t, errmsg.AccountNoToken.Message, body.Message)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.AccountNoToken,
+		bodyBytes,
+		statusCode,
+	)
 }
 
 func TestAccountsCleanup(t *testing.T) {
