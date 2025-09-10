@@ -46,5 +46,6 @@ func Routes(app *fiber.App) {
 	superusers.Get("/flags/stages", models.SuperUserMiddleware, flagStagesGetHandler)
 	superusers.Post("/flags/stages", models.SuperUserMiddleware, flagStagesCreateHandler)
 	superusers.Delete("/flags/stages", models.SuperUserMiddleware, flagStagesDeleteHandler)
+	superusers.Post("/flags/stages/execute", models.SuperUserMiddleware, flagStagesExecuteHandler)
 
 }

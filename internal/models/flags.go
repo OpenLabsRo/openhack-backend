@@ -147,6 +147,9 @@ func (f *Flags) Reset() (err error) {
 	return
 }
 
+// this will not update the cache,
+// as it will always be executed when changing a stage,
+// which automatically does a SetBulk on the flags
 func (f *Flags) SetStage(flagStage FlagStage) (err error) {
 	_, err = db.Flags.UpdateOne(db.Ctx, bson.M{},
 		bson.M{

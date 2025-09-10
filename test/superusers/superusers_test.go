@@ -308,8 +308,8 @@ func TestSuperUsersFlagStagesCreate(t *testing.T) {
 		app,
 		models.FlagStage{
 			Name:    "test",
-			TurnOff: []string{},
-			TurnOn:  []string{},
+			TurnOff: []string{"flagstagesoff"},
+			TurnOn:  []string{"flagstageson"},
 		},
 		testSuperUserToken,
 	)
@@ -323,7 +323,37 @@ func TestSuperUsersFlagStagesCreate(t *testing.T) {
 	testFlagStageID = body.ID
 }
 
-func TestSuperUserFlagStagesDelete(t *testing.T) {
+func TestSuperUsersFlagStagesExecuteNotFound(t *testing.T) {
+	bodyBytes, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"123",
+		testSuperUserToken,
+	)
+	helpers.ResponseErrorCheck(t, app,
+		errmsg.FlagStageNotFound,
+		bodyBytes,
+		statusCode,
+	)
+}
+
+func TestSuperUsersFlagStagesExecute(t *testing.T) {
+	bodyBytes, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		testFlagStageID,
+		testSuperUserToken,
+	)
+
+	require.Equal(t, http.StatusOK, statusCode)
+	var body models.Flags
+	err := json.Unmarshal(bodyBytes, &body)
+	require.NoError(t, err)
+
+	require.Equal(t, body.Stage.ID, testFlagStageID)
+}
+
+func TestSuperUsersFlagStagesDelete(t *testing.T) {
 	bodyBytes, statusCode := helpers.API_SuperUsersFlagStagesDelete(
 		t,
 		app,
@@ -337,4 +367,22 @@ func TestSuperUserFlagStagesDelete(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, body.ID, "")
+}
+
+func TestSuperUsersFlagStagesCleanup(t *testing.T) {
+	_, statusCode := helpers.API_SuperUsersFlagsUnset(
+		t,
+		app,
+		"flagstageson",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
+	_, statusCode = helpers.API_SuperUsersFlagsUnset(
+		t,
+		app,
+		"flagstagesoff",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
 }
