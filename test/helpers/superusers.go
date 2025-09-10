@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"backend/internal/models"
 	"encoding/json"
 	"testing"
 
@@ -118,6 +119,37 @@ func API_SuperUsersFlagsSet(
 	)
 }
 
+func API_SuperUsersFlagsSetBulk(
+	t *testing.T,
+	app *fiber.App,
+	rawFlags map[string]bool,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	// marshalling the paylaod into JSON
+	sendBytes, err := json.Marshal(rawFlags)
+	require.NoError(t, err)
+
+	return RequestRunner(t, app,
+		"PUT",
+		"/superusers/flags",
+		sendBytes,
+		&token,
+	)
+}
+
+func API_SuperUsersFlagsReset(
+	t *testing.T,
+	app *fiber.App,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	return RequestRunner(t, app,
+		"PUT",
+		"/superusers/flags/reset",
+		[]byte{},
+		&token,
+	)
+}
+
 func API_SuperUsersFlagsUnset(
 	t *testing.T,
 	app *fiber.App,
@@ -152,6 +184,51 @@ func API_SuperUsersFlagsMiddleware(
 	return RequestRunner(t, app,
 		"GET",
 		"/superusers/flags/test",
+		[]byte{},
+		&token,
+	)
+}
+
+func API_SuperUsersFlagStagesGet(
+	t *testing.T,
+	app *fiber.App,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	return RequestRunner(t, app,
+		"GET",
+		"/superusers/flags/stages",
+		[]byte{},
+		&token,
+	)
+}
+
+func API_SuperUsersFlagStagesCreate(
+	t *testing.T,
+	app *fiber.App,
+	fstage models.FlagStage,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	// marshaling the flagstage into JSON
+	sendBytes, err := json.Marshal(fstage)
+	require.NoError(t, err)
+
+	return RequestRunner(t, app,
+		"POST",
+		"/superusers/flags/stages",
+		sendBytes,
+		&token,
+	)
+}
+
+func API_SuperUsersFlagStagesDelete(
+	t *testing.T,
+	app *fiber.App,
+	id string,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	return RequestRunner(t, app,
+		"DELETE",
+		"/superusers/flags/stages?id="+id,
 		[]byte{},
 		&token,
 	)

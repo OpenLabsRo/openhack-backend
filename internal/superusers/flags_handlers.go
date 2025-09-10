@@ -1,6 +1,7 @@
 package superusers
 
 import (
+	"backend/internal/errmsg"
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
@@ -13,7 +14,7 @@ func flagsGetHandler(c fiber.Ctx) error {
 	flags := models.Flags{}
 	err := flags.Get()
 	if err != nil {
-		return utils.Error(c, 500, err)
+		return utils.StatusError(c, errmsg.InternalServerError)
 	}
 
 	return c.JSON(flags.Flags)
@@ -29,12 +30,30 @@ func flagsSetHandler(c fiber.Ctx) error {
 	flags := models.Flags{}
 	err := flags.Get()
 	if err != nil {
-		return utils.Error(c, 500, err)
+		return utils.StatusError(c, errmsg.InternalServerError)
 	}
 
 	err = flags.Set(body.Flag, body.Value)
 	if err != nil {
-		return utils.Error(c, 500, err)
+		return utils.StatusError(c, errmsg.InternalServerError)
+	}
+
+	return c.JSON(flags.Flags)
+}
+
+func flagsSetBulkHandler(c fiber.Ctx) error {
+	var body map[string]bool
+	json.Unmarshal(c.Body(), &body)
+
+	flags := models.Flags{}
+	err := flags.Get()
+	if err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError)
+	}
+
+	err = flags.SetBulk(body)
+	if err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError)
 	}
 
 	return c.JSON(flags.Flags)
@@ -49,15 +68,32 @@ func flagsUnsetHandler(c fiber.Ctx) error {
 	flags := models.Flags{}
 	err := flags.Get()
 	if err != nil {
-		return utils.Error(c, 500, err)
+		return utils.StatusError(c, errmsg.InternalServerError)
 	}
 
 	err = flags.Unset(body.Flag)
 	if err != nil {
-		return utils.Error(c, 500, err)
+		return utils.StatusError(c, errmsg.InternalServerError)
 	}
 
 	return c.JSON(flags.Flags)
+}
+
+func flagsResetHandler(c fiber.Ctx) error {
+
+	flags := models.Flags{}
+	err := flags.Get()
+	if err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError)
+	}
+
+	err = flags.Reset()
+	if err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError)
+	}
+
+	return c.JSON(flags.Flags)
+
 }
 
 func flagsTestHandler(c fiber.Ctx) error {

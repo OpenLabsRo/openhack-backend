@@ -33,11 +33,18 @@ func Routes(app *fiber.App) {
 	// flags
 	superusers.Get("/flags", models.SuperUserMiddleware, flagsGetHandler)
 	superusers.Post("/flags", models.SuperUserMiddleware, flagsSetHandler)
+	superusers.Put("/flags", models.SuperUserMiddleware, flagsSetBulkHandler)
+	superusers.Put("/flags/reset", models.SuperUserMiddleware, flagsResetHandler)
 	superusers.Delete("/flags", models.SuperUserMiddleware, flagsUnsetHandler)
 
 	// testing the flags middleware
 	superusers.Get("/flags/test", models.SuperUserMiddleware, models.FlagsMiddlewareBuilder([]string{
-		"test",
+		"test", "testing",
 	}), flagsTestHandler)
+
+	// flagstages
+	superusers.Get("/flags/stages", models.SuperUserMiddleware, flagStagesGetHandler)
+	superusers.Post("/flags/stages", models.SuperUserMiddleware, flagStagesCreateHandler)
+	superusers.Delete("/flags/stages", models.SuperUserMiddleware, flagStagesDeleteHandler)
 
 }

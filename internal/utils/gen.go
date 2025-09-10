@@ -6,7 +6,16 @@ import (
 )
 
 var Encoding string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
+var TeamIDEncoding string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 var CodeEncoding string = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+func GenTeamID() (ID string) {
+	for range 6 {
+		ID += string(TeamIDEncoding[rand.Intn(26)])
+	}
+
+	return
+}
 
 func GenID(n int) string {
 	var ID string

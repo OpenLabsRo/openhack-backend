@@ -15,7 +15,7 @@ type Team struct {
 }
 
 func (t *Team) Create(firstMember string) (err error) {
-	t.ID = utils.GenID(6)
+	t.ID = utils.GenTeamID()
 	t.Name = "New Team"
 	t.Members = []string{
 		firstMember,

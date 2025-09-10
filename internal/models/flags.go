@@ -5,6 +5,7 @@ import (
 	"backend/internal/errmsg"
 	"backend/internal/utils"
 	"encoding/json"
+	"maps"
 
 	"github.com/gofiber/fiber/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,6 +13,7 @@ import (
 
 type Flags struct {
 	Flags map[string]bool `json:"flags" bson:"flags"`
+	Stage FlagStage       `json:"stage" bson:"stage"`
 }
 
 func FlagsMiddlewareBuilder(flags []string) fiber.Handler {
@@ -77,6 +79,31 @@ func (f *Flags) Set(flag string, value bool) (err error) {
 	return
 }
 
+func (f *Flags) SetBulk(rawFlags map[string]bool) (err error) {
+	marshaledFlags := bson.M{}
+
+	for k, v := range rawFlags {
+		marshaledFlags["flags."+k] = v
+	}
+
+	_, err = db.Flags.UpdateOne(db.Ctx, bson.M{},
+		bson.M{
+			"$set": marshaledFlags,
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	maps.Copy(f.Flags, rawFlags)
+
+	bytes, _ := json.Marshal(f)
+	db.Set("flags", string(bytes))
+
+	return
+}
+
 func (f *Flags) Unset(flag string) (err error) {
 	_, err = db.Flags.UpdateOne(db.Ctx, bson.M{},
 		bson.M{
@@ -100,6 +127,40 @@ func (f *Flags) Unset(flag string) (err error) {
 
 	bytes, _ := json.Marshal(f)
 	db.Set("flags", string(bytes))
+
+	return
+}
+
+func (f *Flags) Reset() (err error) {
+	resetFlags := map[string]bool{}
+
+	for f, _ := range f.Flags {
+		resetFlags[f] = false
+	}
+
+	err = f.SetBulk(resetFlags)
+	if err != nil {
+		return
+	}
+
+	f.Flags = resetFlags
+	return
+}
+
+func (f *Flags) SetStage(flagStage FlagStage) (err error) {
+	_, err = db.Flags.UpdateOne(db.Ctx, bson.M{},
+		bson.M{
+			"$set": bson.M{
+				"stage": flagStage,
+			},
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	f.Stage = flagStage
 
 	return
 }
