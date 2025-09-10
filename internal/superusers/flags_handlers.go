@@ -14,7 +14,9 @@ func flagsGetHandler(c fiber.Ctx) error {
 	flags := models.Flags{}
 	err := flags.Get()
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	return c.JSON(flags)
@@ -30,12 +32,16 @@ func flagsSetHandler(c fiber.Ctx) error {
 	flags := models.Flags{}
 	err := flags.Get()
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	err = flags.Set(body.Flag, body.Value)
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	return c.JSON(flags.Flags)
@@ -48,12 +54,16 @@ func flagsSetBulkHandler(c fiber.Ctx) error {
 	flags := models.Flags{}
 	err := flags.Get()
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	err = flags.SetBulk(body)
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	return c.JSON(flags.Flags)
@@ -68,12 +78,16 @@ func flagsUnsetHandler(c fiber.Ctx) error {
 	flags := models.Flags{}
 	err := flags.Get()
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	err = flags.Unset(body.Flag)
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	return c.JSON(flags.Flags)
@@ -84,12 +98,16 @@ func flagsResetHandler(c fiber.Ctx) error {
 	flags := models.Flags{}
 	err := flags.Get()
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	err = flags.Reset()
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	return c.JSON(flags.Flags)

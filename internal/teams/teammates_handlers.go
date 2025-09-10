@@ -9,6 +9,34 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+func TeamGetTeammatesHandler(c fiber.Ctx) error {
+	account := models.Account{}
+	utils.GetLocals(c, "account", &account)
+
+	if account.TeamID == "" {
+		return utils.StatusError(
+			c, errmsg.AccountHasNoTeam,
+		)
+	}
+
+	team := models.Team{ID: account.TeamID}
+	err := team.Get()
+	if err != nil {
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
+	}
+
+	members, err := team.GetMembers()
+	if err != nil {
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
+	}
+
+	return c.JSON(members)
+}
+
 func TeamJoinHandler(c fiber.Ctx) error {
 	// get all info on the team
 	team := models.Team{ID: c.Query("id")}
@@ -30,7 +58,7 @@ func TeamJoinHandler(c fiber.Ctx) error {
 	}
 
 	// adding the member to the team
-	serr := team.AddMember(account.ID)
+	serr := team.AddMember(account.ID, account)
 	if serr != errmsg.EmptyStatusError {
 		return utils.StatusError(
 			c, serr,
@@ -40,7 +68,7 @@ func TeamJoinHandler(c fiber.Ctx) error {
 	err = account.AddToTeam(team.ID)
 	if err != nil {
 		return utils.StatusError(
-			c, errmsg.InternalServerError,
+			c, errmsg.InternalServerError(err),
 		)
 	}
 
@@ -80,7 +108,7 @@ func TeamLeaveHandler(c fiber.Ctx) error {
 	err = account.RemoveFromTeam(team.ID)
 	if err != nil {
 		return utils.StatusError(
-			c, errmsg.InternalServerError,
+			c, errmsg.InternalServerError(err),
 		)
 	}
 
@@ -126,7 +154,7 @@ func TeamKickHandler(c fiber.Ctx) error {
 	err = accountToRemove.RemoveFromTeam(team.ID)
 	if err != nil {
 		return utils.StatusError(
-			c, errmsg.InternalServerError,
+			c, errmsg.InternalServerError(err),
 		)
 	}
 

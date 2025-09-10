@@ -207,7 +207,7 @@ func TestTeamsJoinNotFound(t *testing.T) {
 	)
 }
 
-// 1 and 2 join 0 team
+// 1, 2, and 3 join 0's team
 func TestTeamsJoin(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		bodyBytes, statusCode := helpers.API_TeamsJoin(

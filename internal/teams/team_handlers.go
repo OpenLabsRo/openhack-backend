@@ -25,7 +25,7 @@ func TeamGetHandler(c fiber.Ctx) error {
 
 	if err != nil {
 		return utils.StatusError(
-			c, errmsg.InternalServerError,
+			c, errmsg.InternalServerError(err),
 		)
 	}
 
@@ -48,7 +48,7 @@ func TeamCreateHandler(c fiber.Ctx) error {
 	err := team.Create(account.ID)
 	if err != nil {
 		return utils.StatusError(
-			c, errmsg.InternalServerError,
+			c, errmsg.InternalServerError(err),
 		)
 	}
 
@@ -104,14 +104,14 @@ func TeamDeleteHandler(c fiber.Ctx) error {
 	err = account.RemoveFromTeam(account.TeamID)
 	if err != nil {
 		return utils.StatusError(
-			c, errmsg.InternalServerError,
+			c, errmsg.InternalServerError(err),
 		)
 	}
 
 	err = team.Delete()
 	if err != nil {
 		return utils.StatusError(
-			c, errmsg.InternalServerError,
+			c, errmsg.InternalServerError(err),
 		)
 	}
 

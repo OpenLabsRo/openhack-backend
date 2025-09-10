@@ -105,9 +105,7 @@ func (fstage *FlagStage) Create() (err error) {
 		return
 	}
 
-	// -- and then the flagstages
-
-	// getting the flagStages before
+	// -- getting the flagStages before
 	flagStages := []FlagStage{}
 	fstagesBytes, _ := db.CacheGetBytes("flagstages")
 	err = json.Unmarshal(fstagesBytes, &flagStages)

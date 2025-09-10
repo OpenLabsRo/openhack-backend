@@ -21,7 +21,9 @@ func AccountEditHandler(c fiber.Ctx) error {
 
 	err := account.EditName(body.Name)
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	token := account.GenToken()

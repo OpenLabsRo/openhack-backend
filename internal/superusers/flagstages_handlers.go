@@ -12,7 +12,9 @@ import (
 func flagStagesGetHandler(c fiber.Ctx) error {
 	flagStages, err := models.GetFlagStages()
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	return c.JSON(flagStages)
@@ -25,7 +27,9 @@ func flagStagesCreateHandler(c fiber.Ctx) error {
 	err := flagStage.Create()
 
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	return c.JSON(flagStage)
@@ -36,7 +40,9 @@ func flagStagesDeleteHandler(c fiber.Ctx) error {
 
 	err := flagStage.Delete()
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	return c.JSON(flagStage)
@@ -51,13 +57,17 @@ func flagStagesExecuteHandler(c fiber.Ctx) error {
 
 	err := flagStage.Execute()
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	flags := models.Flags{}
 	err = flags.Get()
 	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError)
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
 	}
 
 	return c.JSON(flags)

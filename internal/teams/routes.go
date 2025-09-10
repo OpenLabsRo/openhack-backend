@@ -18,6 +18,7 @@ func Routes(app *fiber.App) {
 	teams.Patch("", models.AccountMiddleware, TeamChangeHandler)
 	teams.Delete("", models.AccountMiddleware, TeamDeleteHandler)
 
+	teams.Get("/members", models.AccountMiddleware, TeamGetTeammatesHandler)
 	teams.Patch("/join", models.AccountMiddleware, TeamJoinHandler)
 	teams.Patch("/leave", models.AccountMiddleware, TeamLeaveHandler)
 	teams.Patch("/kick", models.AccountMiddleware, TeamKickHandler)

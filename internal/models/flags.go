@@ -22,7 +22,9 @@ func FlagsMiddlewareBuilder(flags []string) fiber.Handler {
 		err := f.Get()
 
 		if err != nil {
-			return utils.StatusError(c, errmsg.InternalServerError)
+			return utils.StatusError(
+				c, errmsg.InternalServerError(err),
+			)
 		}
 
 		for _, flagName := range flags {

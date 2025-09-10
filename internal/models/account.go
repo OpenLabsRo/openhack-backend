@@ -104,7 +104,7 @@ func (acc *Account) Initialize() (serr errmsg.StatusError) {
 
 	_, err := db.Accounts.InsertOne(db.Ctx, acc)
 	if err != nil {
-		return errmsg.InternalServerError
+		return errmsg.InternalServerError(err)
 	}
 
 	return
@@ -168,7 +168,7 @@ func (acc *Account) CreatePassword(password string) (serr errmsg.StatusError) {
 	})
 
 	if err != nil {
-		return errmsg.InternalServerError
+		return errmsg.InternalServerError(err)
 	}
 
 	acc.Password = string(hashedPassword)

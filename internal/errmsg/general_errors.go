@@ -2,4 +2,6 @@ package errmsg
 
 import "net/http"
 
-var InternalServerError = NewStatusError(http.StatusInternalServerError, "internal server error")
+func InternalServerError(err error) StatusError {
+	return NewStatusError(http.StatusInternalServerError, "internal server error: "+err.Error())
+}
