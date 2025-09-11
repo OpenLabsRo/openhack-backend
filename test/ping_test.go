@@ -10,7 +10,7 @@ import (
 )
 
 func TestPing(t *testing.T) {
-	app := internal.SetupApp("dev")
+	app := internal.SetupApp("test")
 
 	req, _ := http.NewRequest("GET", "/ping", nil)
 	resp, err := app.Test(req)

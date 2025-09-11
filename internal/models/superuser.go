@@ -22,12 +22,12 @@ func (su SuperUser) GenToken() string {
 	claims, _ := sj.ToClaims(su)
 	claims.SetExpiresAt(time.Now().Add(365 * 24 * time.Hour))
 
-	token := claims.Generate(env.JWT_KEY)
+	token := claims.Generate(env.JWT_SECRET)
 	return token
 }
 
 func (su *SuperUser) ParseToken(token string) error {
-	hasVerified := sj.Verify(token, env.JWT_KEY)
+	hasVerified := sj.Verify(token, env.JWT_SECRET)
 
 	if !hasVerified {
 		return nil

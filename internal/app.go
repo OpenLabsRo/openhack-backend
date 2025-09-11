@@ -14,6 +14,8 @@ import (
 func SetupApp(deployment string) *fiber.App {
 	app := fiber.New()
 
+	env.Init(deployment)
+
 	if err := db.InitDB(deployment); err != nil {
 		log.Fatal("Could not connect to MongoDB")
 		return nil

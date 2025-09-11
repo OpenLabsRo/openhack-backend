@@ -29,7 +29,7 @@ var (
 )
 
 func TestSupersUsersSetup(t *testing.T) {
-	app = internal.SetupApp("dev")
+	app = internal.SetupApp("test")
 	fmt.Println("SuperUsers Setup Complete!")
 }
 

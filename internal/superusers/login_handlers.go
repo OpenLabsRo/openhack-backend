@@ -12,10 +12,7 @@ import (
 )
 
 func loginHandler(c fiber.Ctx) error {
-	var body struct {
-		Username string `json:"username" bson:"username"`
-		Password string `json:"password" bson:"password"`
-	}
+	var body models.SuperUser
 	json.Unmarshal(c.Body(), &body)
 
 	su := models.SuperUser{}

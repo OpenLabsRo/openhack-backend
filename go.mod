@@ -1,11 +1,12 @@
 module backend
 
-go 1.24.5
+go 1.25.1
 
 require (
 	github.com/brianvoe/sjwt v0.5.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gofiber/fiber/v3 v3.0.0-beta.5
+	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.10.0
 	go.mongodb.org/mongo-driver v1.17.4
 	golang.org/x/crypto v0.40.0

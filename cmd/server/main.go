@@ -6,12 +6,18 @@ import (
 	"backend/internal/models"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/gofiber/fiber/v3"
 )
 
 func main() {
-	app := internal.SetupApp("dev")
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: server <deployment-type>")
+		os.Exit(1)
+	}
+	deployment := os.Args[1]
+	app := internal.SetupApp(deployment)
 
 	app.Get("/testflags", models.FlagsMiddlewareBuilder([]string{"test"}))
 

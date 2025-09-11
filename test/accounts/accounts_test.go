@@ -28,7 +28,7 @@ var (
 )
 
 func TestAccountsPing(t *testing.T) {
-	app = internal.SetupApp("dev")
+	app = internal.SetupApp("test")
 
 	req, _ := http.NewRequest("GET", "/accounts/ping", nil)
 	resp, err := app.Test(req)
