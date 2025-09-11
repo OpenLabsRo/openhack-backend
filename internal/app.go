@@ -19,7 +19,7 @@ func SetupApp(deployment string) *fiber.App {
 		return nil
 	}
 
-	if err := db.InitCache(); err != nil {
+	if err := db.InitCache(deployment); err != nil {
 		log.Fatal("Could not connect to Redis")
 		return nil
 	}

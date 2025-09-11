@@ -51,13 +51,23 @@ func GetCollection(database string, collectionName string, client *mongo.Client)
 	return client.Database(database).Collection(collectionName)
 }
 
-func InitCache() error {
+func InitCache(deployment string) error {
 	var err error
+
+	redisDatabase := 17
+	switch deployment {
+	case "prod":
+		redisDatabase = 0
+	case "dev":
+		redisDatabase = 1
+	case "test":
+		redisDatabase = 2
+	}
 
 	RDB = redis.NewClient(&redis.Options{
 		Addr:     "127.0.0.1:6379",
 		Password: "",
-		DB:       0,
+		DB:       redisDatabase,
 	})
 
 	err = RDB.Ping(Ctx).Err()
