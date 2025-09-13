@@ -22,11 +22,11 @@ func (e *Emitter) TeamCreate(
 	e.Emit(evt)
 }
 
-func (e *Emitter) TeamRename(
+func (e *Emitter) TeamChangeName(
 	accountID, teamID, oldName, newName string,
 ) {
 	evt := &models.Event{
-		Action: "team.rename",
+		Action: "team.change.name",
 
 		ActorRole: "participant",
 		ActorID:   accountID,
@@ -56,6 +56,44 @@ func (e *Emitter) TeamMemberJoin(
 		TargetID:   teamID,
 
 		Props: nil,
+	}
+
+	e.EmitWindowed(evt)
+}
+
+func (e *Emitter) TeamMemberLeave(
+	accountID, teamID string,
+) {
+	evt := &models.Event{
+		Action: "team.member.exit",
+
+		ActorRole: "participant",
+		ActorID:   accountID,
+
+		TargetType: "team",
+		TargetID:   teamID,
+
+		Props: nil,
+	}
+	e.EmitWindowed(evt)
+}
+
+func (e *Emitter) TeamMemberKick(
+	actorID, teamID string,
+	kickedID string,
+) {
+	evt := &models.Event{
+		Action: "team.member.exit",
+
+		ActorRole: "parcitipant",
+		ActorID:   actorID,
+
+		TargetType: "team",
+		TargetID:   teamID,
+
+		Props: map[string]any{
+			"kickedID": kickedID,
+		},
 	}
 
 	e.EmitWindowed(evt)

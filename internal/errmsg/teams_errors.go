@@ -27,4 +27,9 @@ var (
 		http.StatusConflict,
 		"account does not belong to a team",
 	)
+
+	TeamSubmissionNotFound = NewStatusError(
+		http.StatusNotFound,
+		"submission not found",
+	)
 )

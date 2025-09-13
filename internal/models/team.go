@@ -14,6 +14,12 @@ type Team struct {
 	ID      string   `json:"id" bson:"id"`
 	Name    string   `json:"name" bson:"name"`
 	Members []string `json:"members" bson:"members"`
+
+	Submission struct {
+		Name string `json:"name" bson:"name"`
+		Desc string `json:"desc" bson:"desc"`
+		Link string `json:"link" bson:"link"`
+	} `json:"submission" bson:"submission"`
 }
 
 func (t *Team) Create(firstMember string) (err error) {
@@ -140,7 +146,7 @@ func (t *Team) AddMember(newMember string, newFullMember Account) (serr errmsg.S
 	fullMembersBytes, _ := db.CacheGetBytes("members:" + t.ID)
 	err = json.Unmarshal(fullMembersBytes, &fullMembers)
 	if err != nil {
-		return
+		return errmsg.InternalServerError(err)
 	}
 
 	// -- add the new member to the old fullMembers and marshal it
@@ -148,13 +154,13 @@ func (t *Team) AddMember(newMember string, newFullMember Account) (serr errmsg.S
 	fullMembers = append(fullMembers, newFullMember)
 	fullMembersBytes, err = json.Marshal(fullMembers)
 	if err != nil {
-		return
+		return errmsg.InternalServerError(err)
 	}
 
 	// -- changing the cache
 	err = db.CacheSetBytes("members:"+t.ID, fullMembersBytes)
 	if err != nil {
-		return
+		return errmsg.InternalServerError(err)
 	}
 
 	return
@@ -180,7 +186,7 @@ func (t *Team) RemoveMember(removeMember string) (serr errmsg.StatusError) {
 	fullMembersBytes, _ := db.CacheGetBytes("members:" + t.ID)
 	err = json.Unmarshal(fullMembersBytes, &fullMembers)
 	if err != nil {
-		return
+		return errmsg.InternalServerError(err)
 	}
 
 	// -- add the new member to the old fullMembers and marshal it
@@ -192,13 +198,13 @@ func (t *Team) RemoveMember(removeMember string) (serr errmsg.StatusError) {
 	}
 	fullMembersBytes, err = json.Marshal(newFullMembers)
 	if err != nil {
-		return
+		return errmsg.InternalServerError(err)
 	}
 
 	// -- changing the cache
 	err = db.CacheSetBytes("members:"+t.ID, fullMembersBytes)
 	if err != nil {
-		return
+		return errmsg.InternalServerError(err)
 	}
 
 	return
@@ -244,11 +250,91 @@ func (t *Team) ChangeName(name string) (serr errmsg.StatusError) {
 
 	tBytes, err := json.Marshal(t)
 	if err != nil {
-		return
+		return errmsg.InternalServerError(err)
 	}
 	err = db.CacheSetBytes("team:"+t.ID, tBytes)
 	if err != nil {
-		return
+		return errmsg.InternalServerError(err)
+	}
+
+	return
+}
+
+func (t *Team) ChangeSubmissionName(name string) (serr errmsg.StatusError) {
+	err := db.Teams.FindOneAndUpdate(db.Ctx, bson.M{
+		"id": t.ID,
+	}, bson.M{
+		"$set": bson.M{
+			"submission.name": name,
+		},
+	}).Decode(t)
+
+	if err != nil {
+		return errmsg.InternalServerError(err)
+	}
+
+	t.Submission.Name = name
+
+	tBytes, err := json.Marshal(t)
+	if err != nil {
+		return errmsg.InternalServerError(err)
+	}
+	err = db.CacheSetBytes("team:"+t.ID, tBytes)
+	if err != nil {
+		return errmsg.InternalServerError(err)
+	}
+
+	return
+}
+
+func (t *Team) ChangeSubmissionDesc(desc string) (serr errmsg.StatusError) {
+	err := db.Teams.FindOneAndUpdate(db.Ctx, bson.M{
+		"id": t.ID,
+	}, bson.M{
+		"$set": bson.M{
+			"submission.desc": desc,
+		},
+	}).Decode(t)
+
+	if err != nil {
+		return errmsg.InternalServerError(err)
+	}
+
+	t.Submission.Desc = desc
+
+	tBytes, err := json.Marshal(t)
+	if err != nil {
+		return errmsg.InternalServerError(err)
+	}
+	err = db.CacheSetBytes("team:"+t.ID, tBytes)
+	if err != nil {
+		return errmsg.InternalServerError(err)
+	}
+
+	return
+}
+func (t *Team) ChangeSubmissionLink(link string) (serr errmsg.StatusError) {
+	err := db.Teams.FindOneAndUpdate(db.Ctx, bson.M{
+		"id": t.ID,
+	}, bson.M{
+		"$set": bson.M{
+			"submission.link": link,
+		},
+	}).Decode(t)
+
+	if err != nil {
+		return errmsg.InternalServerError(err)
+	}
+
+	t.Submission.Link = link
+
+	tBytes, err := json.Marshal(t)
+	if err != nil {
+		return errmsg.InternalServerError(err)
+	}
+	err = db.CacheSetBytes("team:"+t.ID, tBytes)
+	if err != nil {
+		return errmsg.InternalServerError(err)
 	}
 
 	return
