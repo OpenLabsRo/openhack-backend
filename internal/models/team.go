@@ -34,8 +34,16 @@ func (t *Team) Create(firstMember string) (err error) {
 	t.Deleted = false
 
 	_, err = db.Teams.InsertOne(db.Ctx, t)
+	if err != nil {
+		return
+	}
 
-	return err
+	// caching the members
+	t.GetMembers()
+
+	// caching the tam
+	tBytes, err := json.Marshal(t)
+	return db.CacheSetBytes("team"+t.ID, tBytes)
 }
 
 func (t *Team) Get() (err error) {

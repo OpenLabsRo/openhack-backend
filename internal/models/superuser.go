@@ -5,6 +5,7 @@ import (
 	"backend/internal/env"
 	"backend/internal/errmsg"
 	"backend/internal/utils"
+	"slices"
 	"strings"
 	"time"
 
@@ -14,8 +15,10 @@ import (
 )
 
 type SuperUser struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username" bson:"username"`
+	Password string `json:"password" bson:"password"`
+
+	Permissions []string `json:"permissions" bson:"permissions"`
 }
 
 func (su SuperUser) GenToken() string {
@@ -40,39 +43,66 @@ func (su *SuperUser) ParseToken(token string) error {
 	return err
 }
 
-func SuperUserMiddleware(c fiber.Ctx) error {
-	var token string
+func (su *SuperUser) HasAllRoles(required []string) bool {
+	if su == nil {
+		return false
+	}
 
-	authHeader := c.Get("Authorization")
+	if slices.Contains(su.Permissions, "admin") {
+		return true
+	}
 
-	if string(authHeader) != "" && strings.HasPrefix(string(authHeader), "Bearer") {
-
-		tokens := strings.Fields(string(authHeader))
-		if len(tokens) == 2 {
-			token = tokens[1]
+	for _, want := range required {
+		if !slices.Contains(su.Permissions, want) {
+			return false
 		}
+	}
+
+	return true
+}
+
+func SuperUserMiddlewareBuilder(required []string) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		var token string
+
+		authHeader := c.Get("Authorization")
+
+		if string(authHeader) != "" && strings.HasPrefix(string(authHeader), "Bearer") {
+
+			tokens := strings.Fields(string(authHeader))
+			if len(tokens) == 2 {
+				token = tokens[1]
+			}
+			if token == "" {
+				return utils.StatusError(c,
+					errmsg.SuperUserNoToken,
+				)
+			}
+
+			var su SuperUser
+			err := su.ParseToken(token)
+			if err != nil {
+				return utils.StatusError(c,
+					errmsg.SuperUserNoToken,
+				)
+			}
+			if allowed := su.HasAllRoles(required); !allowed {
+				return utils.StatusError(c,
+					errmsg.SuperUserNoToken,
+				)
+			}
+
+			utils.SetLocals(c, "superuser", su)
+		}
+
 		if token == "" {
 			return utils.StatusError(c,
-				errmsg.AccountNoToken,
+				errmsg.SuperUserNoToken,
 			)
 		}
 
-		var su SuperUser
-		err := su.ParseToken(token)
-		if err != nil {
-
-		}
-
-		utils.SetLocals(c, "superuser", su)
+		return c.Next()
 	}
-
-	if token == "" {
-		return utils.StatusError(c,
-			errmsg.AccountNoToken,
-		)
-	}
-
-	return c.Next()
 }
 
 func (su *SuperUser) Get(username string) (serr errmsg.StatusError) {

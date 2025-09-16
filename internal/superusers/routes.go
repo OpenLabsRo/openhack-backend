@@ -15,37 +15,110 @@ func Routes(app *fiber.App) {
 		return c.SendString("PONG")
 	})
 
-	superusers.Get("/whoami", models.SuperUserMiddleware, func(c fiber.Ctx) error {
-		su := models.SuperUser{}
-		utils.GetLocals(c, "superuser", &su)
+	superusers.Get("/whoami",
+		models.SuperUserMiddlewareBuilder([]string{"admin"}),
+		func(c fiber.Ctx) error {
+			su := models.SuperUser{}
+			utils.GetLocals(c, "superuser", &su)
 
-		return c.JSON(bson.M{
-			"superuser": su,
-		})
-	})
+			return c.JSON(bson.M{
+				"superuser": su,
+			})
+		},
+	)
 
 	// login for supersusers
 	superusers.Post("/login", loginHandler)
 
 	// initializing accounts
-	superusers.Post("/accounts/initialize", models.SuperUserMiddleware, initializeAccountHandler)
+	superusers.Post("/accounts/initialize",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		initializeAccountHandler,
+	)
 
 	// flags
-	superusers.Get("/flags", models.SuperUserMiddleware, flagsGetHandler)
-	superusers.Post("/flags", models.SuperUserMiddleware, flagsSetHandler)
-	superusers.Put("/flags", models.SuperUserMiddleware, flagsSetBulkHandler)
-	superusers.Put("/flags/reset", models.SuperUserMiddleware, flagsResetHandler)
-	superusers.Delete("/flags", models.SuperUserMiddleware, flagsUnsetHandler)
+	superusers.Get("/flags",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		flagsGetHandler,
+	)
+	superusers.Post("/flags",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		flagsSetHandler,
+	)
+	superusers.Put("/flags",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		flagsSetBulkHandler,
+	)
+	superusers.Put("/flags/reset",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		flagsResetHandler,
+	)
+	superusers.Delete("/flags",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		flagsUnsetHandler,
+	)
 
 	// testing the flags middleware
-	superusers.Get("/flags/test", models.SuperUserMiddleware, models.FlagsMiddlewareBuilder([]string{
-		"test", "testing",
-	}), flagsTestHandler)
+	superusers.Get("/flags/test",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		models.FlagsMiddlewareBuilder([]string{
+			"test", "testing",
+		}),
+		flagsTestHandler,
+	)
 
 	// flagstages
-	superusers.Get("/flags/stages", models.SuperUserMiddleware, flagStagesGetHandler)
-	superusers.Post("/flags/stages", models.SuperUserMiddleware, flagStagesCreateHandler)
-	superusers.Delete("/flags/stages", models.SuperUserMiddleware, flagStagesDeleteHandler)
-	superusers.Post("/flags/stages/execute", models.SuperUserMiddleware, flagStagesExecuteHandler)
+	superusers.Get("/flags/stages",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		flagStagesGetHandler,
+	)
+	superusers.Post("/flags/stages",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		flagStagesCreateHandler,
+	)
+	superusers.Delete("/flags/stages",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		flagStagesDeleteHandler,
+	)
+	superusers.Post("/flags/stages/execute",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		flagStagesExecuteHandler,
+	)
+
+	// badges
+	superusers.Get("/badges",
+		models.SuperUserMiddlewareBuilder([]string{
+			"staff",
+		}),
+		badgeGetHandler,
+	)
+	superusers.Post("/badges",
+		models.SuperUserMiddlewareBuilder([]string{
+			"staff",
+		}),
+		badgeAssignHandler,
+	)
 
 }
