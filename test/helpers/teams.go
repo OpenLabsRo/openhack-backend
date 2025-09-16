@@ -118,3 +118,78 @@ func API_TeamsKick(
 		&token,
 	)
 }
+
+func API_TeamsSubmissionsChangeName(
+	t *testing.T,
+	app *fiber.App,
+	name string,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	// building the payload
+	payload := struct {
+		Name string `json:"name"`
+	}{
+		Name: name,
+	}
+
+	// marshalling the payload into JSON
+	sendBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	return RequestRunner(t, app,
+		"PATCH",
+		"/teams/submissions/name",
+		sendBytes,
+		&token,
+	)
+}
+
+func API_TeamsSubmissionsChangeDesc(
+	t *testing.T,
+	app *fiber.App,
+	desc string,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	// building the payload
+	payload := struct {
+		Desc string `json:"desc"`
+	}{
+		Desc: desc,
+	}
+
+	// marshalling the payload into JSON
+	sendBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	return RequestRunner(t, app,
+		"PATCH",
+		"/teams/submissions/desc",
+		sendBytes,
+		&token,
+	)
+}
+
+func API_TeamsSubmissionsChangeLink(
+	t *testing.T,
+	app *fiber.App,
+	link string,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	// building the payload
+	payload := struct {
+		Link string `json:"link"`
+	}{
+		Link: link,
+	}
+
+	// marshalling the payload into JSON
+	sendBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	return RequestRunner(t, app,
+		"PATCH",
+		"/teams/submissions/link",
+		sendBytes,
+		&token,
+	)
+}

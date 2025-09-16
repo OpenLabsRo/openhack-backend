@@ -13,13 +13,21 @@ func Routes(app *fiber.App) {
 		return c.SendString("PONG")
 	})
 
+	// team operations
 	teams.Get("", models.AccountMiddleware, TeamGetHandler)
 	teams.Post("", models.AccountMiddleware, TeamCreateHandler)
 	teams.Patch("", models.AccountMiddleware, TeamChangeHandler)
 	teams.Delete("", models.AccountMiddleware, TeamDeleteHandler)
 
+	// teammate operations
 	teams.Get("/members", models.AccountMiddleware, TeamGetTeammatesHandler)
 	teams.Patch("/join", models.AccountMiddleware, TeamJoinHandler)
 	teams.Patch("/leave", models.AccountMiddleware, TeamLeaveHandler)
 	teams.Patch("/kick", models.AccountMiddleware, TeamKickHandler)
+
+	// submission operations
+	teams.Patch("/submissions/name", models.AccountMiddleware, TeamSubmissionChangeNameHandler)
+	teams.Patch("/submissions/desc", models.AccountMiddleware, TeamSubmissionChangeDescHandler)
+	teams.Patch("/submissions/link", models.AccountMiddleware, TeamSubmissionChangeLinkHandler)
+
 }

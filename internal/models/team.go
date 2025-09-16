@@ -142,9 +142,7 @@ func (t *Team) AddMember(newMember string, newFullMember Account) (serr errmsg.S
 
 	// --- updating the cache
 	// -- get the old members
-	fullMembers := []Account{}
-	fullMembersBytes, _ := db.CacheGetBytes("members:" + t.ID)
-	err = json.Unmarshal(fullMembersBytes, &fullMembers)
+	fullMembers, err := t.GetMembers()
 	if err != nil {
 		return errmsg.InternalServerError(err)
 	}
@@ -152,7 +150,7 @@ func (t *Team) AddMember(newMember string, newFullMember Account) (serr errmsg.S
 	// -- add the new member to the old fullMembers and marshal it
 	newFullMember.TeamID = t.ID
 	fullMembers = append(fullMembers, newFullMember)
-	fullMembersBytes, err = json.Marshal(fullMembers)
+	fullMembersBytes, err := json.Marshal(fullMembers)
 	if err != nil {
 		return errmsg.InternalServerError(err)
 	}
@@ -182,9 +180,7 @@ func (t *Team) RemoveMember(removeMember string) (serr errmsg.StatusError) {
 
 	// --- updating the cache
 	// -- get the old members
-	fullMembers := []Account{}
-	fullMembersBytes, _ := db.CacheGetBytes("members:" + t.ID)
-	err = json.Unmarshal(fullMembersBytes, &fullMembers)
+	fullMembers, err := t.GetMembers()
 	if err != nil {
 		return errmsg.InternalServerError(err)
 	}
@@ -196,7 +192,7 @@ func (t *Team) RemoveMember(removeMember string) (serr errmsg.StatusError) {
 			newFullMembers = append(newFullMembers, v)
 		}
 	}
-	fullMembersBytes, err = json.Marshal(newFullMembers)
+	fullMembersBytes, err := json.Marshal(newFullMembers)
 	if err != nil {
 		return errmsg.InternalServerError(err)
 	}
@@ -313,6 +309,7 @@ func (t *Team) ChangeSubmissionDesc(desc string) (serr errmsg.StatusError) {
 
 	return
 }
+
 func (t *Team) ChangeSubmissionLink(link string) (serr errmsg.StatusError) {
 	err := db.Teams.FindOneAndUpdate(db.Ctx, bson.M{
 		"id": t.ID,

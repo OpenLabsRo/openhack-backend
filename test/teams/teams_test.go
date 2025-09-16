@@ -192,6 +192,60 @@ func TestTeamsChange(t *testing.T) {
 	require.Equal(t, tempTeam.Name, newName)
 }
 
+func TestTeamsSubmissionsChangeName(t *testing.T) {
+	newName := "Changed Submission Name"
+	bodyBytes, statusCode := helpers.API_TeamsSubmissionsChangeName(
+		t,
+		app,
+		newName,
+		testAccountTokens[0],
+	)
+
+	require.Equal(t, http.StatusOK, statusCode)
+
+	tempTeam := models.Team{}
+	err := json.Unmarshal(bodyBytes, &tempTeam)
+	require.NoError(t, err)
+
+	require.Equal(t, tempTeam.Submission.Name, newName)
+}
+
+func TestTeamsSubmissionChangeDesc(t *testing.T) {
+	newDesc := "Changed Description"
+	bodyBytes, statusCode := helpers.API_TeamsSubmissionsChangeDesc(
+		t,
+		app,
+		newDesc,
+		testAccountTokens[0],
+	)
+
+	require.Equal(t, http.StatusOK, statusCode)
+
+	tempTeam := models.Team{}
+	err := json.Unmarshal(bodyBytes, &tempTeam)
+	require.NoError(t, err)
+
+	require.Equal(t, tempTeam.Submission.Desc, newDesc)
+}
+
+func TestTeamsSubmissionChangeLink(t *testing.T) {
+	newLink := "Changed Link"
+	bodyBytes, statusCode := helpers.API_TeamsSubmissionsChangeLink(
+		t,
+		app,
+		newLink,
+		testAccountTokens[0],
+	)
+
+	require.Equal(t, http.StatusOK, statusCode)
+
+	tempTeam := models.Team{}
+	err := json.Unmarshal(bodyBytes, &tempTeam)
+	require.NoError(t, err)
+
+	require.Equal(t, tempTeam.Submission.Link, newLink)
+}
+
 func TestTeamsJoinNotFound(t *testing.T) {
 	bodyBytes, statusCode := helpers.API_TeamsJoin(
 		t,
