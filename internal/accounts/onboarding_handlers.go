@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"backend/internal/errmsg"
+	"backend/internal/events"
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
@@ -46,15 +47,30 @@ func AccountRegisterHandler(c fiber.Ctx) error {
 	}
 
 	if account.Password != "" {
+
+		events.Em.AccountRegisterFailure(
+			account.ID,
+			errmsg.AccountAlreadyRegistered.Message,
+		)
 		return utils.StatusError(c, errmsg.AccountAlreadyRegistered)
 	}
 
 	serr = account.CreatePassword(body.Password)
 	if serr != errmsg.EmptyStatusError {
+
+		events.Em.AccountRegisterFailure(
+			account.ID,
+			serr.Message,
+		)
+
 		return utils.StatusError(c, serr)
 	}
 
 	token := account.GenToken()
+
+	events.Em.AccountRegisterSuccess(
+		account.ID,
+	)
 
 	return c.JSON(bson.M{
 		"token":   token,
@@ -72,6 +88,10 @@ func AccountLoginHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	serr := account.GetByEmail(body.Email)
 	if serr != errmsg.EmptyStatusError {
+		events.Em.AccountLoginFailure(
+			account.ID,
+			serr.Message,
+		)
 		return utils.StatusError(c, serr)
 	}
 
@@ -79,12 +99,20 @@ func AccountLoginHandler(c fiber.Ctx) error {
 		[]byte(account.Password),
 		[]byte(body.Password),
 	) != nil {
+		events.Em.AccountLoginFailure(
+			account.ID,
+			errmsg.AccountLoginWrongPassword.Message,
+		)
 		return utils.StatusError(c,
 			errmsg.AccountLoginWrongPassword,
 		)
 	}
 
 	token := account.GenToken()
+
+	events.Em.AccountLoginSuccess(
+		account.ID,
+	)
 
 	return c.JSON(bson.M{
 		"token":   token,

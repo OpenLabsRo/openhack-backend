@@ -28,6 +28,7 @@ func Routes(app *fiber.App) {
 	// submission operations
 	teams.Patch("/submissions/name", models.AccountMiddleware, TeamSubmissionChangeNameHandler)
 	teams.Patch("/submissions/desc", models.AccountMiddleware, TeamSubmissionChangeDescHandler)
-	teams.Patch("/submissions/link", models.AccountMiddleware, TeamSubmissionChangeLinkHandler)
+	teams.Patch("/submissions/repo", models.AccountMiddleware, TeamSubmissionChangeRepoHandler)
+	teams.Patch("/submissions/pres", models.AccountMiddleware, TeamSubmissionChangePresHandler)
 
 }

@@ -1,11 +1,11 @@
-package events_emitter
+package events
 
 import "backend/internal/models"
 
 func (e *Emitter) TeamCreate(
 	accountID, teamID string,
 ) {
-	evt := &models.Event{
+	evt := models.Event{
 		Action: "team.created",
 
 		ActorRole: "participant",
@@ -25,7 +25,7 @@ func (e *Emitter) TeamCreate(
 func (e *Emitter) TeamChangeName(
 	accountID, teamID, oldName, newName string,
 ) {
-	evt := &models.Event{
+	evt := models.Event{
 		Action: "team.change.name",
 
 		ActorRole: "participant",
@@ -46,7 +46,7 @@ func (e *Emitter) TeamChangeName(
 func (e *Emitter) TeamMemberJoin(
 	accountID, teamID string,
 ) {
-	evt := &models.Event{
+	evt := models.Event{
 		Action: "team.member.add",
 
 		ActorRole: "participant",
@@ -64,13 +64,13 @@ func (e *Emitter) TeamMemberJoin(
 func (e *Emitter) TeamMemberLeave(
 	accountID, teamID string,
 ) {
-	evt := &models.Event{
+	evt := models.Event{
 		Action: "team.member.exit",
 
-		ActorRole: "participant",
+		ActorRole: ActorParticipant,
 		ActorID:   accountID,
 
-		TargetType: "team",
+		TargetType: TargetTeam,
 		TargetID:   teamID,
 
 		Props: nil,
@@ -82,13 +82,13 @@ func (e *Emitter) TeamMemberKick(
 	actorID, teamID string,
 	kickedID string,
 ) {
-	evt := &models.Event{
+	evt := models.Event{
 		Action: "team.member.exit",
 
-		ActorRole: "parcitipant",
+		ActorRole: ActorParticipant,
 		ActorID:   actorID,
 
-		TargetType: "team",
+		TargetType: TargetTeam,
 		TargetID:   teamID,
 
 		Props: map[string]any{
@@ -97,4 +97,24 @@ func (e *Emitter) TeamMemberKick(
 	}
 
 	e.EmitWindowed(evt)
+}
+
+func (e *Emitter) TeamDelete(
+	accountID, teamID string,
+) {
+	evt := models.Event{
+		Action: "team.deleted",
+
+		ActorRole: ActorParticipant,
+		ActorID:   accountID,
+
+		TargetType: TargetTeam,
+		TargetID:   teamID,
+
+		Props: nil,
+
+		Key: "team.created|" + teamID,
+	}
+
+	e.Emit(evt)
 }

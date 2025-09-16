@@ -1,4 +1,4 @@
-package events_emitter
+package events
 
 import (
 	"backend/internal/models"
@@ -7,13 +7,13 @@ import (
 func (e *Emitter) AccountInitialized(
 	superuserID, accountID string,
 ) {
-	evt := &models.Event{
+	evt := models.Event{
 		Action: "account.initialized",
 
-		ActorRole: "superuser",
+		ActorRole: ActorParticipant,
 		ActorID:   superuserID,
 
-		TargetType: "account",
+		TargetType: TargetParticipant,
 		TargetID:   accountID,
 
 		Props: nil,
@@ -24,16 +24,16 @@ func (e *Emitter) AccountInitialized(
 	e.Emit(evt)
 }
 
-func (e *Emitter) AccountRegistered(
+func (e *Emitter) AccountRegisterSuccess(
 	accountID string,
 ) {
-	evt := &models.Event{
-		Action: "account.registered",
+	evt := models.Event{
+		Action: "account.register",
 
-		ActorRole: "participant",
+		ActorRole: ActorParticipant,
 		ActorID:   accountID,
 
-		TargetType: "account",
+		TargetType: TargetParticipant,
 		TargetID:   accountID,
 
 		Props: nil,
@@ -44,16 +44,39 @@ func (e *Emitter) AccountRegistered(
 	e.Emit(evt)
 }
 
+func (e *Emitter) AccountRegisterFailure(
+	accountID string,
+	reason string,
+) {
+	evt := models.Event{
+		Action: "account.register.failure",
+
+		ActorRole: ActorParticipant,
+		ActorID:   accountID,
+
+		TargetType: TargetParticipant,
+		TargetID:   accountID,
+
+		Props: map[string]any{
+			"reason": reason,
+		},
+
+		Key: "account.registerd|" + accountID,
+	}
+
+	e.Emit(evt)
+}
+
 func (e *Emitter) AccountLoginSuccess(
 	accountID string,
 ) {
-	evt := &models.Event{
+	evt := models.Event{
 		Action: "account.login.success",
 
-		ActorRole: "participant",
+		ActorRole: ActorParticipant,
 		ActorID:   accountID,
 
-		TargetType: "account",
+		TargetType: TargetParticipant,
 		TargetID:   accountID,
 
 		Props: nil,
@@ -66,13 +89,13 @@ func (e *Emitter) AccountLoginFailure(
 	accountID string,
 	reason string,
 ) {
-	evt := &models.Event{
+	evt := models.Event{
 		Action: "account.login.failure",
 
-		ActorRole: "participant",
+		ActorRole: ActorParticipant,
 		ActorID:   accountID,
 
-		TargetType: "account",
+		TargetType: TargetParticipant,
 		TargetID:   accountID,
 
 		Props: map[string]any{
@@ -88,13 +111,13 @@ func (e *Emitter) AccountNameChanged(
 	oldName string,
 	newName string,
 ) {
-	evt := &models.Event{
+	evt := models.Event{
 		Action: "account.login.success",
 
-		ActorRole: "participant",
+		ActorRole: ActorParticipant,
 		ActorID:   accountID,
 
-		TargetType: "account",
+		TargetType: TargetParticipant,
 		TargetID:   accountID,
 
 		Props: map[string]any{
@@ -110,13 +133,13 @@ func (e *Emitter) AccountTeamJoin(
 	accountID string,
 	teamID string,
 ) {
-	evt := &models.Event{
+	evt := models.Event{
 		Action: "account.team.join",
 
-		ActorRole: "participant",
+		ActorRole: ActorParticipant,
 		ActorID:   accountID,
 
-		TargetType: "team",
+		TargetType: TargetTeam,
 		TargetID:   teamID,
 
 		Props: nil,
@@ -129,13 +152,13 @@ func (e *Emitter) AccountTeamExit(
 	accountID string,
 	teamID string,
 ) {
-	evt := &models.Event{
+	evt := models.Event{
 		Action: "account.team.exit",
 
-		ActorRole: "parcitipant",
+		ActorRole: ActorParticipant,
 		ActorID:   accountID,
 
-		TargetType: "team",
+		TargetType: TargetTeam,
 		TargetID:   teamID,
 
 		Props: nil,

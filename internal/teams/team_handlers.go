@@ -2,6 +2,7 @@ package teams
 
 import (
 	"backend/internal/errmsg"
+	"backend/internal/events"
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
@@ -56,6 +57,11 @@ func TeamCreateHandler(c fiber.Ctx) error {
 
 	token := account.GenToken()
 
+	events.Em.TeamCreate(
+		account.ID,
+		team.ID,
+	)
+
 	return c.JSON(bson.M{
 		"token":   token,
 		"account": account,
@@ -78,12 +84,19 @@ func TeamChangeHandler(c fiber.Ctx) error {
 	json.Unmarshal(c.Body(), &body)
 
 	team := models.Team{ID: account.TeamID}
-	serr := team.ChangeName(body.Name)
+	oldName, serr := team.ChangeName(body.Name)
 	if serr != errmsg.EmptyStatusError {
 		return utils.StatusError(
 			c, serr,
 		)
 	}
+
+	events.Em.TeamChangeName(
+		account.ID,
+		team.ID,
+		oldName,
+		team.Name,
+	)
 
 	return c.JSON(team)
 }
@@ -108,7 +121,7 @@ func TeamDeleteHandler(c fiber.Ctx) error {
 		)
 	}
 
-	err = team.Delete()
+	oldID, err := team.Delete()
 	if err != nil {
 		return utils.StatusError(
 			c, errmsg.InternalServerError(err),
@@ -116,6 +129,11 @@ func TeamDeleteHandler(c fiber.Ctx) error {
 	}
 
 	token := account.GenToken()
+
+	events.Em.TeamDelete(
+		account.ID,
+		oldID,
+	)
 
 	return c.JSON(bson.M{
 		"token":   token,

@@ -4,9 +4,11 @@ import (
 	"backend/internal/accounts"
 	"backend/internal/db"
 	"backend/internal/env"
+	"backend/internal/events"
 	"backend/internal/superusers"
 	"backend/internal/teams"
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -25,6 +27,15 @@ func SetupApp(deployment string) *fiber.App {
 		log.Fatal("Could not connect to Redis")
 		return nil
 	}
+
+	events.Em = events.NewEmitter(
+		db.Events,
+		events.Config{
+			Buffer:     1000,
+			BatchSize:  50,
+			FlushEvery: 2 * time.Second,
+		},
+	)
 
 	app.Get("/ping", func(c fiber.Ctx) error {
 		return c.SendString("PONG")

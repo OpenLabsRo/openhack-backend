@@ -2,6 +2,7 @@ package teams
 
 import (
 	"backend/internal/errmsg"
+	"backend/internal/events"
 	"backend/internal/models"
 	"backend/internal/utils"
 
@@ -74,6 +75,11 @@ func TeamJoinHandler(c fiber.Ctx) error {
 
 	token := account.GenToken()
 
+	events.Em.TeamMemberJoin(
+		account.ID,
+		team.ID,
+	)
+
 	return c.JSON(bson.M{
 		"token":   token,
 		"account": account,
@@ -114,6 +120,15 @@ func TeamLeaveHandler(c fiber.Ctx) error {
 
 	token := account.GenToken()
 
+	events.Em.TeamMemberLeave(
+		account.ID,
+		team.ID,
+	)
+	events.Em.AccountTeamExit(
+		account.ID,
+		team.ID,
+	)
+
 	return c.JSON(bson.M{
 		"token":   token,
 		"account": account,
@@ -151,12 +166,23 @@ func TeamKickHandler(c fiber.Ctx) error {
 		)
 	}
 
+	events.Em.TeamMemberKick(
+		account.ID,
+		team.ID,
+		accountToRemove.ID,
+	)
+
 	err = accountToRemove.RemoveFromTeam(team.ID)
 	if err != nil {
 		return utils.StatusError(
 			c, errmsg.InternalServerError(err),
 		)
 	}
+
+	events.Em.AccountTeamExit(
+		accountToRemove.ID,
+		team.ID,
+	)
 
 	return c.Status(200).SendString("OK")
 }

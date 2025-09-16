@@ -1,4 +1,4 @@
-package events_emitter
+package events
 
 import (
 	"backend/internal/models"

@@ -2,6 +2,7 @@ package teams
 
 import (
 	"backend/internal/errmsg"
+	"backend/internal/events"
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
@@ -25,12 +26,19 @@ func TeamSubmissionChangeNameHandler(c fiber.Ctx) error {
 	json.Unmarshal(c.Body(), &body)
 
 	team := models.Team{ID: account.TeamID}
-	serr := team.ChangeSubmissionName(body.Name)
+	oldName, serr := team.ChangeSubmissionName(body.Name)
 	if serr != errmsg.EmptyStatusError {
 		return utils.StatusError(
 			c, serr,
 		)
 	}
+
+	events.Em.SubmissionChangeName(
+		account.ID,
+		team.ID,
+		oldName,
+		team.Submission.Name,
+	)
 
 	return c.JSON(team)
 }
@@ -51,17 +59,24 @@ func TeamSubmissionChangeDescHandler(c fiber.Ctx) error {
 	json.Unmarshal(c.Body(), &body)
 
 	team := models.Team{ID: account.TeamID}
-	serr := team.ChangeSubmissionDesc(body.Desc)
+	oldDesc, serr := team.ChangeSubmissionDesc(body.Desc)
 	if serr != errmsg.EmptyStatusError {
 		return utils.StatusError(
 			c, serr,
 		)
 	}
 
+	events.Em.SubmissionChangeDesc(
+		account.ID,
+		team.ID,
+		oldDesc,
+		team.Submission.Desc,
+	)
+
 	return c.JSON(team)
 }
 
-func TeamSubmissionChangeLinkHandler(c fiber.Ctx) error {
+func TeamSubmissionChangeRepoHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
 
@@ -72,17 +87,57 @@ func TeamSubmissionChangeLinkHandler(c fiber.Ctx) error {
 	}
 
 	var body struct {
-		Link string `json:"link"`
+		Repo string `json:"repo"`
 	}
 	json.Unmarshal(c.Body(), &body)
 
 	team := models.Team{ID: account.TeamID}
-	serr := team.ChangeSubmissionLink(body.Link)
+	oldRepo, serr := team.ChangeSubmissionRepo(body.Repo)
 	if serr != errmsg.EmptyStatusError {
 		return utils.StatusError(
 			c, serr,
 		)
 	}
+
+	events.Em.SubmissionChangeRepo(
+		account.ID,
+		team.ID,
+		oldRepo,
+		team.Submission.Repo,
+	)
+
+	return c.JSON(team)
+}
+
+func TeamSubmissionChangePresHandler(c fiber.Ctx) error {
+	account := models.Account{}
+	utils.GetLocals(c, "account", &account)
+
+	if account.TeamID == "" {
+		return utils.StatusError(
+			c, errmsg.AccountHasNoTeam,
+		)
+	}
+
+	var body struct {
+		Pres string `json:"pres"`
+	}
+	json.Unmarshal(c.Body(), &body)
+
+	team := models.Team{ID: account.TeamID}
+	oldPres, serr := team.ChangeSubmissionPres(body.Pres)
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(
+			c, serr,
+		)
+	}
+
+	events.Em.SubmissionChangePres(
+		account.ID,
+		team.ID,
+		oldPres,
+		team.Submission.Pres,
+	)
 
 	return c.JSON(team)
 }

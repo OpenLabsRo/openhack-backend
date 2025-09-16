@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"backend/internal/errmsg"
+	"backend/internal/events"
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
@@ -18,6 +19,7 @@ func AccountEditHandler(c fiber.Ctx) error {
 
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
+	oldName := account.Name
 
 	err := account.EditName(body.Name)
 	if err != nil {
@@ -27,6 +29,12 @@ func AccountEditHandler(c fiber.Ctx) error {
 	}
 
 	token := account.GenToken()
+
+	events.Em.AccountNameChanged(
+		account.ID,
+		oldName,
+		account.Name,
+	)
 
 	return c.JSON(bson.M{
 		"token":   token,

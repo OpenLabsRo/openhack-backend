@@ -18,8 +18,11 @@ type Team struct {
 	Submission struct {
 		Name string `json:"name" bson:"name"`
 		Desc string `json:"desc" bson:"desc"`
-		Link string `json:"link" bson:"link"`
+		Repo string `json:"repo" bson:"repo"`
+		Pres string `json:"pres" bson:"pres"`
 	} `json:"submission" bson:"submission"`
+
+	Deleted bool `json:"deleted" bson:"deleted"`
 }
 
 func (t *Team) Create(firstMember string) (err error) {
@@ -28,6 +31,7 @@ func (t *Team) Create(firstMember string) (err error) {
 	t.Members = []string{
 		firstMember,
 	}
+	t.Deleted = false
 
 	_, err = db.Teams.InsertOne(db.Ctx, t)
 
@@ -206,10 +210,15 @@ func (t *Team) RemoveMember(removeMember string) (serr errmsg.StatusError) {
 	return
 }
 
-func (t *Team) Delete() (err error) {
-	_, err = db.Teams.DeleteOne(db.Ctx, bson.M{
-		"id": t.ID,
-	})
+func (t *Team) Delete() (oldID string, err error) {
+	_, err = db.Teams.UpdateOne(db.Ctx,
+		bson.M{
+			"id": t.ID,
+		},
+		bson.M{
+			"deleted": true,
+		},
+	)
 
 	err = db.CacheDel("members:" + t.ID)
 	if err != nil {
@@ -220,12 +229,13 @@ func (t *Team) Delete() (err error) {
 		return
 	}
 
+	oldID = t.ID
 	t = &Team{}
 
 	return
 }
 
-func (t *Team) ChangeName(name string) (serr errmsg.StatusError) {
+func (t *Team) ChangeName(name string) (oldName string, serr errmsg.StatusError) {
 	err := db.Teams.FindOneAndUpdate(db.Ctx, bson.M{
 		"id": t.ID,
 	}, bson.M{
@@ -235,28 +245,30 @@ func (t *Team) ChangeName(name string) (serr errmsg.StatusError) {
 	}).Decode(t)
 
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return "", errmsg.InternalServerError(err)
 	}
 
 	if t.Name == "" {
-		return errmsg.TeamNotFound
+		return "", errmsg.TeamNotFound
 	}
+
+	oldName = t.Name
 
 	t.Name = name
 
 	tBytes, err := json.Marshal(t)
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return "", errmsg.InternalServerError(err)
 	}
 	err = db.CacheSetBytes("team:"+t.ID, tBytes)
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return "", errmsg.InternalServerError(err)
 	}
 
 	return
 }
 
-func (t *Team) ChangeSubmissionName(name string) (serr errmsg.StatusError) {
+func (t *Team) ChangeSubmissionName(name string) (oldName string, serr errmsg.StatusError) {
 	err := db.Teams.FindOneAndUpdate(db.Ctx, bson.M{
 		"id": t.ID,
 	}, bson.M{
@@ -266,24 +278,25 @@ func (t *Team) ChangeSubmissionName(name string) (serr errmsg.StatusError) {
 	}).Decode(t)
 
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return oldName, errmsg.InternalServerError(err)
 	}
 
+	oldName = t.Submission.Name
 	t.Submission.Name = name
 
 	tBytes, err := json.Marshal(t)
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return oldName, errmsg.InternalServerError(err)
 	}
 	err = db.CacheSetBytes("team:"+t.ID, tBytes)
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return oldName, errmsg.InternalServerError(err)
 	}
 
 	return
 }
 
-func (t *Team) ChangeSubmissionDesc(desc string) (serr errmsg.StatusError) {
+func (t *Team) ChangeSubmissionDesc(desc string) (oldDesc string, serr errmsg.StatusError) {
 	err := db.Teams.FindOneAndUpdate(db.Ctx, bson.M{
 		"id": t.ID,
 	}, bson.M{
@@ -293,45 +306,74 @@ func (t *Team) ChangeSubmissionDesc(desc string) (serr errmsg.StatusError) {
 	}).Decode(t)
 
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return oldDesc, errmsg.InternalServerError(err)
 	}
 
+	oldDesc = t.Submission.Desc
 	t.Submission.Desc = desc
 
 	tBytes, err := json.Marshal(t)
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return oldDesc, errmsg.InternalServerError(err)
 	}
 	err = db.CacheSetBytes("team:"+t.ID, tBytes)
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return oldDesc, errmsg.InternalServerError(err)
 	}
 
 	return
 }
 
-func (t *Team) ChangeSubmissionLink(link string) (serr errmsg.StatusError) {
+func (t *Team) ChangeSubmissionRepo(repo string) (oldRepo string, serr errmsg.StatusError) {
 	err := db.Teams.FindOneAndUpdate(db.Ctx, bson.M{
 		"id": t.ID,
 	}, bson.M{
 		"$set": bson.M{
-			"submission.link": link,
+			"submission.repo": repo,
 		},
 	}).Decode(t)
 
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return oldRepo, errmsg.InternalServerError(err)
 	}
 
-	t.Submission.Link = link
+	oldRepo = t.Submission.Repo
+	t.Submission.Repo = repo
 
 	tBytes, err := json.Marshal(t)
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return oldRepo, errmsg.InternalServerError(err)
 	}
 	err = db.CacheSetBytes("team:"+t.ID, tBytes)
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return oldRepo, errmsg.InternalServerError(err)
+	}
+
+	return
+}
+func (t *Team) ChangeSubmissionPres(pres string) (oldPres string, serr errmsg.StatusError) {
+	err := db.Teams.FindOneAndUpdate(db.Ctx, bson.M{
+		"id": t.ID,
+	}, bson.M{
+		"$set": bson.M{
+			"submission.pres": pres,
+		},
+	}).Decode(t)
+
+	if err != nil {
+		return oldPres, errmsg.InternalServerError(err)
+	}
+
+	oldPres = t.Submission.Pres
+	t.Submission.Pres = pres
+
+	tBytes, err := json.Marshal(t)
+	if err != nil {
+		return oldPres, errmsg.InternalServerError(err)
+	}
+	err = db.CacheSetBytes("team:"+t.ID, tBytes)
+	if err != nil {
+		return oldPres, errmsg.InternalServerError(err)
 	}
 
 	return

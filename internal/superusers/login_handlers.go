@@ -2,6 +2,7 @@ package superusers
 
 import (
 	"backend/internal/errmsg"
+	"backend/internal/events"
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
@@ -31,6 +32,10 @@ func loginHandler(c fiber.Ctx) error {
 	}
 
 	token := su.GenToken()
+
+	events.Em.SuperUserLogin(
+		su.Username,
+	)
 
 	return c.JSON(bson.M{
 		"token":     token,

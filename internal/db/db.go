@@ -19,6 +19,7 @@ var Teams *mongo.Collection
 var Flags *mongo.Collection
 var SuperUsers *mongo.Collection
 var FlagStages *mongo.Collection
+var Events *mongo.Collection
 
 func InitDB(deployment string) error {
 	var err error
@@ -43,6 +44,7 @@ func InitDB(deployment string) error {
 	Flags = GetCollection(deployment, "flags", Client)
 	SuperUsers = GetCollection(deployment, "superusers", Client)
 	FlagStages = GetCollection(deployment, "flagstages", Client)
+	Events = GetCollection(deployment, "events", Client)
 
 	return nil
 }

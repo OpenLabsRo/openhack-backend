@@ -1,4 +1,4 @@
-package events_emitter
+package events
 
 import (
 	"backend/internal/models"
@@ -8,6 +8,8 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+var Em *Emitter
 
 type Config struct {
 	Buffer     int // channel capacity
@@ -19,8 +21,8 @@ type Emitter struct {
 	col *mongo.Collection
 
 	// hooks for testing
-	insertMany func(context.Context, []interface{}) error
-	insertOne  func(context.Context, interface{}) error
+	insertMany func(context.Context, []any) error
+	insertOne  func(context.Context, any) error
 
 	buf        chan models.Event
 	batchSize  int

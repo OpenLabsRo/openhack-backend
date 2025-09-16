@@ -169,17 +169,17 @@ func API_TeamsSubmissionsChangeDesc(
 	)
 }
 
-func API_TeamsSubmissionsChangeLink(
+func API_TeamsSubmissionsChangeRepo(
 	t *testing.T,
 	app *fiber.App,
-	link string,
+	repo string,
 	token string,
 ) (bodyBytes []byte, statusCode int) {
 	// building the payload
 	payload := struct {
-		Link string `json:"link"`
+		Repo string `json:"repo"`
 	}{
-		Link: link,
+		Repo: repo,
 	}
 
 	// marshalling the payload into JSON
@@ -188,7 +188,31 @@ func API_TeamsSubmissionsChangeLink(
 
 	return RequestRunner(t, app,
 		"PATCH",
-		"/teams/submissions/link",
+		"/teams/submissions/repo",
+		sendBytes,
+		&token,
+	)
+}
+func API_TeamsSubmissionsChangePres(
+	t *testing.T,
+	app *fiber.App,
+	pres string,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	// building the payload
+	payload := struct {
+		Pres string `json:"pres"`
+	}{
+		Pres: pres,
+	}
+
+	// marshalling the payload into JSON
+	sendBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	return RequestRunner(t, app,
+		"PATCH",
+		"/teams/submissions/pres",
 		sendBytes,
 		&token,
 	)

@@ -1,4 +1,4 @@
-package events_emitter
+package events
 
 import (
 	"backend/internal/models"
@@ -124,7 +124,7 @@ func TestFallbackInsertOneWhenBufferFull(t *testing.T) {
 	em.buf <- sampleEvt(1)
 	// force fallback path
 	evt := sampleEvt(2)
-	em.Emit(&evt)
+	em.Emit(evt)
 
 	time.Sleep(50 * time.Millisecond)
 
