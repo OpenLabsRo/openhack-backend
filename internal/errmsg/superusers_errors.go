@@ -15,12 +15,16 @@ var (
 		http.StatusUnauthorized,
 		"no token has been provided",
 	)
-	BadgeIncomplete = NewStatusError(
+	TagIncomplete = NewStatusError(
 		http.StatusConflict,
-		"badge data is incomplete",
+		"tag data is incomplete",
 	)
-	BadgeNotFound = NewStatusError(
+	TagNotFound = NewStatusError(
 		http.StatusNotFound,
-		"badge not found",
+		"tag not found",
+	)
+	PileNotFound = NewStatusError(
+		http.StatusNotFound,
+		"badge pile not found",
 	)
 )

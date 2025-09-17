@@ -107,18 +107,29 @@ func Routes(app *fiber.App) {
 		flagStagesExecuteHandler,
 	)
 
-	// badges
-	superusers.Get("/badges",
+	// checkin
+	superusers.Get("/checkin/badges",
 		models.SuperUserMiddlewareBuilder([]string{
-			"staff",
+			"admin",
 		}),
-		badgeGetHandler,
+		badgePilesGetHandler,
 	)
-	superusers.Post("/badges",
+	superusers.Get("/checkin/tags",
 		models.SuperUserMiddlewareBuilder([]string{
-			"staff",
+			"staff", // as it should be a route available to all staff
 		}),
-		badgeAssignHandler,
+		tagsGetHandler,
 	)
-
+	superusers.Post("/checkin/tags",
+		models.SuperUserMiddlewareBuilder([]string{
+			"staff.checkin", // as it should only be available for people at checking (and admin)
+		}),
+		tagsAssignHandler,
+	)
+	superusers.Post("/checkin/scan",
+		models.SuperUserMiddlewareBuilder([]string{
+			"staff.checkin",
+		}),
+		checkinScanParticipantHandler,
+	)
 }

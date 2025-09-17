@@ -386,3 +386,7 @@ func TestSuperUsersFlagStagesCleanup(t *testing.T) {
 	)
 	require.Equal(t, http.StatusOK, statusCode)
 }
+
+func TestSuperUsersStaffCheckinSetup(t *testing.T) {
+
+}
