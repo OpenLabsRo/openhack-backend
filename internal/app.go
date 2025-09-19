@@ -13,6 +13,29 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+func getEmitterConfig(deployment string) events.Config {
+	switch deployment {
+	case "test":
+		return events.Config{
+			Buffer:     1000,
+			BatchSize:  50,
+			FlushEvery: 100 * time.Millisecond,
+		}
+	case "dev":
+		return events.Config{
+			Buffer:     1000,
+			BatchSize:  50,
+			FlushEvery: 1 * time.Second,
+		}
+	default:
+		return events.Config{
+			Buffer:     1000,
+			BatchSize:  50,
+			FlushEvery: 2 * time.Second,
+		}
+	}
+}
+
 func SetupApp(deployment string) *fiber.App {
 	app := fiber.New()
 
@@ -30,11 +53,8 @@ func SetupApp(deployment string) *fiber.App {
 
 	events.Em = events.NewEmitter(
 		db.Events,
-		events.Config{
-			Buffer:     1000,
-			BatchSize:  50,
-			FlushEvery: 2 * time.Second,
-		},
+		getEmitterConfig(deployment),
+		deployment,
 	)
 
 	app.Get("/ping", func(c fiber.Ctx) error {

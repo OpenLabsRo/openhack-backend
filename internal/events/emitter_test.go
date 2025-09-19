@@ -25,6 +25,19 @@ func sampleEvt(i int) models.Event {
 	}
 }
 
+func newEmitterNoWorker(deployment string) *Emitter {
+	em := &Emitter{
+		buf:        make(chan models.Event, 1),
+		cfg: Config{
+			BatchSize:  100,
+			FlushEvery: time.Hour,
+		},
+		deployment: deployment,
+	}
+
+	return em
+}
+
 func TestFlushOnBatchSize(t *testing.T) {
 	em := NewEmitter(
 		nil,
@@ -33,22 +46,23 @@ func TestFlushOnBatchSize(t *testing.T) {
 			BatchSize:  3,
 			FlushEvery: time.Hour,
 		},
+		"test",
 	)
 	defer em.Close()
 
 	var mu sync.Mutex
-	var many [][]any
+	var many [][]models.Event
 
-	em.insertMany = func(_ context.Context, docs []any) error {
+	em.InsertMany = func(_ context.Context, docs []models.Event) error {
 		mu.Lock()
 		defer mu.Unlock()
 
-		cp := append([]any{}, docs...)
+		cp := append([]models.Event{}, docs...)
 		many = append(many, cp)
 
 		return nil
 	}
-	em.insertOne = func(_ context.Context, doc any) error {
+	em.InsertOne = func(_ context.Context, doc models.Event) error {
 		return nil
 	}
 
@@ -74,21 +88,22 @@ func TestFlushOnTimer(t *testing.T) {
 			BatchSize:  100,
 			FlushEvery: 50 * time.Millisecond,
 		},
+		"test",
 	)
 	defer em.Close()
 
 	var mu sync.Mutex
-	var many [][]any
-	em.insertMany = func(_ context.Context, docs []any) error {
+	var many [][]models.Event
+	em.InsertMany = func(_ context.Context, docs []models.Event) error {
 		mu.Lock()
 		defer mu.Unlock()
 
-		cp := append([]any{}, docs...)
+		cp := append([]models.Event{}, docs...)
 		many = append(many, cp)
 
 		return nil
 	}
-	em.insertOne = func(_ context.Context, doc any) error {
+	em.InsertOne = func(_ context.Context, doc models.Event) error {
 		return nil
 	}
 
@@ -105,15 +120,15 @@ func TestFlushOnTimer(t *testing.T) {
 }
 
 func TestFallbackInsertOneWhenBufferFull(t *testing.T) {
-	em := newEmitterNoWorker()
+	em := newEmitterNoWorker("test")
 	defer em.Close()
 
 	var mu sync.Mutex
-	var ones []any
-	em.insertMany = func(_ context.Context, docs []any) error {
+	var ones []models.Event
+	em.InsertMany = func(_ context.Context, docs []models.Event) error {
 		return nil
 	}
-	em.insertOne = func(_ context.Context, doc any) error {
+	em.InsertOne = func(_ context.Context, doc models.Event) error {
 		mu.Lock()
 		defer mu.Unlock()
 		ones = append(ones, doc)
@@ -143,18 +158,19 @@ func TestCloseFlushesRemaining(t *testing.T) {
 			BatchSize:  10,
 			FlushEvery: time.Hour,
 		},
+		"test",
 	)
 
 	var mu sync.Mutex
-	var many [][]any
-	em.insertMany = func(_ context.Context, docs []any) error {
+	var many [][]models.Event
+	em.InsertMany = func(_ context.Context, docs []models.Event) error {
 		mu.Lock()
 		defer mu.Unlock()
-		cp := append([]any{}, docs...)
+		cp := append([]models.Event{}, docs...)
 		many = append(many, cp)
 		return nil
 	}
-	em.insertOne = func(_ context.Context, doc any) error { return nil }
+	em.InsertOne = func(_ context.Context, doc models.Event) error { return nil }
 
 	// enqueue fewer than batch size so only Close() flushes them
 	for i := range 4 {

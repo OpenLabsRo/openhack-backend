@@ -73,7 +73,7 @@ func (e *Emitter) SubmissionChangePres(
 	oldRepo, newRepo string,
 ) {
 	evt := models.Event{
-		Action: "submission.repo.change",
+		Action: "submission.pres.change",
 
 		ActorRole: TargetParticipant,
 		ActorID:   accountID,

@@ -2,10 +2,12 @@ package test
 
 import (
 	"backend/internal"
+	"backend/internal/db"
 	"backend/internal/env"
 	"backend/internal/errmsg"
 	"backend/internal/models"
 	"backend/test/helpers"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,6 +17,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var usersToCreate = 5
@@ -305,6 +308,22 @@ func TestTeamsJoin(t *testing.T) {
 	}
 }
 
+func TestTeamsGetMembers(t *testing.T) {
+	bodyBytes, statusCode := helpers.API_TeamsGetMembers(
+		t,
+		app,
+		testAccountTokens[0],
+	)
+
+	require.Equal(t, http.StatusOK, statusCode)
+
+	var body []models.Account
+	err := json.Unmarshal(bodyBytes, &body)
+	require.NoError(t, err)
+
+	require.Len(t, body, 4)
+}
+
 func TestTeamsJoinTeamFull(t *testing.T) {
 	bodyBytes, statusCode := helpers.API_TeamsJoin(
 		t,
@@ -422,6 +441,9 @@ func TestTeamsDelete(t *testing.T) {
 }
 
 func TestTeamsCleanup(t *testing.T) {
+	// delete the team
+	db.Teams.DeleteOne(context.Background(), bson.M{"id": testTeamID})
+
 	for i := range usersToCreate {
 		err := testAccounts[i].Delete()
 		if err != nil {

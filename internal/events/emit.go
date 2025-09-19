@@ -2,6 +2,7 @@ package events
 
 import (
 	"backend/internal/models"
+	"backend/test/common"
 	"context"
 	"time"
 )
@@ -19,6 +20,10 @@ var (
 )
 
 func (e *Emitter) Emit(evt models.Event) {
+	if e.deployment == "test" {
+		common.IncrementEventCounter()
+	}
+
 	loc, err := time.LoadLocation("Europe/Bucharest")
 	if err != nil {
 		panic(err)
@@ -32,11 +37,15 @@ func (e *Emitter) Emit(evt models.Event) {
 			2*time.Second,
 		)
 		defer cancel()
-		_ = e.insertOne(ctx, evt)
+		_ = e.InsertOne(ctx, evt)
 	}
 }
 
 func (e *Emitter) EmitWindowed(evt models.Event) {
+	if e.deployment == "test" {
+		common.IncrementEventCounter()
+	}
+
 	loc, err := time.LoadLocation("Europe/Bucharest")
 	if err != nil {
 		panic(err)
@@ -54,6 +63,8 @@ func (e *Emitter) EmitWindowed(evt models.Event) {
 			2*time.Second,
 		)
 		defer cancel()
-		_ = e.insertOne(ctx, evt)
+		_ = e.InsertOne(ctx, evt)
 	}
 }
+
+

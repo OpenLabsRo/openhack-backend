@@ -36,6 +36,20 @@ func API_TeamsCreate(
 	)
 }
 
+func API_TeamsGetMembers(
+	t *testing.T,
+	app *fiber.App,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+
+	return RequestRunner(t, app,
+		"GET",
+		"/teams/members",
+		[]byte{},
+		&token,
+	)
+}
+
 func API_TeamsChange(
 	t *testing.T,
 	app *fiber.App,

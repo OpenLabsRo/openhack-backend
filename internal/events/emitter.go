@@ -18,61 +18,45 @@ type Config struct {
 }
 
 type Emitter struct {
-	col *mongo.Collection
-
-	// hooks for testing
-	insertMany func(context.Context, []any) error
-	insertOne  func(context.Context, any) error
-
+	coll       *mongo.Collection
 	buf        chan models.Event
-	batchSize  int
-	flushEvery time.Duration
+	cfg        Config
+	deployment string
 
 	wg        sync.WaitGroup
 	onceClose sync.Once
+
+	InsertOne  func(context.Context, models.Event) error
+	InsertMany func(context.Context, []models.Event) error
 }
 
-func NewEmitter(col *mongo.Collection, cfg Config) *Emitter {
-	if cfg.Buffer < 10 {
-		cfg.Buffer = 10
-	}
-	if cfg.BatchSize < 1 {
-		cfg.BatchSize = 1
-	}
-	if cfg.FlushEvery <= 0 {
-		cfg.FlushEvery = 2 * time.Second
-	}
-
+func NewEmitter(coll *mongo.Collection, cfg Config, deployment string) *Emitter {
 	e := &Emitter{
-		col:        col,
+		coll:       coll,
 		buf:        make(chan models.Event, cfg.Buffer),
-		batchSize:  cfg.BatchSize,
-		flushEvery: cfg.FlushEvery,
+		cfg:        cfg,
+		deployment: deployment,
 	}
 
-	e.insertMany = func(ctx context.Context, docs []interface{}) error {
-		_, err := col.InsertMany(ctx, docs)
+	e.InsertOne = func(ctx context.Context, evt models.Event) error {
+		_, err := e.coll.InsertOne(ctx, evt)
 		return err
 	}
 
-	e.insertOne = func(ctx context.Context, doc interface{}) error {
-		_, err := col.InsertOne(ctx, doc)
+	e.InsertMany = func(ctx context.Context, evts []models.Event) error {
+		docs := make([]interface{}, len(evts))
+		for i, evt := range evts {
+			docs[i] = evt
+		}
+
+		_, err := e.coll.InsertMany(ctx, docs)
 		return err
 	}
 
 	e.wg.Add(1)
 	go e.worker()
+
 	return e
-}
-
-func newEmitterNoWorker() *Emitter {
-	em := &Emitter{
-		buf:        make(chan models.Event, 1),
-		batchSize:  100,
-		flushEvery: time.Hour,
-	}
-
-	return em
 }
 
 func (e *Emitter) Close() {
@@ -85,55 +69,42 @@ func (e *Emitter) Close() {
 func (e *Emitter) worker() {
 	defer e.wg.Done()
 
-	batch := make([]interface{}, 0, e.batchSize)
-	timer := time.NewTimer(e.flushEvery)
+	batch := make([]models.Event, 0, e.cfg.BatchSize)
+	timer := time.NewTimer(e.cfg.FlushEvery)
 
 	defer timer.Stop()
 
 	flush := func() {
-		// if there's nothing in the back
 		if len(batch) == 0 {
-			timer.Reset(e.flushEvery) // just reset the timer
-			return                    // and return
+			timer.Reset(e.cfg.FlushEvery)
+			return
 		}
 
-		// creating a background context
 		ctx, cancel := context.WithTimeout(
 			context.Background(),
-			2*time.Second, // with a max 2 second timeout
+			2*time.Second,
 		)
 
-		// push to the db
-		_ = e.insertMany(ctx, batch)
+		_ = e.InsertMany(ctx, batch)
 
-		// cancel the timer
-		// after succeeding
 		cancel()
 
-		batch = batch[:0]         // resetting the batch
-		timer.Reset(e.flushEvery) // reset the timer
+		batch = batch[:0]
+		timer.Reset(e.cfg.FlushEvery)
 	}
 
 	for {
-		select { // apparently,
-		// select will do one of the actions on a channel action
-		case evt, ok := <-e.buf: // pushing to the channel
-			// if it's not ok
-			// meaning we have exited the Emitter
-			// and the server in effect
-			// we flush
+		select {
+		case evt, ok := <-e.buf:
 			if !ok {
 				flush()
 				return
 			}
 
-			// if it is ok,
-			// we append to the batch
 			batch = append(batch, evt)
 
-			// but if the batch is full
-			if len(batch) >= e.batchSize {
-				flush() // we flush
+			if len(batch) >= e.cfg.BatchSize {
+				flush()
 			}
 		case <-timer.C:
 			flush()

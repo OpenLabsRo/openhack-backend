@@ -9,6 +9,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func API_SuperUsersStaffCheckinBadgesGet(
+	t *testing.T,
+	app *fiber.App,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	return RequestRunner(t, app,
+		"GET",
+		"/superusers/checkin/badges",
+		[]byte{},
+		&token,
+	)
+}
+
 func API_SuperUsersStaffCheckinTagsGet(
 	t *testing.T,
 	app *fiber.App,
@@ -53,7 +66,7 @@ func API_SuperUsersStaffCheckinScan(
 	token string,
 ) (bodyBytes []byte, statusCode int) {
 	return RequestRunner(t, app,
-		"GET",
+		"POST",
 		"/superusers/checkin/scan?id="+accountID,
 		[]byte{},
 		&token,
