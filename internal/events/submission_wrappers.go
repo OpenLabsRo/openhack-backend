@@ -23,6 +23,7 @@ func (e *Emitter) SubmissionChangeName(
 
 	e.EmitWindowed(evt)
 }
+
 func (e *Emitter) SubmissionChangeDesc(
 	accountID, teamID string,
 	oldDesc, newDesc string,
