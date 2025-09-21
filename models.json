@@ -1,0 +1,50 @@
+{
+  "Account": {
+    "id": "string",
+    "email": "string",
+    "password": "string",
+    "name": "string",
+    "teamID": "string"
+  },
+  "Event": {
+    "timestamp": "time.Time",
+    "action": "string",
+    "actorID": "string",
+    "actorRole": "string",
+    "targetID": "string",
+    "targetType": "string",
+    "props": "map[string]any",
+    "key": "string"
+  },
+  "Flags": {
+    "flags": "map[string]bool",
+    "stage": "FlagStage"
+  },
+  "FlagStage": {
+    "id": "string",
+    "name": "string",
+    "turnoff": "[]string",
+    "turnon": "[]string"
+  },
+  "SuperUser": {
+    "username": "string",
+    "password": "string",
+    "permissions": "[]string"
+  },
+  "Tag": {
+    "id": "string",
+    "accountID": "string"
+  },
+  "Team": {
+    "id": "string",
+    "name": "string",
+    "members": "[]string",
+    "submission": {
+      "name": "string",
+      "desc": "string",
+      "repo": "string",
+      "pres": "string"
+    },
+    "deleted": "bool"
+  }
+}

@@ -110,3 +110,16 @@ func API_AccountsEdit(
 		&token,
 	)
 }
+
+func API_AccountsGetFlags(
+	t *testing.T,
+	app *fiber.App,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	return RequestRunner(t, app,
+		"GET",
+		"/accounts/flags",
+		nil,
+		&token,
+	)
+}

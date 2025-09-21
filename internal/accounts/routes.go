@@ -28,4 +28,7 @@ func Routes(app *fiber.App) {
 
 	// edit
 	accounts.Patch("/", models.AccountMiddleware, AccountEditHandler)
+
+	// flags
+	accounts.Get("/flags", models.AccountMiddleware, GetFlagsHandler)
 }

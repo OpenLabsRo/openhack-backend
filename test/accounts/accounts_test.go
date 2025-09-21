@@ -285,6 +285,20 @@ func TestAccountsEditNoToken(t *testing.T) {
 	)
 }
 
+func TestAccountsGetFlags(t *testing.T) {
+	bodyBytes, statusCode := helpers.API_AccountsGetFlags(
+		t,
+		app,
+		testAccountToken,
+	)
+
+	require.Equal(t, http.StatusOK, statusCode)
+
+	var body models.Flags
+	err := json.Unmarshal(bodyBytes, &body)
+	require.NoError(t, err)
+}
+
 func TestAccountsCleanup(t *testing.T) {
 	err := testAccount.Delete()
 	if err != nil {
