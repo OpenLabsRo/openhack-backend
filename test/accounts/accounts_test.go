@@ -5,6 +5,7 @@ import (
 	"backend/internal/env"
 	"backend/internal/errmsg"
 	"backend/internal/models"
+	"flag"
 
 	"backend/test/helpers"
 
@@ -28,7 +29,12 @@ var (
 )
 
 func TestAccountsPing(t *testing.T) {
-	app = internal.SetupApp("test")
+	envRoot := flag.String("env-root", "", "directory containing environment files")
+	appVersion := flag.String("app-version", "", "application version override")
+
+	flag.Parse()
+
+	app = internal.SetupApp("test", *envRoot, *appVersion)
 
 	req, _ := http.NewRequest("GET", "/accounts/ping", nil)
 	resp, err := app.Test(req)

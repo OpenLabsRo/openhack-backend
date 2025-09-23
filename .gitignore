@@ -4,4 +4,4 @@ bin
 .env
 backend
 todo.txt
-*/env
+.air.toml

@@ -107,6 +107,11 @@ func TeamDeleteHandler(c fiber.Ctx) error {
 
 	team := models.Team{ID: account.TeamID}
 	err := team.Get()
+	if err != nil {
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
+	}
 
 	if len(team.Members) > 1 {
 		return utils.StatusError(

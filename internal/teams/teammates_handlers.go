@@ -73,6 +73,14 @@ func TeamJoinHandler(c fiber.Ctx) error {
 		)
 	}
 
+	// getting all of the teammembers
+	members, err := team.GetMembers()
+	if err != nil {
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
+	}
+
 	token := account.GenToken()
 
 	events.Em.TeamMemberJoin(
@@ -83,6 +91,7 @@ func TeamJoinHandler(c fiber.Ctx) error {
 	return c.JSON(bson.M{
 		"token":   token,
 		"account": account,
+		"members": members,
 	})
 }
 
@@ -118,6 +127,14 @@ func TeamLeaveHandler(c fiber.Ctx) error {
 		)
 	}
 
+	// getting all of the teammembers
+	members, err := team.GetMembers()
+	if err != nil {
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
+	}
+
 	token := account.GenToken()
 
 	events.Em.TeamMemberLeave(
@@ -132,6 +149,7 @@ func TeamLeaveHandler(c fiber.Ctx) error {
 	return c.JSON(bson.M{
 		"token":   token,
 		"account": account,
+		"members": members,
 	})
 }
 
@@ -179,10 +197,20 @@ func TeamKickHandler(c fiber.Ctx) error {
 		)
 	}
 
+	// getting all of the teammembers
+	members, err := team.GetMembers()
+	if err != nil {
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
+	}
+
 	events.Em.AccountTeamExit(
 		accountToRemove.ID,
 		team.ID,
 	)
 
-	return c.Status(200).SendString("OK")
+	return c.JSON(bson.M{
+		"members": members,
+	})
 }

@@ -3,40 +3,53 @@ package main
 import (
 	"backend/internal"
 	"backend/internal/env"
-	"backend/internal/models"
+	"flag"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gofiber/fiber/v3"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: server <deployment-type>")
-		os.Exit(1)
+	// these are required flags
+	// for whichever deployment profile is being used
+	deploymentFlag := flag.String("deployment", "", "deployment profile (dev|test|prod)")
+	portFlag := flag.String("port", "", "port to listen on")
+
+	envRoot := flag.String("env-root", "", "directory containing environment files")
+	appVersion := flag.String("app-version", "", "application version override")
+
+	// parsing the flags
+	flag.Parse()
+
+	// the deployment flag first
+	deployment := strings.TrimSpace(*deploymentFlag)
+	if deployment == "" {
+		args := flag.Args()
+		if len(args) == 0 {
+			fmt.Println("Usage: server --deployment <type> --port <port> [--env-root <dir>] [--app-version <version>]")
+			os.Exit(1)
+		}
+		deployment = strings.TrimSpace(args[0])
 	}
-	deployment := os.Args[1]
 
-	port := ""
-	switch deployment {
-	case "test":
-		port = "9000"
-	case "dev":
-		port = "9001"
-	case "prod":
-		port = "9002"
-	default:
-		log.Fatalf("Invalid deployment type: %s", deployment)
+	if deployment == "" {
+		log.Fatal("deployment is required")
 	}
 
-	app := internal.SetupApp(deployment)
+	port := strings.TrimSpace(*portFlag)
+	if port == "" {
+		log.Fatal("port is required")
+	}
 
-	app.Get("/testflags", models.FlagsMiddlewareBuilder([]string{"test"}))
+	app := internal.SetupApp(deployment, *envRoot, *appVersion)
 
-	if app.Listen(fmt.Sprintf(":%s", port), fiber.ListenConfig{
+	fmt.Println("APP VERSION:", env.VERSION)
+	if err := app.Listen(fmt.Sprintf(":%s", port), fiber.ListenConfig{
 		EnablePrefork: env.PREFORK,
-	}) != nil {
-		log.Fatalf("Error listening on port %s", port)
+	}); err != nil {
+		log.Fatalf("Error listening on port %s: %v", port, err)
 	}
 }

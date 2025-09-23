@@ -9,6 +9,7 @@ import (
 	"backend/test/helpers"
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -36,7 +37,11 @@ var (
 )
 
 func TestTeamsPing(t *testing.T) {
-	app = internal.SetupApp("test")
+	envRoot := flag.String("env-root", "", "directory containing environment files")
+	appVersion := flag.String("app-version", "", "application version override")
+
+	flag.Parse()
+	app = internal.SetupApp("test", *envRoot, *appVersion)
 
 	req, _ := http.NewRequest("GET", "/accounts/ping", nil)
 	resp, err := app.Test(req)

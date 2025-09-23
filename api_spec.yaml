@@ -32,7 +32,7 @@ paths:
       summary: Current deployment version
       responses:
         '200':
-          description: Semantic version string loaded from .VERSION.
+          description: Semantic version string supplied by deployment metadata.
           content:
             text/plain:
               schema:
@@ -581,11 +581,11 @@ paths:
       - $ref: '#/components/parameters/TeamIdQuery'
       responses:
         '200':
-          description: Account added to the team; refreshed token returned.
+          description: Account added to the team; refreshed token and member roster returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AccountTokenResponse'
+                $ref: '#/components/schemas/AccountMembersResponse'
         '401':
           description: Unauthorized
           content:
@@ -643,11 +643,11 @@ paths:
       - AccountAuth: []
       responses:
         '200':
-          description: Account removed from the team; refreshed token returned.
+          description: Account removed from the team; refreshed token and remaining member roster returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AccountTokenResponse'
+                $ref: '#/components/schemas/AccountMembersResponse'
         '401':
           description: Unauthorized
           content:
@@ -703,12 +703,11 @@ paths:
       - $ref: '#/components/parameters/AccountIdQuery'
       responses:
         '200':
-          description: Member removed.
+          description: Member removed; returns the updated member roster.
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: OK
+                $ref: '#/components/schemas/TeamMembersResponse'
         '401':
           description: Unauthorized
           content:
@@ -1788,6 +1787,21 @@ components:
       required:
       - token
       - account
+    AccountMembersResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        account:
+          $ref: '#/components/schemas/Account'
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'
+      required:
+      - token
+      - account
+      - members
     AccountEditRequest:
       type: object
       properties:
@@ -1881,6 +1895,15 @@ components:
       - members
       - submission
       - deleted
+    TeamMembersResponse:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'
+      required:
+      - members
     TeamSubmission:
       type: object
       properties:

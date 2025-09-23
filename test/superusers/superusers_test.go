@@ -1,7 +1,6 @@
 package superusers
 
 import (
-	"backend/internal"
 	"backend/internal/env"
 	"backend/internal/errmsg"
 	"backend/internal/models"
@@ -13,13 +12,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	app                *fiber.App
 	testSuperUser      models.SuperUser
 	testSuperUserToken string
 
@@ -27,11 +24,6 @@ var (
 
 	testFlagStageID string
 )
-
-func TestSupersUsersSetup(t *testing.T) {
-	app = internal.SetupApp("test")
-	fmt.Println("SuperUsers Setup Complete!")
-}
 
 func TestSuperUsersPing(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/superusers/ping", nil)
@@ -249,14 +241,14 @@ func TestSuperUsersFlagsMiddleware(t *testing.T) {
 }
 
 func TestSuperUsersFlagsUnset(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_SuperUsersFlagsUnset(
+	_, _ = helpers.API_SuperUsersFlagsUnset(
 		t,
 		app,
 		"testingbulk1",
 		testSuperUserToken,
 	)
 
-	bodyBytes, statusCode = helpers.API_SuperUsersFlagsUnset(
+	bodyBytes, statusCode := helpers.API_SuperUsersFlagsUnset(
 		t,
 		app,
 		"testingbulk2",

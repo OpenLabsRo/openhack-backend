@@ -36,10 +36,10 @@ func getEmitterConfig(deployment string) events.Config {
 	}
 }
 
-func SetupApp(deployment string) *fiber.App {
+func SetupApp(deployment string, envRoot string, appVersion string) *fiber.App {
 	app := fiber.New()
 
-	env.Init(deployment)
+	env.Init(envRoot, appVersion)
 
 	if err := db.InitDB(deployment); err != nil {
 		log.Fatal("Could not connect to MongoDB")

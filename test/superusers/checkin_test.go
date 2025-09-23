@@ -1,7 +1,6 @@
 package superusers
 
 import (
-	"backend/internal"
 	"backend/internal/db"
 	"backend/internal/env"
 	"backend/internal/models"
@@ -11,152 +10,187 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
+	"sync"
 	"testing"
 
-	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var (
-	checkinApp               *fiber.App
-	checkinTestSuperUserToken string
-	checkinTestStaffUser      models.SuperUser
-	checkinTestStaffUserToken string
-	checkinTestAccounts       []models.Account
-	numCheckinTestAccounts    = 60
+	checkinSetupOnce      sync.Once
+	checkinCleanupOnce    sync.Once
+	checkinSetupErr       error
+	checkinSuperUserToken string
+	checkinStaffUser      models.SuperUser
+	checkinStaffToken     string
+	checkinAccounts       []models.Account
+	checkinAccountCount   = 60
 )
 
-func TestMain(m *testing.M) {
-	// Setup
-	checkinApp = internal.SetupApp("test")
+func ensureCheckinFixtures(t *testing.T) {
+	t.Helper()
 
-	// login superuser
-	bodyBytes, _ := helpers.API_SuperUsersLogin(
-		&testing.T{},
-		checkinApp,
-		env.SUPERUSER_USERNAME,
-		env.SUPERUSER_PASSWORD,
-	)
+	checkinSetupOnce.Do(func() {
+		if err := bootstrapCheckinFixtures(t); err != nil {
+			checkinSetupErr = err
+			return
+		}
+	})
 
-	var body struct {
-		Token string `json:"token"`
+	if checkinSetupErr != nil {
+		t.Fatalf("check-in fixture setup failed: %v", checkinSetupErr)
 	}
 
-	json.Unmarshal(bodyBytes, &body)
-	checkinTestSuperUserToken = body.Token
+	t.Cleanup(func() {
+		checkinCleanupOnce.Do(func() {
+			teardownCheckinFixtures()
+		})
+	})
+}
 
-	// create staff user
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("staffpassword"), 12)
+func bootstrapCheckinFixtures(t *testing.T) error {
+	// Authenticate as the default superuser.
+	bodyBytes, status := helpers.API_SuperUsersLogin(t, app, env.SUPERUSER_USERNAME, env.SUPERUSER_PASSWORD)
+	if status != http.StatusOK {
+		return fmt.Errorf("superuser login failed: status %d", status)
+	}
+
+	var loginResp struct {
+		Token string `json:"token"`
+	}
+	if err := json.Unmarshal(bodyBytes, &loginResp); err != nil {
+		return fmt.Errorf("decode superuser login: %w", err)
+	}
+	checkinSuperUserToken = loginResp.Token
+
+	// Create a staff user that can perform check-ins.
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("staffpassword"), 12)
+	if err != nil {
+		return fmt.Errorf("hash staff password: %w", err)
+	}
+
 	staffUser := models.SuperUser{
 		Username:    "staffuser",
 		Password:    string(hashedPassword),
 		Permissions: []string{"staff.checkin"},
 	}
-	db.SuperUsers.InsertOne(context.Background(), staffUser)
-	checkinTestStaffUser = staffUser
 
-	bodyBytes, _ = helpers.API_SuperUsersLogin(
-		&testing.T{},
-		checkinApp,
-		staffUser.Username,
-		"staffpassword",
-	)
+	if _, err := db.SuperUsers.InsertOne(context.Background(), staffUser); err != nil {
+		return fmt.Errorf("insert staff user: %w", err)
+	}
+	checkinStaffUser = staffUser
 
-	json.Unmarshal(bodyBytes, &body)
-	checkinTestStaffUserToken = body.Token
+	// Obtain staff token.
+	bodyBytes, status = helpers.API_SuperUsersLogin(t, app, staffUser.Username, "staffpassword")
+	if status != http.StatusOK {
+		return fmt.Errorf("staff login failed: status %d", status)
+	}
 
-	// create accounts
-	for i := 0; i < numCheckinTestAccounts; i++ {
-		bodyBytes, _ = helpers.API_SuperUsersAccountsInitialize(
-			&testing.T{},
-			checkinApp,
-			fmt.Sprintf("checkin_test_%v@test.com", i),
-			fmt.Sprintf("Checkin Test %v", i),
-			checkinTestSuperUserToken,
-		)
+	if err := json.Unmarshal(bodyBytes, &loginResp); err != nil {
+		return fmt.Errorf("decode staff login: %w", err)
+	}
+	checkinStaffToken = loginResp.Token
+
+	// Seed a batch of attendee accounts that can be checked in.
+	for i := 0; i < checkinAccountCount; i++ {
+		email := fmt.Sprintf("checkin_test_%d@test.com", i)
+		display := fmt.Sprintf("Checkin Test %d", i)
+
+		bodyBytes, status = helpers.API_SuperUsersAccountsInitialize(t, app, email, display, checkinSuperUserToken)
+		if status != http.StatusOK {
+			return fmt.Errorf("initialize account %s: status %d", email, status)
+		}
 
 		var acc models.Account
-		json.Unmarshal(bodyBytes, &acc)
-		checkinTestAccounts = append(checkinTestAccounts, acc)
+		if err := json.Unmarshal(bodyBytes, &acc); err != nil {
+			return fmt.Errorf("decode account %s: %w", email, err)
+		}
+		checkinAccounts = append(checkinAccounts, acc)
 	}
 
-	// Run tests
-	code := m.Run()
+	return nil
+}
 
-	// Teardown
-	for _, acc := range checkinTestAccounts {
-		acc.Delete()
+func teardownCheckinFixtures() {
+	for _, acc := range checkinAccounts {
+		_, _ = db.Accounts.DeleteOne(context.Background(), bson.M{"id": acc.ID})
 	}
-	db.SuperUsers.DeleteOne(context.Background(), bson.M{"username": checkinTestStaffUser.Username})
-	db.Tags.DeleteMany(context.Background(), bson.M{})
 
-	os.Exit(code)
+	if checkinStaffUser.Username != "" {
+		_, _ = db.SuperUsers.DeleteOne(context.Background(), bson.M{"username": checkinStaffUser.Username})
+	}
+
+	_, _ = db.Tags.DeleteMany(context.Background(), bson.M{})
+
+	checkinAccounts = nil
+	checkinStaffUser = models.SuperUser{}
+	checkinSuperUserToken = ""
+	checkinStaffToken = ""
 }
 
 func TestCheckinProcess(t *testing.T) {
-	// get all accounts
+	ensureCheckinFixtures(t)
+
+	cursor, err := db.Accounts.Find(db.Ctx, bson.M{"id": bson.M{"$in": getCheckinAccountIDs()}})
+	require.NoError(t, err)
+
 	var accounts []models.Account
-	cursor, _ := db.Accounts.Find(db.Ctx, bson.M{"id": bson.M{"$in": getCheckinTestAccountIDs()}})
-	cursor.All(db.Ctx, &accounts)
+	require.NoError(t, cursor.All(db.Ctx, &accounts))
 
-	var accountIDs []string
-	for _, acc := range accounts {
-		accountIDs = append(accountIDs, acc.ID)
-	}
-
-	// find best salt
-	salt, _ := utils.ChooseBestSalt(accountIDs, env.BADGE_PILES, 1000)
-
-	// set salt
+	salt, _ := utils.ChooseBestSalt(collectAccountIDs(accounts), env.BADGE_PILES, 1000)
 	env.BADGE_PILES_SALT = strconv.FormatUint(uint64(salt), 10)
 
-	// get badges
-	bodyBytes, statusCode := helpers.API_SuperUsersStaffCheckinBadgesGet(t, checkinApp, checkinTestSuperUserToken)
+	bodyBytes, statusCode := helpers.API_SuperUsersStaffCheckinBadgesGet(t, app, checkinSuperUserToken)
 	require.Equal(t, http.StatusOK, statusCode)
 
 	var piles [][]models.Account
-	json.Unmarshal(bodyBytes, &piles)
+	require.NoError(t, json.Unmarshal(bodyBytes, &piles))
 
-	// check that all accounts are in the piles
-	count := 0
+	total := 0
 	for _, pile := range piles {
-		count += len(pile)
+		total += len(pile)
 	}
-	require.Equal(t, len(accounts), count)
+	require.Equal(t, len(accounts), total)
 
-	// check-in each account
 	for _, acc := range accounts {
-		// scan account
-		bodyBytes, statusCode := helpers.API_SuperUsersStaffCheckinScan(t, checkinApp, acc.ID, checkinTestStaffUserToken)
+		// Scan account badge
+		bodyBytes, statusCode = helpers.API_SuperUsersStaffCheckinScan(t, app, acc.ID, checkinStaffToken)
 		require.Equal(t, http.StatusOK, statusCode)
 
-		var body struct {
+		var scanResp struct {
 			Account models.Account `json:"account"`
 		}
-		json.Unmarshal(bodyBytes, &body)
-		require.Equal(t, acc.ID, body.Account.ID)
+		require.NoError(t, json.Unmarshal(bodyBytes, &scanResp))
+		require.Equal(t, acc.ID, scanResp.Account.ID)
 
-		// assign tag
-		tagID := fmt.Sprintf("tag_%v", acc.ID)
-		_, statusCode = helpers.API_SuperUsersStaffCheckinTagsAssign(t, checkinApp, tagID, acc.ID, checkinTestStaffUserToken)
+		// Assign physical tag
+		tagID := fmt.Sprintf("tag_%s", acc.ID)
+		_, statusCode = helpers.API_SuperUsersStaffCheckinTagsAssign(t, app, tagID, acc.ID, checkinStaffToken)
 		require.Equal(t, http.StatusOK, statusCode)
 	}
 
-	// verify tags
-	var tags []models.Tag
-	cursor, _ = db.Tags.Find(db.Ctx, bson.M{})
-	cursor.All(db.Ctx, &tags)
+	cursor, err = db.Tags.Find(db.Ctx, bson.M{})
+	require.NoError(t, err)
 
-	require.Len(t, tags, numCheckinTestAccounts)
+	var tags []models.Tag
+	require.NoError(t, cursor.All(db.Ctx, &tags))
+	require.Len(t, tags, checkinAccountCount)
 }
 
-func getCheckinTestAccountIDs() []string {
-	var ids []string
-	for _, acc := range checkinTestAccounts {
+func getCheckinAccountIDs() []string {
+	ids := make([]string, 0, len(checkinAccounts))
+	for _, acc := range checkinAccounts {
+		ids = append(ids, acc.ID)
+	}
+	return ids
+}
+
+func collectAccountIDs(accounts []models.Account) []string {
+	ids := make([]string, 0, len(accounts))
+	for _, acc := range accounts {
 		ids = append(ids, acc.ID)
 	}
 	return ids
