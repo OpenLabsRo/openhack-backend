@@ -16,7 +16,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -24,7 +23,6 @@ var (
 	checkinCleanupOnce    sync.Once
 	checkinSetupErr       error
 	checkinSuperUserToken string
-	checkinStaffUser      models.SuperUser
 	checkinStaffToken     string
 	checkinAccounts       []models.Account
 	checkinAccountCount   = 60
@@ -66,25 +64,12 @@ func bootstrapCheckinFixtures(t *testing.T) error {
 	}
 	checkinSuperUserToken = loginResp.Token
 
-	// Create a staff user that can perform check-ins.
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("staffpassword"), 12)
-	if err != nil {
-		return fmt.Errorf("hash staff password: %w", err)
+	// Obtain staff token using pre-provisioned credentials.
+	if env.STAFF_SUPERUSER_USERNAME == "" || env.STAFF_SUPERUSER_PASSWORD == "" {
+		return fmt.Errorf("staff superuser credentials not configured")
 	}
 
-	staffUser := models.SuperUser{
-		Username:    "staffuser",
-		Password:    string(hashedPassword),
-		Permissions: []string{"staff.checkin"},
-	}
-
-	if _, err := db.SuperUsers.InsertOne(context.Background(), staffUser); err != nil {
-		return fmt.Errorf("insert staff user: %w", err)
-	}
-	checkinStaffUser = staffUser
-
-	// Obtain staff token.
-	bodyBytes, status = helpers.API_SuperUsersLogin(t, app, staffUser.Username, "staffpassword")
+	bodyBytes, status = helpers.API_SuperUsersLogin(t, app, env.STAFF_SUPERUSER_USERNAME, env.STAFF_SUPERUSER_PASSWORD)
 	if status != http.StatusOK {
 		return fmt.Errorf("staff login failed: status %d", status)
 	}
@@ -119,14 +104,9 @@ func teardownCheckinFixtures() {
 		_, _ = db.Accounts.DeleteOne(context.Background(), bson.M{"id": acc.ID})
 	}
 
-	if checkinStaffUser.Username != "" {
-		_, _ = db.SuperUsers.DeleteOne(context.Background(), bson.M{"username": checkinStaffUser.Username})
-	}
-
 	_, _ = db.Tags.DeleteMany(context.Background(), bson.M{})
 
 	checkinAccounts = nil
-	checkinStaffUser = models.SuperUser{}
 	checkinSuperUserToken = ""
 	checkinStaffToken = ""
 }

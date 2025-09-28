@@ -26,6 +26,8 @@ var VERSION string
 
 const SUPERUSER_USERNAME = "testsuperuser"
 const SUPERUSER_PASSWORD = "testsuperuser"
+const STAFF_SUPERUSER_USERNAME = "staffuser"
+const STAFF_SUPERUSER_PASSWORD = "staffpassword"
 
 type Config struct {
 	Root       string

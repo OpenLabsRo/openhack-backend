@@ -6,6 +6,7 @@ import (
 	"backend/internal/errmsg"
 	"backend/internal/models"
 	"backend/internal/utils"
+	"fmt"
 
 	"github.com/gofiber/fiber/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -28,10 +29,17 @@ func badgePilesGetHandler(c fiber.Ctx) error {
 		)
 	}
 
+	if env.BADGE_PILES <= 0 {
+		return utils.StatusError(c,
+			errmsg.InternalServerError(fmt.Errorf("badge piles misconfigured")),
+		)
+	}
+
+	salt := utils.BadgePileSalt()
 	sieve := make([][]models.Account, env.BADGE_PILES)
 
 	for _, v := range accounts {
-		pile := utils.PileForAccount(v.ID, 1)
+		pile := utils.PileForAccount(v.ID, salt)
 		sieve[pile] = append(sieve[pile], v)
 	}
 

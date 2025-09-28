@@ -1,36 +1,33 @@
-package superusers
+package main
 
 import (
-	"backend/internal"
 	"backend/internal/db"
+	"backend/internal/env"
+	"context"
 	"flag"
 	"log"
-	"os"
-	"testing"
 
-	"github.com/gofiber/fiber/v3"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-var (
-	app *fiber.App
-)
-
-func TestMain(m *testing.M) {
+func main() {
 	envRoot := flag.String("env-root", "", "directory containing environment files")
 	appVersion := flag.String("app-version", "", "application version override")
-
 	flag.Parse()
 
-	app = internal.SetupApp("test", *envRoot, *appVersion)
-	clearEvents()
+	env.Init(*envRoot, *appVersion)
 
-	os.Exit(m.Run())
-}
+	if err := db.InitDB("test"); err != nil {
+		log.Fatalf("failed to initialize test database: %v", err)
+	}
+	defer func() {
+		if db.Client != nil {
+			_ = db.Client.Disconnect(context.Background())
+		}
+	}()
 
-func clearEvents() {
 	if db.Events == nil {
-		log.Fatal("events collection not initialized")
+		log.Fatal("events collection is not initialized")
 	}
 
 	if _, err := db.Events.DeleteMany(db.Ctx, bson.M{}); err != nil {

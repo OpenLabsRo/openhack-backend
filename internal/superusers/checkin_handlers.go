@@ -26,6 +26,6 @@ func checkinScanParticipantHandler(c fiber.Ctx) error {
 
 	return c.JSON(bson.M{
 		"account": account,
-		"pile":    utils.PileForAccount(account.ID, 1),
+		"pile":    utils.PileForAccount(account.ID, utils.BadgePileSalt()),
 	})
 }
