@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Configuration
+REMOTE_USER="sunshine"       # update with remote username
+REMOTE_HOST="api.openhack.ro"   # update with remote host
+SSH_PORT=22                  # update if the SSH port differs
+REMOTE_PATH="/home/sunshine/openhack-backend" # update with the remote path where the binary should be placed
+SERVICE_NAME="openhack-backend"
+KEY_FILE="~/coding/gcp/key"  # update with the path to your SSH private key if needed
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"
+BINARY_PATH="$PROJECT_ROOT/bin/openhack-backend"
+
+function ensure_binary() {
+    mkdir -p "$PROJECT_ROOT/bin"
+    echo "Building backend binary..."
+    pushd "$PROJECT_ROOT" > /dev/null
+    go build -o "$BINARY_PATH" ./cmd/server
+    popd > /dev/null
+}
+
+function stop_remote_service() {
+    echo "Stopping remote service $SERVICE_NAME..."
+    ssh -p "$SSH_PORT" -i "$KEY_FILE" "${REMOTE_USER}@${REMOTE_HOST}" sudo systemctl stop "$SERVICE_NAME"
+}
+
+function deploy_binary() {
+    echo "Copying binary to remote host..."
+    scp -P "$SSH_PORT" -i "$KEY_FILE" "$BINARY_PATH" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}"
+}
+
+function deploy_env() {
+    echo "Copying .env file to remote host..."
+    scp -P "$SSH_PORT" -i "$KEY_FILE" "$PROJECT_ROOT/.env" "${REMOTE_USER}@${REMOTE_HOST}:/home/sunshine/.env"
+}
+
+function start_remote_service() {
+    echo "Starting remote service $SERVICE_NAME..."
+    ssh -p "$SSH_PORT" -i "$KEY_FILE" "${REMOTE_USER}@${REMOTE_HOST}" sudo systemctl start "$SERVICE_NAME"
+}
+
+function reload_status() {
+    echo "Checking remote service status..."
+    ssh -p "$SSH_PORT" -i "$KEY_FILE" "${REMOTE_USER}@${REMOTE_HOST}" sudo systemctl status "$SERVICE_NAME" --no-pager
+}
+
+ensure_binary
+stop_remote_service
+deploy_binary
+deploy_env
+start_remote_service
+reload_status
+
+echo "Deployment complete."
