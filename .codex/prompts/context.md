@@ -1,3 +1,4 @@
+- Execute the following instructions:
 - Read AGENTS.md, to make a general idea
 - Scan the entire repository tree to understand project scope and structure.
 - Review top-level documentation, config files, and entry points to capture architecture, important modules, and build/test workflows.

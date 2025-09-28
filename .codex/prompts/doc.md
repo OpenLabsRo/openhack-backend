@@ -1,3 +1,4 @@
+- Execute the following instructions:
 - Inspect existing `api_spec.yaml`; keep any accurate sections but refresh anything that is stale or incomplete.
 - Traverse every registered route, its handler(s), and any helper calls they invoke so that all success and failure paths are accounted for.
 - Follow StatusError construction (and any direct Fiber status writes) through the call stack to capture every distinct HTTP status code and message an endpoint can emit; document each as an explicit OpenAPI response.
