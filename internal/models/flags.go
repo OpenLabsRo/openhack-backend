@@ -136,7 +136,7 @@ func (f *Flags) Unset(flag string) (err error) {
 func (f *Flags) Reset() (err error) {
 	resetFlags := map[string]bool{}
 
-	for f, _ := range f.Flags {
+	for f := range f.Flags {
 		resetFlags[f] = false
 	}
 

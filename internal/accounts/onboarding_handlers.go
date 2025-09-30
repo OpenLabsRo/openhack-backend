@@ -12,6 +12,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// AccountCheckHandler verifies whether the participant has already registered.
+// @Summary Check registration status
+// @Description Confirms if an initialized account already set a password so the UI can branch between login and signup.
+// @Tags Accounts Auth
+// @Accept json
+// @Produce json
+// @Param payload body AccountCheckRequest true "Account email"
+// @Success 200 {object} AccountCheckResponse
+// @Failure 404 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /accounts/check [post]
 func AccountCheckHandler(c fiber.Ctx) error {
 	var body struct {
 		Email string `json:"email" bson:"email"`
@@ -32,6 +43,18 @@ func AccountCheckHandler(c fiber.Ctx) error {
 	})
 }
 
+// AccountRegisterHandler finalizes registration by persisting a hashed password.
+// @Summary Complete participant registration
+// @Description Accepts credentials for an initialized participant and issues a signed session token upon success.
+// @Tags Accounts Auth
+// @Accept json
+// @Produce json
+// @Param payload body CredentialRequest true "Account credentials"
+// @Success 200 {object} AccountTokenResponse
+// @Failure 404 {object} swagger.StatusErrorDoc
+// @Failure 409 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /accounts/register [post]
 func AccountRegisterHandler(c fiber.Ctx) error {
 	var body struct {
 		Email    string `json:"email" bson:"email"`
@@ -78,6 +101,17 @@ func AccountRegisterHandler(c fiber.Ctx) error {
 	})
 }
 
+// AccountLoginHandler authenticates a participant and mints a new JWT.
+// @Summary Authenticate a participant
+// @Description Validates submitted credentials against the stored hash and returns a refreshed token plus account snapshot.
+// @Tags Accounts Auth
+// @Accept json
+// @Produce json
+// @Param payload body CredentialRequest true "Login payload"
+// @Success 200 {object} AccountTokenResponse
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 404 {object} swagger.StatusErrorDoc
+// @Router /accounts/login [post]
 func AccountLoginHandler(c fiber.Ctx) error {
 	var body struct {
 		Email    string `json:"email" bson:"email"`

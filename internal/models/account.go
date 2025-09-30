@@ -14,6 +14,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type Consumables struct {
+	Water      int  `json:"water" bson:"water"`
+	Pizza      bool `json:"pizza" bson:"pizza"`
+	Coffee     bool `json:"coffee" bson:"coffee"`
+	Jerky      bool `json:"jerky" bson:"jerky"`
+	Sandwiches int  `json:"sandwiches" bson:"sandwiches"`
+}
+
 type Account struct {
 	ID string `json:"id" bson:"id"`
 
@@ -21,6 +29,17 @@ type Account struct {
 	Password string `json:"password" bson:"password"`
 
 	Name string `json:"name" bson:"name"`
+
+	// extra information about the user
+	MedicalConditions string `json:"medicalConditions" bson:"medicalConditions"`
+	FoodRestrictions  string `json:"foodRestrictions" bson:"foodRestrictions"`
+	University        string `json:"university" bson:"university"`
+	DOB               string `json:"dob" bson:"dob"`
+	PhoneNumber       string `json:"phoneNumber" bson:"phoneNumber"`
+
+	CheckedIn bool `json:"checkedIn" bson:"checkedIn"`
+
+	Consumables Consumables `json:"consumables" bson:"consumables"`
 
 	TeamID string `json:"teamID" bson:"teamID"`
 }

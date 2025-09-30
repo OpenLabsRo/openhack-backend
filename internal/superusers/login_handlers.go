@@ -12,6 +12,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// loginHandler authenticates a superuser and issues a JWT.
+// @Summary Authenticate a superuser
+// @Description Validates privileged credentials and returns a token plus superuser profile.
+// @Tags Superusers Auth
+// @Accept json
+// @Produce json
+// @Param payload body SuperUserLoginRequest true "Superuser credentials"
+// @Success 200 {object} SuperUserLoginResponse
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 404 {object} swagger.StatusErrorDoc
+// @Router /superusers/login [post]
 func loginHandler(c fiber.Ctx) error {
 	var body models.SuperUser
 	json.Unmarshal(c.Body(), &body)

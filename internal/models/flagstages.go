@@ -33,7 +33,7 @@ func GetFlagStages() (fstages []FlagStage, err error) {
 			return
 		}
 
-		bytes := []byte{}
+		var bytes []byte
 		bytes, err = json.Marshal(fstages)
 		if err != nil {
 			return
@@ -75,7 +75,7 @@ func (fstage *FlagStage) Get() (serr errmsg.StatusError) {
 			return errmsg.FlagStageNotFound
 		}
 
-		bytes := []byte{}
+		var bytes []byte
 		bytes, err = json.Marshal(fstage)
 		if err != nil {
 			return
@@ -93,6 +93,9 @@ func (fstage *FlagStage) Create() (err error) {
 	fstage.ID = utils.GenID(6)
 
 	_, err = db.FlagStages.InsertOne(db.Ctx, fstage)
+	if err != nil {
+		return err
+	}
 
 	// --- updating the cache
 	// -- first the flagstage itself
@@ -133,6 +136,9 @@ func (fstage *FlagStage) Delete() (err error) {
 	_, err = db.FlagStages.DeleteOne(db.Ctx, bson.M{
 		"id": fstage.ID,
 	})
+	if err != nil {
+		return
+	}
 
 	// ---  updating the cache
 	// -- first deleting the flagstage itself

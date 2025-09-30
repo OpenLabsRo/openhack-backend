@@ -10,6 +10,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// TeamGetTeammatesHandler lists the teammates for the current account.
+// @Summary List team members for the authenticated account
+// @Description Reads the cached roster for the caller's team to power team management UIs.
+// @Tags Teams Members
+// @Security AccountAuth
+// @Produce json
+// @Success 200 {array} models.Account
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 409 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /teams/members [get]
 func TeamGetTeammatesHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
@@ -38,6 +49,19 @@ func TeamGetTeammatesHandler(c fiber.Ctx) error {
 	return c.JSON(members)
 }
 
+// TeamJoinHandler lets the caller join a target team via query parameter.
+// @Summary Join an existing team by ID
+// @Description Validates capacity, attaches the caller, and returns a refreshed token plus updated roster.
+// @Tags Teams Members
+// @Security AccountAuth
+// @Produce json
+// @Param id query string true "Team ID"
+// @Success 200 {object} AccountMembersResponse
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 404 {object} swagger.StatusErrorDoc
+// @Failure 409 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /teams/join [patch]
 func TeamJoinHandler(c fiber.Ctx) error {
 	// get all info on the team
 	team := models.Team{ID: c.Query("id")}
@@ -95,6 +119,18 @@ func TeamJoinHandler(c fiber.Ctx) error {
 	})
 }
 
+// TeamLeaveHandler removes the caller from their current team.
+// @Summary Leave the current team
+// @Description Detaches the caller from the roster and returns the remaining membership plus refreshed token.
+// @Tags Teams Members
+// @Security AccountAuth
+// @Produce json
+// @Success 200 {object} AccountMembersResponse
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 404 {object} swagger.StatusErrorDoc
+// @Failure 409 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /teams/leave [patch]
 func TeamLeaveHandler(c fiber.Ctx) error {
 	// unmarshal the body
 	var account models.Account
@@ -153,6 +189,18 @@ func TeamLeaveHandler(c fiber.Ctx) error {
 	})
 }
 
+// TeamKickHandler removes a teammate by account ID.
+// @Summary Remove a teammate by account ID
+// @Description Allows captains to prune roster members and returns the updated list for confirmation.
+// @Tags Teams Members
+// @Security AccountAuth
+// @Produce json
+// @Param id query string true "Account ID"
+// @Success 200 {object} TeamMembersResponse
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 404 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /teams/kick [patch]
 func TeamKickHandler(c fiber.Ctx) error {
 	// getting the local account
 	var account models.Account

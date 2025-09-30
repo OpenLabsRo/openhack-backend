@@ -3,6 +3,7 @@ package main
 import (
 	"backend/internal"
 	"backend/internal/env"
+	"backend/internal/swagger"
 	"flag"
 	"fmt"
 	"log"
@@ -45,6 +46,7 @@ func main() {
 	}
 
 	app := internal.SetupApp(deployment, *envRoot, *appVersion)
+	swagger.Register(app)
 
 	fmt.Println("APP VERSION:", env.VERSION)
 	if err := app.Listen(fmt.Sprintf(":%s", port), fiber.ListenConfig{

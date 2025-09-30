@@ -11,6 +11,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// AccountEditHandler updates the display name for the authenticated participant.
+// @Summary Update display name
+// @Description Stores a new display name and returns a refreshed token so clients keep their session in sync.
+// @Tags Accounts Profile
+// @Security AccountAuth
+// @Accept json
+// @Produce json
+// @Param payload body AccountEditRequest true "Display name"
+// @Success 200 {object} AccountTokenResponse
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /accounts [patch]
 func AccountEditHandler(c fiber.Ctx) error {
 	var body struct {
 		Name string `json:"name" bson:"name"`

@@ -10,6 +10,19 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+// TeamSubmissionChangeNameHandler updates the submission name field.
+// @Summary Update the team submission name
+// @Description Records a new project name and emits an event so judges see the latest label.
+// @Tags Teams Submission
+// @Security AccountAuth
+// @Accept json
+// @Produce json
+// @Param payload body SubmissionNameRequest true "Submission name"
+// @Success 200 {object} models.Team
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 409 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /teams/submissions/name [patch]
 func TeamSubmissionChangeNameHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
@@ -43,6 +56,19 @@ func TeamSubmissionChangeNameHandler(c fiber.Ctx) error {
 	return c.JSON(team)
 }
 
+// TeamSubmissionChangeDescHandler updates the submission summary text.
+// @Summary Update the team submission description
+// @Description Persists revised blurb content so reviewers receive the latest write-up.
+// @Tags Teams Submission
+// @Security AccountAuth
+// @Accept json
+// @Produce json
+// @Param payload body SubmissionDescRequest true "Submission description"
+// @Success 200 {object} models.Team
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 409 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /teams/submissions/desc [patch]
 func TeamSubmissionChangeDescHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
@@ -76,6 +102,19 @@ func TeamSubmissionChangeDescHandler(c fiber.Ctx) error {
 	return c.JSON(team)
 }
 
+// TeamSubmissionChangeRepoHandler updates the repository link.
+// @Summary Update the team submission repo
+// @Description Stores a repository URL so judges can inspect source material from the dashboard.
+// @Tags Teams Submission
+// @Security AccountAuth
+// @Accept json
+// @Produce json
+// @Param payload body SubmissionRepoRequest true "Submission repository"
+// @Success 200 {object} models.Team
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 409 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /teams/submissions/repo [patch]
 func TeamSubmissionChangeRepoHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
@@ -109,6 +148,19 @@ func TeamSubmissionChangeRepoHandler(c fiber.Ctx) error {
 	return c.JSON(team)
 }
 
+// TeamSubmissionChangePresHandler updates the presentation artifact link.
+// @Summary Update the team submission presentation
+// @Description Keeps the presentation URL in sync for the demo day kiosk.
+// @Tags Teams Submission
+// @Security AccountAuth
+// @Accept json
+// @Produce json
+// @Param payload body SubmissionPresRequest true "Submission presentation"
+// @Success 200 {object} models.Team
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 409 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /teams/submissions/pres [patch]
 func TeamSubmissionChangePresHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)

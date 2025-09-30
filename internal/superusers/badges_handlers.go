@@ -12,6 +12,16 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// badgePilesGetHandler computes badge pile assignments for all accounts.
+// @Summary Retrieve badge pile assignments for all accounts
+// @Description Hashes each account into deterministic piles so on-site staff can stage badge pickup.
+// @Tags Superusers Check-In
+// @Security SuperUserAuth
+// @Produce json
+// @Success 200 {object} BadgePilesResponse
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /superusers/checkin/badges [get]
 func badgePilesGetHandler(c fiber.Ctx) error {
 	// get all Accounts
 	//

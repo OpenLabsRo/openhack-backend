@@ -43,6 +43,9 @@ func (t *Team) Create(firstMember string) (err error) {
 
 	// caching the tam
 	tBytes, err := json.Marshal(t)
+	if err != nil {
+		return
+	}
 	return db.CacheSetBytes("team"+t.ID, tBytes)
 }
 
@@ -56,7 +59,7 @@ func (t *Team) Get() (err error) {
 			return
 		}
 
-		tBytes := []byte{}
+		var tBytes []byte
 		tBytes, err = json.Marshal(t)
 		if err != nil {
 			return
@@ -94,7 +97,7 @@ func (t *Team) GetMembers() (members []Account, err error) {
 			return
 		}
 
-		membersBytes := []byte{}
+		var membersBytes []byte
 		membersBytes, err = json.Marshal(members)
 		if err != nil {
 			return
@@ -124,6 +127,9 @@ func (t *Team) ChangeMembers(newMembers []string) (err error) {
 			"members": newMembers,
 		},
 	})
+	if err != nil {
+		return
+	}
 
 	t.Members = newMembers
 
@@ -227,6 +233,9 @@ func (t *Team) Delete() (oldID string, err error) {
 			"deleted": true,
 		},
 	)
+	if err != nil {
+		return
+	}
 
 	err = db.CacheDel("members:" + t.ID)
 	if err != nil {

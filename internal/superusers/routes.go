@@ -1,30 +1,25 @@
 package superusers
 
 import (
+	"backend/internal/errmsg"
 	"backend/internal/models"
 	"backend/internal/utils"
 
 	"github.com/gofiber/fiber/v3"
-	"go.mongodb.org/mongo-driver/bson"
+)
+
+var (
+	_ = errmsg.StatusError{}
 )
 
 func Routes(app *fiber.App) {
 	superusers := app.Group("/superusers")
 
-	superusers.Get("/ping", func(c fiber.Ctx) error {
-		return c.SendString("PONG")
-	})
+	superusers.Get("/ping", superUserPingHandler)
 
 	superusers.Get("/whoami",
 		models.SuperUserMiddlewareBuilder([]string{"admin"}),
-		func(c fiber.Ctx) error {
-			su := models.SuperUser{}
-			utils.GetLocals(c, "superuser", &su)
-
-			return c.JSON(bson.M{
-				"superuser": su,
-			})
-		},
+		superUserWhoAmIHandler,
 	)
 
 	// login for supersusers
@@ -132,4 +127,31 @@ func Routes(app *fiber.App) {
 		}),
 		checkinScanParticipantHandler,
 	)
+}
+
+// superUserPingHandler responds to health probes for the superuser subsystem.
+// @Summary Superuser service health check
+// @Description Confirms the privileged routes segment is reachable by returning a simple PONG.
+// @Tags Superusers Health
+// @Produce plain
+// @Success 200 {string} string "PONG"
+// @Router /superusers/ping [get]
+func superUserPingHandler(c fiber.Ctx) error {
+	return c.SendString("PONG")
+}
+
+// superUserWhoAmIHandler reveals the authenticated superuser context.
+// @Summary Inspect the current superuser context
+// @Description Echoes the active superuser payload so operators can verify their scopes.
+// @Tags Superusers Health
+// @Security SuperUserAuth
+// @Produce json
+// @Success 200 {object} models.SuperUser
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Router /superusers/whoami [get]
+func superUserWhoAmIHandler(c fiber.Ctx) error {
+	su := models.SuperUser{}
+	utils.GetLocals(c, "superuser", &su)
+
+	return c.JSON(su)
 }

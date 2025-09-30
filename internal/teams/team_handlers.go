@@ -11,6 +11,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// TeamGetHandler returns the authenticated account's team document.
+// @Summary Fetch the team for the authenticated account
+// @Description Looks up the caller's team by membership and returns submission metadata and members.
+// @Tags Teams Core
+// @Security AccountAuth
+// @Produce json
+// @Success 200 {object} models.Team
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 409 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /teams [get]
 func TeamGetHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
@@ -33,6 +44,19 @@ func TeamGetHandler(c fiber.Ctx) error {
 	return c.JSON(team)
 }
 
+// TeamCreateHandler creates a fresh team led by the caller.
+// @Summary Create a new team led by the authenticated account
+// @Description Seeds a new team with the caller as captain and returns a refreshed token.
+// @Tags Teams Core
+// @Security AccountAuth
+// @Accept json
+// @Produce json
+// @Param payload body models.Team false "Optional team seed"
+// @Success 200 {object} AccountTokenResponse
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 409 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /teams [post]
 func TeamCreateHandler(c fiber.Ctx) error {
 	var team models.Team
 	json.Unmarshal(c.Body(), &team)
@@ -68,6 +92,19 @@ func TeamCreateHandler(c fiber.Ctx) error {
 	})
 }
 
+// TeamChangeHandler updates the team's display name.
+// @Summary Rename the current team
+// @Description Applies a new team name and broadcasts the change to the event stream.
+// @Tags Teams Core
+// @Security AccountAuth
+// @Accept json
+// @Produce json
+// @Param payload body TeamRenameRequest true "New team name"
+// @Success 200 {object} models.Team
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 409 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /teams [patch]
 func TeamChangeHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
@@ -101,6 +138,17 @@ func TeamChangeHandler(c fiber.Ctx) error {
 	return c.JSON(team)
 }
 
+// TeamDeleteHandler disbands the caller's team when they are the last member.
+// @Summary Delete the current team
+// @Description Removes the final member from the roster and drops the team document when safe.
+// @Tags Teams Core
+// @Security AccountAuth
+// @Produce json
+// @Success 200 {object} AccountTokenResponse
+// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 409 {object} swagger.StatusErrorDoc
+// @Failure 500 {object} swagger.StatusErrorDoc
+// @Router /teams [delete]
 func TeamDeleteHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)

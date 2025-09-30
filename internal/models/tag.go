@@ -59,6 +59,9 @@ func (t *Tag) Assign() (serr errmsg.StatusError) {
 	}
 
 	bytes, err := json.Marshal(t)
+	if err != nil {
+		return errmsg.InternalServerError(err)
+	}
 	err = db.CacheSetBytes("badge:"+t.ID, bytes)
 	if err != nil {
 		return errmsg.InternalServerError(err)
