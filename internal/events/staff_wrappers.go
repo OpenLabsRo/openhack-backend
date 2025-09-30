@@ -2,11 +2,11 @@ package events
 
 import "backend/internal/models"
 
-func (e *Emitter) CheckInScan(
+func (e *Emitter) StaffRegister(
 	superuserID, accountID string,
 ) {
 	evt := models.Event{
-		Action: "checkin.scan",
+		Action: "staff.register",
 
 		ActorRole: ActorSuperUser,
 		ActorID:   superuserID,
@@ -22,11 +22,11 @@ func (e *Emitter) CheckInScan(
 	e.Emit(evt)
 }
 
-func (e *Emitter) CheckInTagAssign(
+func (e *Emitter) StaffTagAssign(
 	superuserID, accountID, tagID string,
 ) {
 	evt := models.Event{
-		Action: "checkin.tag.assigned",
+		Action: "staff.tag.assigned",
 
 		ActorRole: ActorSuperUser,
 		ActorID:   superuserID,
@@ -42,4 +42,67 @@ func (e *Emitter) CheckInTagAssign(
 	}
 
 	e.Emit(evt)
+}
+
+func (e *Emitter) StaffCheckIn(
+	superuserID, accountID string,
+) {
+	evt := models.Event{
+		Action: "staff.checkin",
+
+		ActorRole: ActorSuperUser,
+		ActorID:   superuserID,
+
+		TargetType: TargetParticipant,
+		TargetID:   accountID,
+
+		Props: nil,
+
+		Key: "checkin|" + accountID,
+	}
+
+	e.EmitWindowed(evt)
+}
+
+func (e *Emitter) StaffCheckOut(
+	superuserID, accountID string,
+) {
+	evt := models.Event{
+		Action: "staff.checkout",
+
+		ActorRole: ActorSuperUser,
+		ActorID:   superuserID,
+
+		TargetType: TargetParticipant,
+		TargetID:   accountID,
+
+		Props: nil,
+
+		Key: "checkout|" + accountID,
+	}
+
+	e.EmitWindowed(evt)
+}
+
+func (e *Emitter) StaffConsumablesUpdated(
+	superuserID, accountID string,
+	consumables models.Consumables,
+) {
+	evt := models.Event{
+		Action: "staff.consumables.updated",
+
+		ActorRole: ActorSuperUser,
+		ActorID:   superuserID,
+
+		TargetType: TargetParticipant,
+		TargetID:   accountID,
+
+		Props: map[string]any{
+			"consumables": consumables,
+		},
+
+		Key: "consumables.updated|" + accountID,
+	}
+
+	e.EmitWindowed(evt)
 }

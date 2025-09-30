@@ -16,8 +16,8 @@ import (
 // @Security SuperUserAuth
 // @Produce json
 // @Success 200 {array} models.FlagStage
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags/stages [get]
 func flagStagesGetHandler(c fiber.Ctx) error {
 	flagStages, err := models.GetFlagStages()
@@ -39,8 +39,8 @@ func flagStagesGetHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param payload body FlagStageCreateRequest true "Flag stage"
 // @Success 200 {object} models.FlagStage
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags/stages [post]
 func flagStagesCreateHandler(c fiber.Ctx) error {
 	flagStage := models.FlagStage{}
@@ -65,8 +65,8 @@ func flagStagesCreateHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param id query string true "Flag stage ID"
 // @Success 200 {object} models.FlagStage
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags/stages [delete]
 func flagStagesDeleteHandler(c fiber.Ctx) error {
 	flagStage := models.FlagStage{ID: c.Query("id")}
@@ -89,9 +89,9 @@ func flagStagesDeleteHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param id query string true "Flag stage ID"
 // @Success 200 {object} models.Flags
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 404 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 404 {object} errmsg._FlagStageNotFound
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags/stages/execute [post]
 func flagStagesExecuteHandler(c fiber.Ctx) error {
 	flagStage := models.FlagStage{ID: c.Query("id")}

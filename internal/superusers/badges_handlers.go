@@ -19,8 +19,8 @@ import (
 // @Security SuperUserAuth
 // @Produce json
 // @Success 200 {object} BadgePilesResponse
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/checkin/badges [get]
 func badgePilesGetHandler(c fiber.Ctx) error {
 	// get all Accounts

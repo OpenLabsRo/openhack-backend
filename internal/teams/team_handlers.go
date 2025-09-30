@@ -18,9 +18,9 @@ import (
 // @Security AccountAuth
 // @Produce json
 // @Success 200 {object} models.Team
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 409 {object} errmsg._AccountHasNoTeam
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams [get]
 func TeamGetHandler(c fiber.Ctx) error {
 	account := models.Account{}
@@ -53,9 +53,9 @@ func TeamGetHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param payload body models.Team false "Optional team seed"
 // @Success 200 {object} AccountTokenResponse
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 409 {object} errmsg._AccountAlreadyHasTeam
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams [post]
 func TeamCreateHandler(c fiber.Ctx) error {
 	var team models.Team
@@ -101,9 +101,10 @@ func TeamCreateHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param payload body TeamRenameRequest true "New team name"
 // @Success 200 {object} models.Team
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 409 {object} errmsg._AccountHasNoTeam
+// @Failure 404 {object} errmsg._TeamNotFound
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams [patch]
 func TeamChangeHandler(c fiber.Ctx) error {
 	account := models.Account{}
@@ -145,9 +146,9 @@ func TeamChangeHandler(c fiber.Ctx) error {
 // @Security AccountAuth
 // @Produce json
 // @Success 200 {object} AccountTokenResponse
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 409 {object} errmsg._TeamNotEmpty
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams [delete]
 func TeamDeleteHandler(c fiber.Ctx) error {
 	account := models.Account{}

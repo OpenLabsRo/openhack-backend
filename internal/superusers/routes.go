@@ -109,23 +109,29 @@ func Routes(app *fiber.App) {
 		}),
 		badgePilesGetHandler,
 	)
-	superusers.Get("/checkin/tags",
+	superusers.Get("/staff/tags",
 		models.SuperUserMiddlewareBuilder([]string{
 			"staff", // as it should be a route available to all staff
 		}),
-		tagsGetHandler,
+		staffTagGetHandler,
 	)
-	superusers.Post("/checkin/tags",
+	superusers.Post("/staff/tags",
 		models.SuperUserMiddlewareBuilder([]string{
-			"staff.checkin", // as it should only be available for people at checking (and admin)
+			"staff", // as it should only be available for people at checking (and admin)
 		}),
-		tagsAssignHandler,
+		staffTagPostHandler,
 	)
-	superusers.Post("/checkin/scan",
+	superusers.Post("/staff/register",
 		models.SuperUserMiddlewareBuilder([]string{
-			"staff.checkin",
+			"staff",
 		}),
-		checkinScanParticipantHandler,
+		staffRegisterHandler,
+	)
+	superusers.Put("/staff/consumables",
+		models.SuperUserMiddlewareBuilder([]string{
+			"staff",
+		}),
+		staffConsumablesPutHandler,
 	)
 }
 
@@ -147,7 +153,7 @@ func superUserPingHandler(c fiber.Ctx) error {
 // @Security SuperUserAuth
 // @Produce json
 // @Success 200 {object} models.SuperUser
-// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
 // @Router /superusers/whoami [get]
 func superUserWhoAmIHandler(c fiber.Ctx) error {
 	su := models.SuperUser{}

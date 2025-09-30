@@ -19,9 +19,9 @@ import (
 // @Produce json
 // @Param payload body AccountInitializeRequest true "Participant seed data"
 // @Success 200 {object} models.Account
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 409 {object} errmsg._AccountAlreadyInitialized
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/accounts/initialize [post]
 func initializeAccountHandler(c fiber.Ctx) error {
 	superuser := models.SuperUser{}

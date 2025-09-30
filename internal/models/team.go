@@ -38,85 +38,52 @@ func (t *Team) Create(firstMember string) (err error) {
 		return
 	}
 
-	// caching the members
-	t.GetMembers()
+	cacheTeam(t)
+	invalidateTeamMembersCache(t.ID)
 
-	// caching the tam
-	tBytes, err := json.Marshal(t)
-	if err != nil {
-		return
-	}
-	return db.CacheSetBytes("team"+t.ID, tBytes)
+	return nil
 }
 
 func (t *Team) Get() (err error) {
-	cache, _ := db.CacheGet("team:" + t.ID)
-	if cache == "" {
-		err = db.Teams.FindOne(db.Ctx, bson.M{
-			"id": t.ID,
-		}).Decode(t)
-		if err != nil {
-			return
-		}
-
-		var tBytes []byte
-		tBytes, err = json.Marshal(t)
-		if err != nil {
-			return
-		}
-
-		err = db.CacheSetBytes("team:"+t.ID, tBytes)
-		if err != nil {
-			return
-		}
-
-		return
+	if loadTeamFromCache(t.ID, t) {
+		return nil
 	}
 
-	err = json.Unmarshal([]byte(cache), t)
+	err = db.Teams.FindOne(db.Ctx, bson.M{
+		"id": t.ID,
+	}).Decode(t)
+	if err != nil {
+		return err
+	}
 
-	return
+	cacheTeam(t)
+
+	return nil
 }
 
 func (t *Team) GetMembers() (members []Account, err error) {
 	members = []Account{}
-
-	cache, _ := db.CacheGet("members:" + t.ID)
-	if cache == "" {
-		cursor := &mongo.Cursor{}
-		cursor, err = db.Accounts.Find(db.Ctx, bson.M{
-			"id": bson.M{
-				"$in": t.Members,
-			},
-		})
-		if err != nil {
-			return
-		}
-
-		if err = cursor.All(db.Ctx, &members); err != nil {
-			return
-		}
-
-		var membersBytes []byte
-		membersBytes, err = json.Marshal(members)
-		if err != nil {
-			return
-		}
-
-		err = db.CacheSetBytes("members:"+t.ID, membersBytes)
-		if err != nil {
-			return
-		}
-
-		return
+	if loadTeamMembersFromCache(t.ID, &members) {
+		return members, nil
 	}
 
-	err = json.Unmarshal([]byte(cache), &members)
+	cursor := &mongo.Cursor{}
+	cursor, err = db.Accounts.Find(db.Ctx, bson.M{
+		"id": bson.M{
+			"$in": t.Members,
+		},
+	})
 	if err != nil {
-		return
+		return members, err
 	}
 
-	return
+	if err = cursor.All(db.Ctx, &members); err != nil {
+		return members, err
+	}
+
+	cacheTeamMembers(t.ID, members)
+
+	return members, nil
 }
 
 func (t *Team) ChangeMembers(newMembers []string) (err error) {
@@ -133,17 +100,10 @@ func (t *Team) ChangeMembers(newMembers []string) (err error) {
 
 	t.Members = newMembers
 
-	// --- updating the team cache
-	tBytes, err := json.Marshal(t)
-	if err != nil {
-		return
-	}
-	err = db.CacheSetBytes("team:"+t.ID, tBytes)
-	if err != nil {
-		return
-	}
+	cacheTeam(t)
+	invalidateTeamMembersCache(t.ID)
 
-	return
+	return nil
 }
 
 func (t *Team) AddMember(newMember string, newFullMember Account) (serr errmsg.StatusError) {
@@ -158,28 +118,9 @@ func (t *Team) AddMember(newMember string, newFullMember Account) (serr errmsg.S
 		return errmsg.InternalServerError(err)
 	}
 
-	// --- updating the cache
-	// -- get the old members
-	fullMembers, err := t.GetMembers()
-	if err != nil {
-		return errmsg.InternalServerError(err)
-	}
-
-	// -- add the new member to the old fullMembers and marshal it
 	newFullMember.TeamID = t.ID
-	fullMembers = append(fullMembers, newFullMember)
-	fullMembersBytes, err := json.Marshal(fullMembers)
-	if err != nil {
-		return errmsg.InternalServerError(err)
-	}
 
-	// -- changing the cache
-	err = db.CacheSetBytes("members:"+t.ID, fullMembersBytes)
-	if err != nil {
-		return errmsg.InternalServerError(err)
-	}
-
-	return
+	return errmsg.EmptyStatusError
 }
 
 func (t *Team) RemoveMember(removeMember string) (serr errmsg.StatusError) {
@@ -196,32 +137,7 @@ func (t *Team) RemoveMember(removeMember string) (serr errmsg.StatusError) {
 		return errmsg.InternalServerError(err)
 	}
 
-	// --- updating the cache
-	// -- get the old members
-	fullMembers, err := t.GetMembers()
-	if err != nil {
-		return errmsg.InternalServerError(err)
-	}
-
-	// -- add the new member to the old fullMembers and marshal it
-	newFullMembers := []Account{}
-	for _, v := range fullMembers {
-		if v.ID != removeMember {
-			newFullMembers = append(newFullMembers, v)
-		}
-	}
-	fullMembersBytes, err := json.Marshal(newFullMembers)
-	if err != nil {
-		return errmsg.InternalServerError(err)
-	}
-
-	// -- changing the cache
-	err = db.CacheSetBytes("members:"+t.ID, fullMembersBytes)
-	if err != nil {
-		return errmsg.InternalServerError(err)
-	}
-
-	return
+	return errmsg.EmptyStatusError
 }
 
 func (t *Team) Delete() (oldID string, err error) {
@@ -237,14 +153,8 @@ func (t *Team) Delete() (oldID string, err error) {
 		return
 	}
 
-	err = db.CacheDel("members:" + t.ID)
-	if err != nil {
-		return
-	}
-	err = db.CacheDel("team:" + t.ID)
-	if err != nil {
-		return
-	}
+	invalidateTeamMembersCache(t.ID)
+	invalidateTeamCache(t.ID)
 
 	oldID = t.ID
 	t = &Team{}
@@ -273,14 +183,7 @@ func (t *Team) ChangeName(name string) (oldName string, serr errmsg.StatusError)
 
 	t.Name = name
 
-	tBytes, err := json.Marshal(t)
-	if err != nil {
-		return "", errmsg.InternalServerError(err)
-	}
-	err = db.CacheSetBytes("team:"+t.ID, tBytes)
-	if err != nil {
-		return "", errmsg.InternalServerError(err)
-	}
+	cacheTeam(t)
 
 	return
 }
@@ -301,14 +204,7 @@ func (t *Team) ChangeSubmissionName(name string) (oldName string, serr errmsg.St
 	oldName = t.Submission.Name
 	t.Submission.Name = name
 
-	tBytes, err := json.Marshal(t)
-	if err != nil {
-		return oldName, errmsg.InternalServerError(err)
-	}
-	err = db.CacheSetBytes("team:"+t.ID, tBytes)
-	if err != nil {
-		return oldName, errmsg.InternalServerError(err)
-	}
+	cacheTeam(t)
 
 	return
 }
@@ -329,14 +225,7 @@ func (t *Team) ChangeSubmissionDesc(desc string) (oldDesc string, serr errmsg.St
 	oldDesc = t.Submission.Desc
 	t.Submission.Desc = desc
 
-	tBytes, err := json.Marshal(t)
-	if err != nil {
-		return oldDesc, errmsg.InternalServerError(err)
-	}
-	err = db.CacheSetBytes("team:"+t.ID, tBytes)
-	if err != nil {
-		return oldDesc, errmsg.InternalServerError(err)
-	}
+	cacheTeam(t)
 
 	return
 }
@@ -357,14 +246,7 @@ func (t *Team) ChangeSubmissionRepo(repo string) (oldRepo string, serr errmsg.St
 	oldRepo = t.Submission.Repo
 	t.Submission.Repo = repo
 
-	tBytes, err := json.Marshal(t)
-	if err != nil {
-		return oldRepo, errmsg.InternalServerError(err)
-	}
-	err = db.CacheSetBytes("team:"+t.ID, tBytes)
-	if err != nil {
-		return oldRepo, errmsg.InternalServerError(err)
-	}
+	cacheTeam(t)
 
 	return
 }
@@ -384,14 +266,89 @@ func (t *Team) ChangeSubmissionPres(pres string) (oldPres string, serr errmsg.St
 	oldPres = t.Submission.Pres
 	t.Submission.Pres = pres
 
-	tBytes, err := json.Marshal(t)
-	if err != nil {
-		return oldPres, errmsg.InternalServerError(err)
-	}
-	err = db.CacheSetBytes("team:"+t.ID, tBytes)
-	if err != nil {
-		return oldPres, errmsg.InternalServerError(err)
-	}
+	cacheTeam(t)
 
 	return
+}
+
+func cacheTeam(t *Team) {
+	if t == nil || t.ID == "" {
+		return
+	}
+
+	bytes, err := json.Marshal(t)
+	if err != nil {
+		return
+	}
+
+	_ = db.CacheSetBytes(teamCacheKey(t.ID), bytes)
+}
+
+func loadTeamFromCache(id string, team *Team) bool {
+	if id == "" {
+		return false
+	}
+
+	bytes, err := db.CacheGetBytes(teamCacheKey(id))
+	if err != nil || len(bytes) == 0 {
+		return false
+	}
+
+	if err := json.Unmarshal(bytes, team); err != nil {
+		_ = db.CacheDel(teamCacheKey(id))
+		return false
+	}
+
+	return team.ID != ""
+}
+
+func invalidateTeamCache(id string) {
+	if id != "" {
+		_ = db.CacheDel(teamCacheKey(id))
+	}
+}
+
+func cacheTeamMembers(teamID string, members []Account) {
+	if teamID == "" {
+		return
+	}
+
+	bytes, err := json.Marshal(members)
+	if err != nil {
+		return
+	}
+
+	_ = db.CacheSetBytes(teamMembersCacheKey(teamID), bytes)
+}
+
+func loadTeamMembersFromCache(teamID string, members *[]Account) bool {
+	if teamID == "" {
+		return false
+	}
+
+	bytes, err := db.CacheGetBytes(teamMembersCacheKey(teamID))
+	if err != nil || len(bytes) == 0 {
+		return false
+	}
+
+	if err := json.Unmarshal(bytes, members); err != nil {
+		_ = db.CacheDel(teamMembersCacheKey(teamID))
+		return false
+	}
+
+	return true
+}
+
+func invalidateTeamMembersCache(teamID string) {
+	if teamID != "" {
+		_ = db.CacheDel(teamMembersCacheKey(teamID))
+	}
+}
+
+func teamCacheKey(id string) string {
+	return "team:" + id
+}
+
+func teamMembersCacheKey(teamID string) string {
+	return "members:" + teamID
 }

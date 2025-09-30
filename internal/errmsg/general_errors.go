@@ -8,3 +8,8 @@ func InternalServerError(err error) StatusError {
 		"internal server error: "+err.Error(),
 	)
 }
+
+type _InternalServerError struct {
+	StatusCode int    `json:"statusCode" example:"500"`
+	Message    string `json:"message" example:"internal server error: <details>"`
+}

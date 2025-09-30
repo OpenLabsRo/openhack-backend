@@ -57,8 +57,8 @@ type TagAssignRequest struct {
 	Type      string `json:"type"`
 }
 
-// CheckInScanResponse mirrors the payload returned when scanning a participant.
-type CheckInScanResponse struct {
+// StaffRegisterResponse mirrors the payload returned when registering a staff member.
+type StaffRegisterResponse struct {
 	Account models.Account `json:"account"`
 	Pile    int            `json:"pile"`
 }

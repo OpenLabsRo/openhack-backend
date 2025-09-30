@@ -49,7 +49,7 @@ func accountPingHandler(c fiber.Ctx) error {
 // @Security AccountAuth
 // @Produce json
 // @Success 200 {object} models.Account
-// @Failure 401 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
 // @Router /accounts/whoami [get]
 func accountWhoAmIHandler(c fiber.Ctx) error {
 	account := models.Account{}

@@ -17,8 +17,8 @@ import (
 // @Security SuperUserAuth
 // @Produce json
 // @Success 200 {object} models.Flags
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags [get]
 func flagsGetHandler(c fiber.Ctx) error {
 	flags := models.Flags{}
@@ -41,8 +41,8 @@ func flagsGetHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param payload body FlagSetRequest true "Flag toggle"
 // @Success 200 {object} FlagAssignments
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags [post]
 func flagsSetHandler(c fiber.Ctx) error {
 	var body struct {
@@ -78,8 +78,8 @@ func flagsSetHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param payload body FlagAssignments true "Flag assignments"
 // @Success 200 {object} FlagAssignments
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags [put]
 func flagsSetBulkHandler(c fiber.Ctx) error {
 	var body map[string]bool
@@ -112,8 +112,8 @@ func flagsSetBulkHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param payload body FlagUnsetRequest true "Flag identifier"
 // @Success 200 {object} FlagAssignments
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags [delete]
 func flagsUnsetHandler(c fiber.Ctx) error {
 	var body struct {
@@ -146,8 +146,8 @@ func flagsUnsetHandler(c fiber.Ctx) error {
 // @Security SuperUserAuth
 // @Produce json
 // @Success 200 {object} FlagAssignments
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags/reset [put]
 func flagsResetHandler(c fiber.Ctx) error {
 
@@ -177,8 +177,9 @@ func flagsResetHandler(c fiber.Ctx) error {
 // @Security SuperUserAuth
 // @Produce plain
 // @Success 200 {string} string "it passed"
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 401 {object} errmsg._FlagRequired
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags/test [get]
 func flagsTestHandler(c fiber.Ctx) error {
 	return c.Status(http.StatusOK).SendString("it passed")

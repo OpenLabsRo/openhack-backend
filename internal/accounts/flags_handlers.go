@@ -15,8 +15,8 @@ import (
 // @Security AccountAuth
 // @Produce json
 // @Success 200 {object} models.Flags
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /accounts/flags [get]
 func GetFlagsHandler(c fiber.Ctx) error {
 	flags := models.Flags{}

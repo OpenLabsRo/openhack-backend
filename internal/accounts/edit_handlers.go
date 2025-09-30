@@ -20,8 +20,8 @@ import (
 // @Produce json
 // @Param payload body AccountEditRequest true "Display name"
 // @Success 200 {object} AccountTokenResponse
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /accounts [patch]
 func AccountEditHandler(c fiber.Ctx) error {
 	var body struct {

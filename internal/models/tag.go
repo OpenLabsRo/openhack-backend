@@ -18,33 +18,27 @@ func (t *Tag) Get() (serr errmsg.StatusError) {
 		return errmsg.TagIncomplete
 	}
 
-	cache, _ := db.CacheGet("badge:" + t.ID)
-	if cache == "" {
-		err := db.Tags.
-			FindOne(db.Ctx,
-				bson.M{
-					"id": t.ID,
-				}).
-			Decode(&t)
-
-		if err != nil {
-			return errmsg.TagNotFound
-		}
-
-		if t.ID == "" {
-			return errmsg.TagNotFound
-		}
-
-		bytes, _ := json.Marshal(t)
-		db.CacheSetBytes("badge:"+t.ID, bytes)
-
-		return
+	if loadTagFromCache(t.ID, t) {
+		return errmsg.EmptyStatusError
 	}
 
-	err := json.Unmarshal([]byte(cache), &t)
+	err := db.Tags.
+		FindOne(db.Ctx,
+			bson.M{
+				"id": t.ID,
+			}).
+		Decode(&t)
+
 	if err != nil {
-		return errmsg.InternalServerError(err)
+		return errmsg.TagNotFound
 	}
+
+	if t.ID == "" {
+		return errmsg.TagNotFound
+	}
+
+	cacheTag(*t)
+
 	return errmsg.EmptyStatusError
 }
 
@@ -58,14 +52,42 @@ func (t *Tag) Assign() (serr errmsg.StatusError) {
 		return errmsg.InternalServerError(err)
 	}
 
-	bytes, err := json.Marshal(t)
-	if err != nil {
-		return errmsg.InternalServerError(err)
-	}
-	err = db.CacheSetBytes("badge:"+t.ID, bytes)
-	if err != nil {
-		return errmsg.InternalServerError(err)
-	}
+	cacheTag(*t)
 
 	return errmsg.EmptyStatusError
+}
+
+func cacheTag(tag Tag) {
+	if tag.ID == "" {
+		return
+	}
+
+	bytes, err := json.Marshal(tag)
+	if err != nil {
+		return
+	}
+
+	_ = db.CacheSetBytes(tagCacheKey(tag.ID), bytes)
+}
+
+func loadTagFromCache(id string, tag *Tag) bool {
+	if id == "" {
+		return false
+	}
+
+	bytes, err := db.CacheGetBytes(tagCacheKey(id))
+	if err != nil || len(bytes) == 0 {
+		return false
+	}
+
+	if err := json.Unmarshal(bytes, tag); err != nil {
+		_ = db.CacheDel(tagCacheKey(id))
+		return false
+	}
+
+	return tag.ID != ""
+}
+
+func tagCacheKey(id string) string {
+	return "badge:" + id
 }

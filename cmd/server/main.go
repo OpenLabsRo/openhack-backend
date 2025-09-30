@@ -1,5 +1,45 @@
 package main
 
+// Tag catalog (order reflects Swagger sidebar)
+// @tag.name General
+// @tag.description Service-wide operational endpoints.
+
+// @tag.name Superusers Auth
+// @tag.description Superuser authentication flows.
+// @tag.name Superusers Health
+// @tag.description Operational endpoints for superuser services.
+
+// @tag.name Superusers Accounts
+// @tag.description Staff tooling for participant account shells.
+// @tag.name Superusers Flags
+// @tag.description Feature flag administration endpoints.
+// @tag.name Superusers Flag Stages
+// @tag.description Stage-based flag rollout orchestration endpoints.
+// @tag.name Superusers Staff
+// @tag.description Staff passport scanning and badge tooling endpoints.
+// @tag.name Superusers Check-In
+// @tag.description Badge assignment and check-in tooling for staff.
+
+// @tag.name Accounts Auth
+// @tag.description Registration and login flows for participants.
+// @tag.name Accounts Health
+// @tag.description Health probes for participant account services.
+// @tag.name Accounts Identity
+// @tag.description Identity introspection for signed-in participants.
+// @tag.name Accounts Profile
+// @tag.description Participant profile maintenance endpoints.
+// @tag.name Accounts Flags
+// @tag.description Feature flag lookup for participants.
+
+// @tag.name Teams Health
+// @tag.description Health probes for team services.
+// @tag.name Teams Core
+// @tag.description Core team lifecycle management endpoints.
+// @tag.name Teams Members
+// @tag.description Team membership management endpoints.
+// @tag.name Teams Submission
+// @tag.description Submission metadata update endpoints.
+
 import (
 	"backend/internal"
 	"backend/internal/env"
@@ -12,6 +52,19 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 )
+
+// @title OpenHack Backend API
+// @version 25.09.11.2
+// @description Backend API for OpenHack handling participant accounts, teams, feature flags, and superuser check-in tooling.
+// @BasePath /
+// @securityDefinitions.apikey AccountAuth
+// @in header
+// @name Authorization
+// @description Provide the participant bearer token as `Bearer <token>`.
+// @securityDefinitions.apikey SuperUserAuth
+// @in header
+// @name Authorization
+// @description Provide the superuser bearer token as `Bearer <token>`.
 
 func main() {
 	// these are required flags

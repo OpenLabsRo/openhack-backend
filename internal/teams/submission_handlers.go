@@ -19,9 +19,9 @@ import (
 // @Produce json
 // @Param payload body SubmissionNameRequest true "Submission name"
 // @Success 200 {object} models.Team
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 409 {object} errmsg._AccountHasNoTeam
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams/submissions/name [patch]
 func TeamSubmissionChangeNameHandler(c fiber.Ctx) error {
 	account := models.Account{}
@@ -65,9 +65,9 @@ func TeamSubmissionChangeNameHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param payload body SubmissionDescRequest true "Submission description"
 // @Success 200 {object} models.Team
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 409 {object} errmsg._AccountHasNoTeam
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams/submissions/desc [patch]
 func TeamSubmissionChangeDescHandler(c fiber.Ctx) error {
 	account := models.Account{}
@@ -111,9 +111,9 @@ func TeamSubmissionChangeDescHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param payload body SubmissionRepoRequest true "Submission repository"
 // @Success 200 {object} models.Team
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 409 {object} errmsg._AccountHasNoTeam
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams/submissions/repo [patch]
 func TeamSubmissionChangeRepoHandler(c fiber.Ctx) error {
 	account := models.Account{}
@@ -157,9 +157,9 @@ func TeamSubmissionChangeRepoHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param payload body SubmissionPresRequest true "Submission presentation"
 // @Success 200 {object} models.Team
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 409 {object} errmsg._AccountHasNoTeam
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams/submissions/pres [patch]
 func TeamSubmissionChangePresHandler(c fiber.Ctx) error {
 	account := models.Account{}

@@ -32,16 +32,24 @@ const uiTemplate = `<!DOCTYPE html>
   <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
   <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-standalone-preset.js"></script>
   <script>
-    window.onload = () => {
-      window.ui = SwaggerUIBundle({
-        url: '/swagger/doc.json',
-        dom_id: '#swagger-ui',
-        presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-        layout: 'StandaloneLayout',
-        deepLinking: true,
-        displayRequestDuration: true,
-      });
-    };
+  window.onload = () => {
+    window.ui = SwaggerUIBundle({
+      url: '/swagger/doc.json',
+      dom_id: '#swagger-ui',
+      presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+      layout: 'StandaloneLayout',
+      deepLinking: true,
+      displayRequestDuration: true,
+      persistAuthorization: true,
+      requestInterceptor: (req) => {
+        const authHeader = req.headers && req.headers.Authorization;
+        if (authHeader && !/^Bearer /i.test(authHeader)) {
+          req.headers.Authorization = 'Bearer ' + authHeader;
+        }
+        return req;
+      },
+    });
+  };
   </script>
 </body>
 </html>`

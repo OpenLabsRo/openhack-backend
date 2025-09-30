@@ -20,8 +20,7 @@ import (
 // @Produce json
 // @Param payload body AccountCheckRequest true "Account email"
 // @Success 200 {object} AccountCheckResponse
-// @Failure 404 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 404 {object} errmsg._AccountNotInitialized
 // @Router /accounts/check [post]
 func AccountCheckHandler(c fiber.Ctx) error {
 	var body struct {
@@ -51,9 +50,9 @@ func AccountCheckHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param payload body CredentialRequest true "Account credentials"
 // @Success 200 {object} AccountTokenResponse
-// @Failure 404 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 404 {object} errmsg._AccountNotInitialized
+// @Failure 409 {object} errmsg._AccountAlreadyRegistered
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /accounts/register [post]
 func AccountRegisterHandler(c fiber.Ctx) error {
 	var body struct {
@@ -109,8 +108,8 @@ func AccountRegisterHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param payload body CredentialRequest true "Login payload"
 // @Success 200 {object} AccountTokenResponse
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 404 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountLoginWrongPassword
+// @Failure 404 {object} errmsg._AccountNotInitialized
 // @Router /accounts/login [post]
 func AccountLoginHandler(c fiber.Ctx) error {
 	var body struct {

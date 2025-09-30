@@ -17,9 +17,9 @@ import (
 // @Security AccountAuth
 // @Produce json
 // @Success 200 {array} models.Account
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 409 {object} errmsg._AccountHasNoTeam
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams/members [get]
 func TeamGetTeammatesHandler(c fiber.Ctx) error {
 	account := models.Account{}
@@ -57,10 +57,11 @@ func TeamGetTeammatesHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param id query string true "Team ID"
 // @Success 200 {object} AccountMembersResponse
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 404 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 404 {object} errmsg._TeamNotFound
+// @Failure 409 {object} errmsg._AccountAlreadyHasTeam
+// @Failure 409 {object} errmsg._TeamFull
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams/join [patch]
 func TeamJoinHandler(c fiber.Ctx) error {
 	// get all info on the team
@@ -126,10 +127,10 @@ func TeamJoinHandler(c fiber.Ctx) error {
 // @Security AccountAuth
 // @Produce json
 // @Success 200 {object} AccountMembersResponse
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 404 {object} swagger.StatusErrorDoc
-// @Failure 409 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 404 {object} errmsg._TeamNotFound
+// @Failure 409 {object} errmsg._AccountHasNoTeam
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams/leave [patch]
 func TeamLeaveHandler(c fiber.Ctx) error {
 	// unmarshal the body
@@ -197,9 +198,10 @@ func TeamLeaveHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param id query string true "Account ID"
 // @Success 200 {object} TeamMembersResponse
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 404 {object} swagger.StatusErrorDoc
-// @Failure 500 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 404 {object} errmsg._AccountNotFound
+// @Failure 404 {object} errmsg._TeamNotFound
+// @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams/kick [patch]
 func TeamKickHandler(c fiber.Ctx) error {
 	// getting the local account

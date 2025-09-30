@@ -5,6 +5,7 @@ import (
 	"backend/internal/env"
 	"backend/internal/errmsg"
 	"backend/internal/utils"
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -126,53 +127,82 @@ func (acc *Account) Initialize() (serr errmsg.StatusError) {
 		return errmsg.InternalServerError(err)
 	}
 
+	cacheAccount(acc)
+
 	return
 }
 
 func (acc *Account) Delete() (err error) {
+	var cachedEmail string
+	if acc.Email != "" {
+		cachedEmail = acc.Email
+	} else {
+		if data, cacheErr := db.CacheGetBytes(accountCacheKey(acc.ID)); cacheErr == nil {
+			var cached Account
+			if jsonErr := json.Unmarshal(data, &cached); jsonErr == nil {
+				cachedEmail = cached.Email
+			}
+		}
+	}
+
 	_, err = db.Accounts.DeleteOne(db.Ctx, bson.M{
 		"id": acc.ID,
 	})
+
+	if err == nil {
+		invalidateAccountCache(acc.ID, cachedEmail)
+	}
 
 	return
 }
 
 func (acc *Account) Get() (err error) {
+	if loadAccountFromCache(accountCacheKey(acc.ID), acc) {
+		return nil
+	}
+
 	err = db.Accounts.FindOne(db.Ctx, bson.M{
 		"id": acc.ID,
 	}).Decode(&acc)
 
-	return err
+	if err == nil {
+		cacheAccount(acc)
+	}
+
+	return
 }
 
 func (acc *Account) GetByEmail(email string) (serr errmsg.StatusError) {
-	db.Accounts.FindOne(db.Ctx, bson.M{
+	if loadAccountFromCache(accountEmailCacheKey(email), acc) {
+		return
+	}
+
+	err := db.Accounts.FindOne(db.Ctx, bson.M{
 		"email": email,
 	}).Decode(&acc)
+
+	if err != nil {
+		return errmsg.AccountNotInitialized
+	}
 
 	if acc.ID == "" {
 		return errmsg.AccountNotInitialized
 	}
 
-	return serr
+	cacheAccount(acc)
+
+	return
 }
 
 func (acc *Account) ExistsAndHasPassword() (exists bool, has bool) {
-	db.Accounts.FindOne(db.Ctx, bson.M{
-		"id": acc.ID,
-	}).Decode(&acc)
-
-	exists = false
-	if acc.Name != "" {
-		exists = true
+	if err := acc.Get(); err != nil {
+		return false, false
 	}
 
-	has = false
-	if acc.Password != "" {
-		has = true
-	}
+	exists = acc.Name != ""
+	has = acc.Password != ""
 
-	return
+	return exists, has
 }
 
 func (acc *Account) CreatePassword(password string) (serr errmsg.StatusError) {
@@ -192,6 +222,8 @@ func (acc *Account) CreatePassword(password string) (serr errmsg.StatusError) {
 
 	acc.Password = string(hashedPassword)
 
+	cacheAccount(acc)
+
 	return
 }
 
@@ -209,6 +241,28 @@ func (acc *Account) EditName(name string) (err error) {
 	}
 
 	acc.Name = name
+
+	cacheAccount(acc)
+
+	return
+}
+
+func (acc *Account) UpdateConsumables(consumables Consumables) (err error) {
+	_, err = db.Accounts.UpdateOne(db.Ctx, bson.M{
+		"id": acc.ID,
+	}, bson.M{
+		"$set": bson.M{
+			"consumables": consumables,
+		},
+	})
+
+	if err != nil {
+		return
+	}
+
+	acc.Consumables = consumables
+
+	cacheAccount(acc)
 
 	return
 }
@@ -228,6 +282,8 @@ func (acc *Account) AddToTeam(teamID string) (err error) {
 
 	acc.TeamID = teamID
 
+	cacheAccount(acc)
+
 	return
 }
 
@@ -246,5 +302,65 @@ func (acc *Account) RemoveFromTeam(teamID string) (err error) {
 
 	acc.TeamID = ""
 
+	cacheAccount(acc)
+
 	return
+}
+
+func cacheAccount(acc *Account) {
+	if acc == nil || acc.ID == "" {
+		return
+	}
+
+	bytes, err := json.Marshal(acc)
+	if err != nil {
+		return
+	}
+
+	_ = db.CacheSetBytes(accountCacheKey(acc.ID), bytes)
+
+	if acc.Email != "" {
+		_ = db.CacheSetBytes(accountEmailCacheKey(acc.Email), bytes)
+	}
+}
+
+func loadAccountFromCache(key string, acc *Account) bool {
+	if key == "" {
+		return false
+	}
+
+	bytes, err := db.CacheGetBytes(key)
+	if err != nil || len(bytes) == 0 {
+		return false
+	}
+
+	if jsonErr := json.Unmarshal(bytes, acc); jsonErr != nil {
+		_ = db.CacheDel(key)
+		return false
+	}
+
+	return acc.ID != ""
+}
+
+func invalidateAccountCache(id string, email string) {
+	if id != "" {
+		_ = db.CacheDel(accountCacheKey(id))
+	}
+	if email != "" {
+		_ = db.CacheDel(accountEmailCacheKey(email))
+	}
+}
+
+func accountCacheKey(id string) string {
+	if id == "" {
+		return ""
+	}
+	return "account:" + id
+}
+
+func accountEmailCacheKey(email string) string {
+	if email == "" {
+		return ""
+	}
+	return "account:email:" + email
 }

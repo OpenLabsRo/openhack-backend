@@ -19,72 +19,27 @@ type FlagStage struct {
 
 func GetFlagStages() (fstages []FlagStage, err error) {
 	fstages = []FlagStage{}
-	cache, _ := db.CacheGet("flagstages")
-
-	if cache == "" {
-		cursor := &mongo.Cursor{}
-		cursor, err = db.FlagStages.Find(db.Ctx, bson.M{})
-		if err != nil {
-			return
-		}
-		defer cursor.Close(db.Ctx)
-
-		if err = cursor.All(db.Ctx, &fstages); err != nil {
-			return
-		}
-
-		var bytes []byte
-		bytes, err = json.Marshal(fstages)
-		if err != nil {
-			return
-		}
-		err = db.CacheSetBytes("flagstages", bytes)
-		if err != nil {
-			return
-		}
-
-		// now setting the cache for each and every flagstage
-		for _, v := range fstages {
-			bytes, err = json.Marshal(v)
-			if err != nil {
-				return
-			}
-			err = db.CacheSetBytes("flagstage:"+v.ID, bytes)
-			if err != nil {
-				return
-			}
-		}
-
-		return
+	if loadFlagStagesFromCache(&fstages) {
+		return fstages, nil
 	}
 
-	err = json.Unmarshal([]byte(cache), &fstages)
-
-	return
+	return refreshFlagStagesCache()
 }
 
 func (fstage *FlagStage) Get() (serr errmsg.StatusError) {
-	cache, _ := db.CacheGet("flagstage:" + fstage.ID)
-
-	if cache == "" {
-		err := db.FlagStages.FindOne(db.Ctx, bson.M{
-			"id": fstage.ID,
-		}).Decode(fstage)
-
-		if err != nil {
-			return errmsg.FlagStageNotFound
-		}
-
-		var bytes []byte
-		bytes, err = json.Marshal(fstage)
-		if err != nil {
-			return
-		}
-		err = db.CacheSetBytes("flagstage:"+fstage.ID, bytes)
-		if err != nil {
-			return
-		}
+	if loadFlagStageFromCache(fstage.ID, fstage) {
+		return errmsg.EmptyStatusError
 	}
+
+	err := db.FlagStages.FindOne(db.Ctx, bson.M{
+		"id": fstage.ID,
+	}).Decode(fstage)
+
+	if err != nil {
+		return errmsg.FlagStageNotFound
+	}
+
+	cacheFlagStage(*fstage)
 
 	return errmsg.EmptyStatusError
 }
@@ -97,39 +52,8 @@ func (fstage *FlagStage) Create() (err error) {
 		return err
 	}
 
-	// --- updating the cache
-	// -- first the flagstage itself
-	bytes, err := json.Marshal(fstage)
-	if err != nil {
-		return
-	}
-	err = db.CacheSetBytes("flagstage:"+fstage.ID, bytes)
-	if err != nil {
-		return
-	}
-
-	// -- getting the flagStages before
-	flagStages := []FlagStage{}
-	fstagesBytes, _ := db.CacheGetBytes("flagstages")
-	err = json.Unmarshal(fstagesBytes, &flagStages)
-	if err != nil {
-		return
-	}
-
-	// -- changing the flagStages and marshaling
-	flagStages = append(flagStages, *fstage)
-	fstagesBytes, err = json.Marshal(flagStages)
-	if err != nil {
-		return
-	}
-
-	// -- writing them to the cache
-	err = db.CacheSetBytes("flagstages", fstagesBytes)
-	if err != nil {
-		return
-	}
-
-	return
+	_, err = refreshFlagStagesCache()
+	return err
 }
 
 func (fstage *FlagStage) Delete() (err error) {
@@ -140,42 +64,15 @@ func (fstage *FlagStage) Delete() (err error) {
 		return
 	}
 
-	// ---  updating the cache
-	// -- first deleting the flagstage itself
-	err = db.CacheDel("flagstage:" + fstage.ID)
-	if err != nil {
-		return
-	}
-
-	// -- getting the previous flagstages
-	flagStages := []FlagStage{}
-	fstagesBytes, _ := db.CacheGetBytes("flagstages")
-	err = json.Unmarshal(fstagesBytes, &flagStages)
-	if err != nil {
-		return
-	}
-
-	// -- changing the flagStages and marshaling
-	newFlagStages := []FlagStage{}
-	for _, v := range flagStages {
-		if v.ID != fstage.ID {
-			newFlagStages = append(newFlagStages, v)
-		}
-	}
-	fstagesBytes, err = json.Marshal(newFlagStages)
-	if err != nil {
-		return
-	}
-
-	// -- writing them to the cache
-	err = db.CacheSetBytes("flagstages", fstagesBytes)
+	invalidateFlagStageCache(fstage.ID)
+	_, err = refreshFlagStagesCache()
 	if err != nil {
 		return
 	}
 
 	*fstage = FlagStage{}
 
-	return
+	return nil
 }
 
 func (fstage *FlagStage) Execute() (err error) {
@@ -206,4 +103,94 @@ func (fstage *FlagStage) Execute() (err error) {
 	}
 
 	return
+}
+
+func cacheFlagStage(stage FlagStage) {
+	if stage.ID == "" {
+		return
+	}
+
+	bytes, err := json.Marshal(stage)
+	if err != nil {
+		return
+	}
+
+	_ = db.CacheSetBytes(flagStageCacheKey(stage.ID), bytes)
+}
+
+func cacheFlagStageList(stages []FlagStage) {
+	bytes, err := json.Marshal(stages)
+	if err != nil {
+		return
+	}
+
+	_ = db.CacheSetBytes(flagStageListCacheKey(), bytes)
+
+	for _, stage := range stages {
+		cacheFlagStage(stage)
+	}
+}
+
+func loadFlagStagesFromCache(stages *[]FlagStage) bool {
+	bytes, err := db.CacheGetBytes(flagStageListCacheKey())
+	if err != nil || len(bytes) == 0 {
+		return false
+	}
+
+	if err := json.Unmarshal(bytes, stages); err != nil {
+		_ = db.CacheDel(flagStageListCacheKey())
+		return false
+	}
+
+	return true
+}
+
+func loadFlagStageFromCache(id string, stage *FlagStage) bool {
+	if id == "" {
+		return false
+	}
+
+	bytes, err := db.CacheGetBytes(flagStageCacheKey(id))
+	if err != nil || len(bytes) == 0 {
+		return false
+	}
+
+	if err := json.Unmarshal(bytes, stage); err != nil {
+		_ = db.CacheDel(flagStageCacheKey(id))
+		return false
+	}
+
+	return stage.ID != ""
+}
+
+func refreshFlagStagesCache() (stages []FlagStage, err error) {
+	stages = []FlagStage{}
+	cursor := &mongo.Cursor{}
+	cursor, err = db.FlagStages.Find(db.Ctx, bson.M{})
+	if err != nil {
+		return stages, err
+	}
+	defer cursor.Close(db.Ctx)
+
+	if err = cursor.All(db.Ctx, &stages); err != nil {
+		return stages, err
+	}
+
+	cacheFlagStageList(stages)
+
+	return stages, nil
+}
+
+func invalidateFlagStageCache(id string) {
+	if id != "" {
+		_ = db.CacheDel(flagStageCacheKey(id))
+	}
+}
+
+func flagStageCacheKey(id string) string {
+	return "flagstage:" + id
+}
+
+func flagStageListCacheKey() string {
+	return "flagstages"
 }

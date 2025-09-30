@@ -20,8 +20,8 @@ import (
 // @Produce json
 // @Param payload body SuperUserLoginRequest true "Superuser credentials"
 // @Success 200 {object} SuperUserLoginResponse
-// @Failure 401 {object} swagger.StatusErrorDoc
-// @Failure 404 {object} swagger.StatusErrorDoc
+// @Failure 401 {object} errmsg._AccountLoginWrongPassword
+// @Failure 404 {object} errmsg._SuperUserNotExists
 // @Router /superusers/login [post]
 func loginHandler(c fiber.Ctx) error {
 	var body models.SuperUser

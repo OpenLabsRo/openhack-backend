@@ -38,26 +38,25 @@ func FlagsMiddlewareBuilder(flags []string) fiber.Handler {
 }
 
 func (f *Flags) Get() (err error) {
-	// we're going to try the cache
-	cache, _ := db.CacheGet("flags")
-	if cache == "" {
-		err = db.Flags.
-			FindOne(db.Ctx, bson.M{}).
-			Decode(&f)
-
-		if err != nil {
-			return
-		}
-
-		bytes, _ := json.Marshal(f)
-
-		db.CacheSetBytes("flags", bytes)
-
-		return
+	if loadFlagsFromCache(f) {
+		return nil
 	}
 
-	err = json.Unmarshal([]byte(cache), &f)
-	return
+	err = db.Flags.
+		FindOne(db.Ctx, bson.M{}).
+		Decode(&f)
+
+	if err != nil {
+		return err
+	}
+
+	if f.Flags == nil {
+		f.Flags = map[string]bool{}
+	}
+
+	cacheFlags(f)
+
+	return nil
 }
 
 func (f *Flags) Set(flag string, value bool) (err error) {
@@ -73,10 +72,12 @@ func (f *Flags) Set(flag string, value bool) (err error) {
 		return err
 	}
 
+	if f.Flags == nil {
+		f.Flags = map[string]bool{}
+	}
 	f.Flags[flag] = value
 
-	bytes, _ := json.Marshal(f)
-	db.CacheSetBytes("flags", bytes)
+	cacheFlags(f)
 
 	return
 }
@@ -98,10 +99,12 @@ func (f *Flags) SetBulk(rawFlags map[string]bool) (err error) {
 		return err
 	}
 
+	if f.Flags == nil {
+		f.Flags = map[string]bool{}
+	}
 	maps.Copy(f.Flags, rawFlags)
 
-	bytes, _ := json.Marshal(f)
-	db.CacheSetBytes("flags", bytes)
+	cacheFlags(f)
 
 	return
 }
@@ -127,8 +130,7 @@ func (f *Flags) Unset(flag string) (err error) {
 	}
 	f.Flags = newFlags
 
-	bytes, _ := json.Marshal(f)
-	db.CacheSetBytes("flags", bytes)
+	cacheFlags(f)
 
 	return
 }
@@ -147,6 +149,37 @@ func (f *Flags) Reset() (err error) {
 
 	f.Flags = resetFlags
 	return
+}
+
+func cacheFlags(f *Flags) {
+	if f == nil {
+		return
+	}
+
+	bytes, err := json.Marshal(f)
+	if err != nil {
+		return
+	}
+
+	_ = db.CacheSetBytes(flagsCacheKey(), bytes)
+}
+
+func loadFlagsFromCache(f *Flags) bool {
+	bytes, err := db.CacheGetBytes(flagsCacheKey())
+	if err != nil || len(bytes) == 0 {
+		return false
+	}
+
+	if err := json.Unmarshal(bytes, f); err != nil {
+		_ = db.CacheDel(flagsCacheKey())
+		return false
+	}
+
+	return true
+}
+
+func flagsCacheKey() string {
+	return "flags"
 }
 
 // this will not update the cache,
