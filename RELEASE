@@ -24,6 +24,18 @@ trim() {
     printf '%s' "$value"
 }
 
+stamp_swagger_assets() {
+    if ! command -v go >/dev/null 2>&1; then
+        echo "go toolchain not found in PATH; cannot stamp swagger version" >&2
+        exit 1
+    fi
+
+    (
+        cd "${PROJECT_ROOT}"
+        go run ./cmd/tools/swagger-version-stamp --repo "${PROJECT_ROOT}" --version "${NEW_VERSION}"
+    )
+}
+
 MANUAL_VERSION=""
 GIT_PUSH=1
 
@@ -86,8 +98,12 @@ fi
 echo "${NEW_VERSION}" > "${VERSION_FILE}"
 printf 'VERSION updated to %s\n' "${NEW_VERSION}"
 
+stamp_swagger_assets
+
+printf 'Swagger metadata stamped for %s\n' "${NEW_VERSION}"
+
 if (( GIT_PUSH )); then
-    git -C "${PROJECT_ROOT}" add VERSION
+    git -C "${PROJECT_ROOT}" add VERSION doc.go cmd/server/main.go internal/app.go internal/swagger/docs
     git -C "${PROJECT_ROOT}" commit -m "release: ${NEW_VERSION}" >/dev/null
     git -C "${PROJECT_ROOT}" tag -a "v${NEW_VERSION}" -m "Release ${NEW_VERSION}"
     git -C "${PROJECT_ROOT}" push

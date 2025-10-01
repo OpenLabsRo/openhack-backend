@@ -1,12 +1,18 @@
 package swagger
 
 import (
+	"encoding/json"
 	"errors"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"backend/internal/env"
 
 	"github.com/gofiber/fiber/v3"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -104,13 +110,134 @@ func missingSpec(c fiber.Ctx, err error) error {
 }
 
 func loadDoc(embedPath string, diskPath string) ([]byte, error) {
+	format := filepath.Ext(embedPath)
+
 	data, err := swaggerDocs.ReadFile(embedPath)
 	if err == nil {
-		return data, nil
+		return stampDoc(format, data), nil
 	}
 	if !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}
 
-	return os.ReadFile(diskPath)
+	data, err = os.ReadFile(diskPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return stampDoc(format, data), nil
+}
+
+func stampDoc(ext string, data []byte) []byte {
+	version := strings.TrimSpace(env.VERSION)
+	if version == "" {
+		return data
+	}
+
+	updated, err := applyVersion(ext, data, version)
+	if err != nil {
+		log.Printf("swagger: failed to stamp version %q into %s doc: %v", version, ext, err)
+		return data
+	}
+
+	return updated
+}
+
+func applyVersion(ext string, data []byte, version string) ([]byte, error) {
+	switch ext {
+	case ".json":
+		return updateJSONDoc(data, version)
+	case ".yaml", ".yml":
+		return updateYAMLDoc(data, version)
+	default:
+		return data, nil
+	}
+}
+
+func updateJSONDoc(data []byte, version string) ([]byte, error) {
+	var doc map[string]any
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, err
+	}
+
+	stampDocMap(doc, version)
+
+	encoded, err := json.MarshalIndent(doc, "", "    ")
+	if err != nil {
+		return nil, err
+	}
+
+	if len(encoded) == 0 || encoded[len(encoded)-1] != '\n' {
+		encoded = append(encoded, '\n')
+	}
+
+	return encoded, nil
+}
+
+func updateYAMLDoc(data []byte, version string) ([]byte, error) {
+	var doc map[string]any
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return nil, err
+	}
+
+	stampDocMap(doc, version)
+
+	return yaml.Marshal(doc)
+}
+
+func stampDocMap(doc map[string]any, version string) {
+	if doc == nil {
+		return
+	}
+
+	info := ensureMap(doc, "info")
+	info["version"] = version
+
+	pathsVal, ok := doc["paths"].(map[string]any)
+	if !ok {
+		return
+	}
+
+	versionPath, ok := pathsVal["/version"].(map[string]any)
+	if !ok {
+		return
+	}
+
+	get, ok := versionPath["get"].(map[string]any)
+	if !ok {
+		return
+	}
+
+	responses, ok := get["responses"].(map[string]any)
+	if !ok {
+		return
+	}
+
+	resp200, ok := responses["200"].(map[string]any)
+	if !ok {
+		return
+	}
+
+	resp200["description"] = version
+
+	schema, ok := resp200["schema"].(map[string]any)
+	if !ok {
+		schema = map[string]any{}
+		resp200["schema"] = schema
+	}
+
+	schema["example"] = version
+}
+
+func ensureMap(root map[string]any, key string) map[string]any {
+	val, ok := root[key]
+	if ok {
+		if existing, ok := val.(map[string]any); ok {
+			return existing
+		}
+	}
+
+	created := map[string]any{}
+	root[key] = created
+	return created
 }
