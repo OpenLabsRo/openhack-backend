@@ -84,7 +84,7 @@ func pingHandler(c fiber.Ctx) error {
 // @Description Exposes the semantic version bundled with the running process for smoke tests.
 // @Tags General
 // @Produce plain
-// @Success 200 {string} string "25.09.29.0"
+// @Success 200 {string} string "25.10.01.0"
 // @Router /version [get]
 func versionHandler(c fiber.Ctx) error {
 	return c.SendString(env.VERSION)
