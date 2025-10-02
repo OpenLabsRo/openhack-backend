@@ -15,7 +15,6 @@ var (
 	targetFiles    = []string{
 		"doc.go",
 		"cmd/server/main.go",
-		"internal/app.go",
 		"internal/swagger/docs/docs.go",
 		"internal/swagger/docs/swagger.json",
 		"internal/swagger/docs/swagger.yaml",
