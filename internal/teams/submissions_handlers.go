@@ -13,7 +13,7 @@ import (
 // TeamSubmissionChangeNameHandler updates the submission name field.
 // @Summary Update the team submission name
 // @Description Records a new project name and emits an event so judges see the latest label.
-// @Tags Teams Submission
+// @Tags Teams Submissions
 // @Security AccountAuth
 // @Accept json
 // @Produce json
@@ -59,7 +59,7 @@ func TeamSubmissionChangeNameHandler(c fiber.Ctx) error {
 // TeamSubmissionChangeDescHandler updates the submission summary text.
 // @Summary Update the team submission description
 // @Description Persists revised blurb content so reviewers receive the latest write-up.
-// @Tags Teams Submission
+// @Tags Teams Submissions
 // @Security AccountAuth
 // @Accept json
 // @Produce json
@@ -105,7 +105,7 @@ func TeamSubmissionChangeDescHandler(c fiber.Ctx) error {
 // TeamSubmissionChangeRepoHandler updates the repository link.
 // @Summary Update the team submission repo
 // @Description Stores a repository URL so judges can inspect source material from the dashboard.
-// @Tags Teams Submission
+// @Tags Teams Submissions
 // @Security AccountAuth
 // @Accept json
 // @Produce json
@@ -151,7 +151,7 @@ func TeamSubmissionChangeRepoHandler(c fiber.Ctx) error {
 // TeamSubmissionChangePresHandler updates the presentation artifact link.
 // @Summary Update the team submission presentation
 // @Description Keeps the presentation URL in sync for the demo day kiosk.
-// @Tags Teams Submission
+// @Tags Teams Submissions
 // @Security AccountAuth
 // @Accept json
 // @Produce json

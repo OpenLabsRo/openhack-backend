@@ -1,4 +1,4 @@
-package superusers
+package flags
 
 import (
 	"backend/internal/errmsg"
@@ -45,10 +45,7 @@ func flagsGetHandler(c fiber.Ctx) error {
 // @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags [post]
 func flagsSetHandler(c fiber.Ctx) error {
-	var body struct {
-		Flag  string `json:"flag"`
-		Value bool   `json:"value"`
-	}
+	var body FlagSetRequest
 	json.Unmarshal(c.Body(), &body)
 
 	flags := models.Flags{}
@@ -82,7 +79,7 @@ func flagsSetHandler(c fiber.Ctx) error {
 // @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags [put]
 func flagsSetBulkHandler(c fiber.Ctx) error {
-	var body map[string]bool
+	var body FlagAssignments
 	json.Unmarshal(c.Body(), &body)
 
 	flags := models.Flags{}
@@ -116,9 +113,7 @@ func flagsSetBulkHandler(c fiber.Ctx) error {
 // @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/flags [delete]
 func flagsUnsetHandler(c fiber.Ctx) error {
-	var body struct {
-		Flag string `json:"flag"`
-	}
+	var body FlagUnsetRequest
 	json.Unmarshal(c.Body(), &body)
 
 	flags := models.Flags{}
@@ -148,7 +143,7 @@ func flagsUnsetHandler(c fiber.Ctx) error {
 // @Success 200 {object} FlagAssignments
 // @Failure 401 {object} errmsg._SuperUserNoToken
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /superusers/flags/reset [put]
+// @Router /superusers/flags/reset [post]
 func flagsResetHandler(c fiber.Ctx) error {
 
 	flags := models.Flags{}

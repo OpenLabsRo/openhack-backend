@@ -42,8 +42,9 @@ func TestTeamsPing(t *testing.T) {
 
 	flag.Parse()
 	app = internal.SetupApp("test", *envRoot, *appVersion)
+	helpers.ResetTestCache()
 
-	req, _ := http.NewRequest("GET", "/accounts/ping", nil)
+	req, _ := http.NewRequest("GET", "/teams/meta/ping", nil)
 	resp, err := app.Test(req)
 	if err != nil {
 		t.Fatalf("failed request: %v", err)
@@ -57,7 +58,7 @@ func TestTeamsPing(t *testing.T) {
 
 func TestTeamsSetup(t *testing.T) {
 	// superuser stuff
-	bodyBytes, statusCode := helpers.API_SuperUsersLogin(
+	bodyBytes, statusCode := helpers.API_SuperUsersAuthLogin(
 		t,
 		app,
 		env.SUPERUSER_USERNAME,
@@ -84,7 +85,7 @@ func TestTeamsSetup(t *testing.T) {
 			fmt.Sprintf("teamstesting%v", i),
 		)
 
-		bodyBytes, statusCode = helpers.API_SuperUsersAccountsInitialize(
+		_, statusCode = helpers.API_SuperUsersParticipantsInitialize(
 			t,
 			app,
 			fmt.Sprintf("teamstesting%v@example.com", i),
@@ -93,7 +94,7 @@ func TestTeamsSetup(t *testing.T) {
 		)
 		require.Equal(t, http.StatusOK, statusCode)
 
-		bodyBytes, statusCode = helpers.API_AccountsRegister(
+		bodyBytes, statusCode = helpers.API_AccountsAuthRegister(
 			t,
 			app,
 			fmt.Sprintf("teamstesting%v@example.com", i),
@@ -273,7 +274,7 @@ func TestTeamsSubmissionChangePres(t *testing.T) {
 }
 
 func TestTeamsJoinNotFound(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_TeamsJoin(
+	bodyBytes, statusCode := helpers.API_TeamsMembersJoin(
 		t,
 		app,
 		"123",
@@ -290,7 +291,7 @@ func TestTeamsJoinNotFound(t *testing.T) {
 // 1, 2, and 3 join 0's team
 func TestTeamsJoin(t *testing.T) {
 	for i := 1; i <= 3; i++ {
-		bodyBytes, statusCode := helpers.API_TeamsJoin(
+		bodyBytes, statusCode := helpers.API_TeamsMembersJoin(
 			t,
 			app,
 			testTeamID,
@@ -330,7 +331,7 @@ func TestTeamsGetMembers(t *testing.T) {
 }
 
 func TestTeamsJoinTeamFull(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_TeamsJoin(
+	bodyBytes, statusCode := helpers.API_TeamsMembersJoin(
 		t,
 		app,
 		testTeamID,
@@ -345,7 +346,7 @@ func TestTeamsJoinTeamFull(t *testing.T) {
 }
 
 func TestTeamsJoinAlreadyHasTeam(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_TeamsJoin(
+	bodyBytes, statusCode := helpers.API_TeamsMembersJoin(
 		t,
 		app,
 		testTeamID,
@@ -360,7 +361,7 @@ func TestTeamsJoinAlreadyHasTeam(t *testing.T) {
 }
 
 func TestTeamsLeave(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_TeamsLeave(
+	bodyBytes, statusCode := helpers.API_TeamsMembersLeave(
 		t,
 		app,
 		testAccountTokens[1],
@@ -382,7 +383,7 @@ func TestTeamsLeave(t *testing.T) {
 }
 
 func TestTeamLeaveHasNoTeam(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_TeamsLeave(
+	bodyBytes, statusCode := helpers.API_TeamsMembersLeave(
 		t,
 		app,
 		testAccountTokens[1],
@@ -397,7 +398,7 @@ func TestTeamLeaveHasNoTeam(t *testing.T) {
 
 func TestTeamKick(t *testing.T) {
 	for i := 2; i <= 3; i++ {
-		_, statusCode := helpers.API_TeamsKick(
+		_, statusCode := helpers.API_TeamsMembersKick(
 			t,
 			app,
 			testAccounts[i].ID,
@@ -409,7 +410,7 @@ func TestTeamKick(t *testing.T) {
 }
 
 func TestTeamKickAccountNotFound(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_TeamsKick(
+	bodyBytes, statusCode := helpers.API_TeamsMembersKick(
 		t,
 		app,
 		"wrongiaccount",
@@ -429,7 +430,6 @@ func TestTeamsDelete(t *testing.T) {
 		app,
 		testAccountTokens[0],
 	)
-
 	require.Equal(t, http.StatusOK, statusCode)
 
 	var body struct {

@@ -19,7 +19,7 @@ fi
 
 go run ./cmd/tools/clear-test-events "$@"
 
-go_cmd=(go test -failfast ./test/... -v -count=1)
+go_cmd=(go test ./test/... -v -count=1)
 
 if (( $# )); then
 	go_cmd+=(-args)

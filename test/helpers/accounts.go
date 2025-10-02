@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func API_AccountsCheck(
+func API_AccountsAuthCheck(
 	t *testing.T,
 	app *fiber.App,
 	email string,
@@ -26,13 +26,13 @@ func API_AccountsCheck(
 
 	return RequestRunner(t, app,
 		"POST",
-		"/accounts/check",
+		"/accounts/auth/check",
 		sendBytes,
 		nil,
 	)
 }
 
-func API_AccountsRegister(
+func API_AccountsAuthRegister(
 	t *testing.T,
 	app *fiber.App,
 	email string,
@@ -53,13 +53,13 @@ func API_AccountsRegister(
 
 	return RequestRunner(t, app,
 		"POST",
-		"/accounts/register",
+		"/accounts/auth/register",
 		sendBytes,
 		nil,
 	)
 }
 
-func API_AccountsLogin(
+func API_AccountsAuthLogin(
 	t *testing.T,
 	app *fiber.App,
 	email string,
@@ -80,13 +80,13 @@ func API_AccountsLogin(
 
 	return RequestRunner(t, app,
 		"POST",
-		"/accounts/login",
+		"/accounts/auth/login",
 		sendBytes,
 		nil,
 	)
 }
 
-func API_AccountsEdit(
+func API_AccountsProfileUpdate(
 	t *testing.T,
 	app *fiber.App,
 	name string,
@@ -105,7 +105,7 @@ func API_AccountsEdit(
 
 	return RequestRunner(t, app,
 		"PATCH",
-		"/accounts",
+		"/accounts/me",
 		sendBytes,
 		&token,
 	)

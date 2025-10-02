@@ -26,7 +26,7 @@ var (
 )
 
 func TestSuperUsersPing(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/superusers/ping", nil)
+	req, _ := http.NewRequest("GET", "/superusers/meta/ping", nil)
 	resp, err := app.Test(req)
 	if err != nil {
 		t.Fatalf("failed request: %v", err)
@@ -39,10 +39,10 @@ func TestSuperUsersPing(t *testing.T) {
 }
 
 func TestSuperUsersLogin(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_SuperUsersLogin(
+	bodyBytes, statusCode := helpers.API_SuperUsersAuthLogin(
 		t,
 		app,
-		env.SUPERUSER_PASSWORD,
+		env.SUPERUSER_USERNAME,
 		env.SUPERUSER_PASSWORD,
 	)
 
@@ -66,7 +66,7 @@ func TestSuperUsersLogin(t *testing.T) {
 }
 
 func TestSuperUsersLoginWrongPassword(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_SuperUsersLogin(
+	bodyBytes, statusCode := helpers.API_SuperUsersAuthLogin(
 		t,
 		app,
 		env.SUPERUSER_USERNAME,
@@ -81,7 +81,7 @@ func TestSuperUsersLoginWrongPassword(t *testing.T) {
 }
 
 func TestSuperUsersLoginWrongEmail(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_SuperUsersLogin(
+	bodyBytes, statusCode := helpers.API_SuperUsersAuthLogin(
 		t,
 		app,
 		"wrongusername",
@@ -96,7 +96,7 @@ func TestSuperUsersLoginWrongEmail(t *testing.T) {
 }
 
 func TestSuperUsersWhoAmI(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_SuperUsersWhoAmI(
+	bodyBytes, statusCode := helpers.API_SuperUsersMetaWhoAmI(
 		app, t, testSuperUserToken,
 	)
 
@@ -104,21 +104,19 @@ func TestSuperUsersWhoAmI(t *testing.T) {
 	require.Equal(t, http.StatusOK, statusCode)
 
 	// decode responsae
-	var body struct {
-		SuperUser models.SuperUser `json:"superuser"`
-	}
+	var body models.SuperUser
 	err := json.Unmarshal(bodyBytes, &body)
 	require.NoError(t, err)
 
 	// assertions
-	require.Equal(t, body.SuperUser.Username, env.SUPERUSER_USERNAME)
+	require.Equal(t, body.Username, env.SUPERUSER_USERNAME)
 }
 
 func TestSuperUsersAccountsInitialize(t *testing.T) {
 	testAccountEmail := "initializeaccounttest@example.com"
 	testAccountName := "Test Initialize"
 
-	bodyBytes, statusCode := helpers.API_SuperUsersAccountsInitialize(
+	bodyBytes, statusCode := helpers.API_SuperUsersParticipantsInitialize(
 		t,
 		app,
 		testAccountEmail,
@@ -140,7 +138,7 @@ func TestSuperUsersAccountsInitialize(t *testing.T) {
 }
 
 func TestSuperUsersAccountsInitializeDuplicateEmail(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_SuperUsersAccountsInitialize(
+	bodyBytes, statusCode := helpers.API_SuperUsersParticipantsInitialize(
 		t,
 		app,
 		testAccount.Email,
@@ -377,8 +375,4 @@ func TestSuperUsersFlagStagesCleanup(t *testing.T) {
 		testSuperUserToken,
 	)
 	require.Equal(t, http.StatusOK, statusCode)
-}
-
-func TestSuperUsersStaffCheckinSetup(t *testing.T) {
-
 }

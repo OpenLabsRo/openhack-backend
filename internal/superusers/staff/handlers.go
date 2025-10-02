@@ -1,4 +1,4 @@
-package superusers
+package staff
 
 import (
 	"backend/internal/errmsg"
@@ -40,6 +40,29 @@ func staffRegisterHandler(c fiber.Ctx) error {
 		"account": account,
 		"pile":    utils.PileForAccount(account.ID, utils.BadgePileSalt()),
 	})
+}
+
+// staffAccountGetHandler gets an account based on the accountID
+// @Summary Gets an account based on the accountID
+// @Description Looks up the account by ID and returns the account.
+// @Tags Superusers Staff
+// @Security SuperUserAuth
+// @Produce json
+// @Param accountID query string true "Account ID"
+// @Success 200 {object} models.Account
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 404 {object} errmsg._AccountNotFound
+// @Router /superusers/staff/account [get]
+func staffAccountGetHandler(c fiber.Ctx) error {
+	account := models.Account{ID: c.Query("accountID")}
+	err := account.Get()
+	if err != nil {
+		return utils.StatusError(c,
+			errmsg.AccountNotFound,
+		)
+	}
+
+	return c.JSON(account)
 }
 
 // tagsGetHandler fetches a stored account by the linked tag ID.
@@ -112,9 +135,10 @@ func staffTagPostHandler(c fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param payload body models.Consumables true "Consumables update"
-// @Param id query string true "Account ID"
+// @Param accountID query string true "Account ID"
 // @Success 200 {string} string "OK"
 // @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 404 {object} errmsg._AccountNotFound
 // @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/staff/consumables [put]
 func staffConsumablesPutHandler(c fiber.Ctx) error {
@@ -124,8 +148,14 @@ func staffConsumablesPutHandler(c fiber.Ctx) error {
 	var su models.SuperUser
 	utils.GetLocals(c, "superuser", &su)
 
-	account := models.Account{ID: c.Query("id")}
-	err := account.UpdateConsumables(consumables)
+	account := models.Account{ID: c.Query("accountID")}
+	err := account.Get()
+	if err != nil {
+		return utils.StatusError(c,
+			errmsg.AccountNotFound,
+		)
+	}
+	err = account.UpdateConsumables(consumables)
 	if err != nil {
 		return utils.StatusError(c,
 			errmsg.InternalServerError(err),
@@ -144,17 +174,24 @@ func staffConsumablesPutHandler(c fiber.Ctx) error {
 // @Security SuperUserAuth
 // @Accept json
 // @Produce json
-// @Param id query string true "Account ID"
+// @Param accountID query string true "Account ID"
 // @Success 200 {string} string "OK"
 // @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 404 {object} errmsg._AccountNotFound
 // @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/staff/in [patch]
 func staffPresentIn(c fiber.Ctx) error {
 	var su models.SuperUser
 	utils.GetLocals(c, "superuser", &su)
 
-	account := models.Account{ID: c.Query("id")}
-	err := account.UpdatePresent(true)
+	account := models.Account{ID: c.Query("accountID")}
+	err := account.Get()
+	if err != nil {
+		return utils.StatusError(c,
+			errmsg.AccountNotFound,
+		)
+	}
+	err = account.UpdatePresent(true)
 	if err != nil {
 		return utils.StatusError(c,
 			errmsg.InternalServerError(err),
@@ -173,17 +210,24 @@ func staffPresentIn(c fiber.Ctx) error {
 // @Security SuperUserAuth
 // @Accept json
 // @Produce json
-// @Param id query string true "Account ID"
+// @Param accountID query string true "Account ID"
 // @Success 200 {string} string "OK"
 // @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 404 {object} errmsg._AccountNotFound
 // @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/staff/out [patch]
 func staffPresentOut(c fiber.Ctx) error {
 	var su models.SuperUser
 	utils.GetLocals(c, "superuser", &su)
 
-	account := models.Account{ID: c.Query("id")}
-	err := account.UpdatePresent(false)
+	account := models.Account{ID: c.Query("accountID")}
+	err := account.Get()
+	if err != nil {
+		return utils.StatusError(c,
+			errmsg.AccountNotFound,
+		)
+	}
+	err = account.UpdatePresent(false)
 	if err != nil {
 		return utils.StatusError(c,
 			errmsg.InternalServerError(err),

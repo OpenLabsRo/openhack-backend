@@ -21,7 +21,7 @@ import (
 // @Param payload body AccountCheckRequest true "Account email"
 // @Success 200 {object} AccountCheckResponse
 // @Failure 404 {object} errmsg._AccountNotInitialized
-// @Router /accounts/check [post]
+// @Router /accounts/auth/check [post]
 func AccountCheckHandler(c fiber.Ctx) error {
 	var body struct {
 		Email string `json:"email" bson:"email"`
@@ -53,7 +53,7 @@ func AccountCheckHandler(c fiber.Ctx) error {
 // @Failure 404 {object} errmsg._AccountNotInitialized
 // @Failure 409 {object} errmsg._AccountAlreadyRegistered
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /accounts/register [post]
+// @Router /accounts/auth/register [post]
 func AccountRegisterHandler(c fiber.Ctx) error {
 	var body struct {
 		Email    string `json:"email" bson:"email"`
@@ -110,7 +110,7 @@ func AccountRegisterHandler(c fiber.Ctx) error {
 // @Success 200 {object} AccountTokenResponse
 // @Failure 401 {object} errmsg._AccountLoginWrongPassword
 // @Failure 404 {object} errmsg._AccountNotInitialized
-// @Router /accounts/login [post]
+// @Router /accounts/auth/login [post]
 func AccountLoginHandler(c fiber.Ctx) error {
 	var body struct {
 		Email    string `json:"email" bson:"email"`

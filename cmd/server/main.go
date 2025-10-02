@@ -4,40 +4,38 @@ package main
 // @tag.name General
 // @tag.description Service-wide operational endpoints.
 
+// @tag.name Superusers Meta
+// @tag.description Operational endpoints for superuser services.
 // @tag.name Superusers Auth
 // @tag.description Superuser authentication flows.
-// @tag.name Superusers Health
-// @tag.description Operational endpoints for superuser services.
 
-// @tag.name Superusers Accounts
-// @tag.description Staff tooling for participant account shells.
+// @tag.name Superusers Participants
+// @tag.description Participant account lifecycle tooling for superusers.
 // @tag.name Superusers Flags
 // @tag.description Feature flag administration endpoints.
 // @tag.name Superusers Flag Stages
 // @tag.description Stage-based flag rollout orchestration endpoints.
 // @tag.name Superusers Staff
-// @tag.description Staff passport scanning and badge tooling endpoints.
-// @tag.name Superusers Check-In
-// @tag.description Badge assignment and check-in tooling for staff.
+// @tag.description Staff passport scanning and presence tooling endpoints.
+// @tag.name Superusers Badges
+// @tag.description Badge assignment and pile lookup endpoints.
 
+// @tag.name Accounts Meta
+// @tag.description Meta routes like ping and whoami
 // @tag.name Accounts Auth
 // @tag.description Registration and login flows for participants.
-// @tag.name Accounts Health
-// @tag.description Health probes for participant account services.
-// @tag.name Accounts Identity
-// @tag.description Identity introspection for signed-in participants.
 // @tag.name Accounts Profile
 // @tag.description Participant profile maintenance endpoints.
 // @tag.name Accounts Flags
 // @tag.description Feature flag lookup for participants.
 
-// @tag.name Teams Health
-// @tag.description Health probes for team services.
+// @tag.name Teams Meta
+// @tag.description Health probes for team services and other meta routes.
 // @tag.name Teams Core
 // @tag.description Core team lifecycle management endpoints.
 // @tag.name Teams Members
 // @tag.description Team membership management endpoints.
-// @tag.name Teams Submission
+// @tag.name Teams Submissions
 // @tag.description Submission metadata update endpoints.
 
 import (

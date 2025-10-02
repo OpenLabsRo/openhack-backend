@@ -6,38 +6,24 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-func Routes(app *fiber.App) {
-	teams := app.Group("/teams")
-
-	teams.Get("/ping", teamPingHandler)
+func Routes(r fiber.Router) {
+	r.Get("/meta/ping", teamPingHandler)
 
 	// team operations
-	teams.Get("", models.AccountMiddleware, TeamGetHandler)
-	teams.Post("", models.AccountMiddleware, TeamCreateHandler)
-	teams.Patch("", models.AccountMiddleware, TeamChangeHandler)
-	teams.Delete("", models.AccountMiddleware, TeamDeleteHandler)
+	r.Get("", models.AccountMiddleware, TeamGetHandler)
+	r.Post("", models.AccountMiddleware, TeamCreateHandler)
+	r.Patch("", models.AccountMiddleware, TeamChangeHandler)
+	r.Delete("", models.AccountMiddleware, TeamDeleteHandler)
 
-	// teammate operations
-	teams.Get("/members", models.AccountMiddleware, TeamGetTeammatesHandler)
-	teams.Patch("/join", models.AccountMiddleware, TeamJoinHandler)
-	teams.Patch("/leave", models.AccountMiddleware, TeamLeaveHandler)
-	teams.Patch("/kick", models.AccountMiddleware, TeamKickHandler)
+	// members operations
+	r.Get("/members", models.AccountMiddleware, TeamMembersGetHandler)
+	r.Patch("/members/join", models.AccountMiddleware, TeamMembersJoinHandler)
+	r.Patch("/members/leave", models.AccountMiddleware, TeamMembersLeaveHandler)
+	r.Patch("/members/kick", models.AccountMiddleware, TeamMembersKickHandler)
 
 	// submission operations
-	teams.Patch("/submissions/name", models.AccountMiddleware, TeamSubmissionChangeNameHandler)
-	teams.Patch("/submissions/desc", models.AccountMiddleware, TeamSubmissionChangeDescHandler)
-	teams.Patch("/submissions/repo", models.AccountMiddleware, TeamSubmissionChangeRepoHandler)
-	teams.Patch("/submissions/pres", models.AccountMiddleware, TeamSubmissionChangePresHandler)
-
-}
-
-// teamPingHandler ensures the teams subsystem responds to health probes.
-// @Summary Teams service health check
-// @Description Returns a PONG from the teams group so orchestration checks can verify connectivity.
-// @Tags Teams Health
-// @Produce plain
-// @Success 200 {string} string "PONG"
-// @Router /teams/ping [get]
-func teamPingHandler(c fiber.Ctx) error {
-	return c.SendString("PONG")
+	r.Patch("/submissions/name", models.AccountMiddleware, TeamSubmissionChangeNameHandler)
+	r.Patch("/submissions/desc", models.AccountMiddleware, TeamSubmissionChangeDescHandler)
+	r.Patch("/submissions/repo", models.AccountMiddleware, TeamSubmissionChangeRepoHandler)
+	r.Patch("/submissions/pres", models.AccountMiddleware, TeamSubmissionChangePresHandler)
 }

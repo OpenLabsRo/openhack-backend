@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func API_SuperUsersLogin(
+func API_SuperUsersAuthLogin(
 	t *testing.T,
 	app *fiber.App,
 	username string,
@@ -29,25 +29,25 @@ func API_SuperUsersLogin(
 
 	return RequestRunner(t, app,
 		"POST",
-		"/superusers/login",
+		"/superusers/auth/login",
 		sendBytes,
 		nil,
 	)
 }
 
-func API_SuperUsersWhoAmI(
+func API_SuperUsersMetaWhoAmI(
 	app *fiber.App,
 	t *testing.T, token string) (bodyBytes []byte, statusCode int) {
 
 	return RequestRunner(t, app,
 		"GET",
-		"/superusers/whoami",
+		"/superusers/meta/whoami",
 		[]byte{},
 		&token,
 	)
 }
 
-func API_SuperUsersAccountsInitialize(
+func API_SuperUsersParticipantsInitialize(
 	t *testing.T,
 	app *fiber.App,
 	email string,
@@ -69,7 +69,7 @@ func API_SuperUsersAccountsInitialize(
 
 	return RequestRunner(t, app,
 		"POST",
-		"/superusers/accounts/initialize",
+		"/superusers/participants",
 		sendBytes,
 		&token,
 	)

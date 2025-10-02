@@ -146,7 +146,9 @@ func (t *Team) Delete() (oldID string, err error) {
 			"id": t.ID,
 		},
 		bson.M{
-			"deleted": true,
+			"$set": bson.M{
+				"deleted": true,
+			},
 		},
 	)
 	if err != nil {

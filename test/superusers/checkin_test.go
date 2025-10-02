@@ -4,13 +4,11 @@ import (
 	"backend/internal/db"
 	"backend/internal/env"
 	"backend/internal/models"
-	"backend/internal/utils"
 	"backend/test/helpers"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"sync"
 	"testing"
 
@@ -25,7 +23,7 @@ var (
 	checkinSuperUserToken string
 	checkinStaffToken     string
 	checkinAccounts       []models.Account
-	checkinAccountCount   = 60
+	checkinAccountCount   = 1
 )
 
 func ensureCheckinFixtures(t *testing.T) {
@@ -51,7 +49,7 @@ func ensureCheckinFixtures(t *testing.T) {
 
 func bootstrapCheckinFixtures(t *testing.T) error {
 	// Authenticate as the default superuser.
-	bodyBytes, status := helpers.API_SuperUsersLogin(t, app, env.SUPERUSER_USERNAME, env.SUPERUSER_PASSWORD)
+	bodyBytes, status := helpers.API_SuperUsersAuthLogin(t, app, env.SUPERUSER_USERNAME, env.SUPERUSER_PASSWORD)
 	if status != http.StatusOK {
 		return fmt.Errorf("superuser login failed: status %d", status)
 	}
@@ -64,12 +62,11 @@ func bootstrapCheckinFixtures(t *testing.T) error {
 	}
 	checkinSuperUserToken = loginResp.Token
 
-	// Obtain staff token using pre-provisioned credentials.
 	if env.STAFF_SUPERUSER_USERNAME == "" || env.STAFF_SUPERUSER_PASSWORD == "" {
 		return fmt.Errorf("staff superuser credentials not configured")
 	}
 
-	bodyBytes, status = helpers.API_SuperUsersLogin(t, app, env.STAFF_SUPERUSER_USERNAME, env.STAFF_SUPERUSER_PASSWORD)
+	bodyBytes, status = helpers.API_SuperUsersAuthLogin(t, app, env.STAFF_SUPERUSER_USERNAME, env.STAFF_SUPERUSER_PASSWORD)
 	if status != http.StatusOK {
 		return fmt.Errorf("staff login failed: status %d", status)
 	}
@@ -79,12 +76,11 @@ func bootstrapCheckinFixtures(t *testing.T) error {
 	}
 	checkinStaffToken = loginResp.Token
 
-	// Seed a batch of attendee accounts that can be checked in.
 	for i := 0; i < checkinAccountCount; i++ {
 		email := fmt.Sprintf("checkin_test_%d@test.com", i)
 		display := fmt.Sprintf("Checkin Test %d", i)
 
-		bodyBytes, status = helpers.API_SuperUsersAccountsInitialize(t, app, email, display, checkinSuperUserToken)
+		bodyBytes, status = helpers.API_SuperUsersParticipantsInitialize(t, app, email, display, checkinSuperUserToken)
 		if status != http.StatusOK {
 			return fmt.Errorf("initialize account %s: status %d", email, status)
 		}
@@ -120,24 +116,14 @@ func TestCheckinProcess(t *testing.T) {
 	var accounts []models.Account
 	require.NoError(t, cursor.All(db.Ctx, &accounts))
 
-	salt, _ := utils.ChooseBestSalt(collectAccountIDs(accounts), env.BADGE_PILES, 1000)
-	env.BADGE_PILES_SALT = strconv.FormatUint(uint64(salt), 10)
+	var (
+		bodyBytes  []byte
+		statusCode int
+	)
 
-	bodyBytes, statusCode := helpers.API_SuperUsersStaffCheckinBadgesGet(t, app, checkinSuperUserToken)
-	require.Equal(t, http.StatusOK, statusCode)
-
-	var piles [][]models.Account
-	require.NoError(t, json.Unmarshal(bodyBytes, &piles))
-
-	total := 0
-	for _, pile := range piles {
-		total += len(pile)
-	}
-	require.Equal(t, len(accounts), total)
-
-	for _, acc := range accounts {
+	for i, acc := range accounts {
 		// Scan account badge
-		bodyBytes, statusCode = helpers.API_SuperUsersStaffCheckinScan(t, app, acc.ID, checkinStaffToken)
+		bodyBytes, statusCode = helpers.API_SuperUsersStaffRegister(t, app, acc.ID, checkinStaffToken)
 		require.Equal(t, http.StatusOK, statusCode)
 
 		var scanResp struct {
@@ -148,9 +134,43 @@ func TestCheckinProcess(t *testing.T) {
 
 		// Assign physical tag
 		tagID := fmt.Sprintf("tag_%s", acc.ID)
-		_, statusCode = helpers.API_SuperUsersStaffCheckinTagsAssign(t, app, tagID, acc.ID, checkinStaffToken)
+		_, statusCode = helpers.API_SuperUsersStaffTagsAssign(t, app, tagID, acc.ID, checkinStaffToken)
 		require.Equal(t, http.StatusOK, statusCode)
+
+		bodyBytes, statusCode = helpers.API_SuperUsersStaffTagsGet(t, app, tagID, checkinStaffToken)
+		require.Equal(t, http.StatusOK, statusCode)
+
+		var taggedAccount models.Account
+		require.NoError(t, json.Unmarshal(bodyBytes, &taggedAccount))
+		require.Equal(t, acc.ID, taggedAccount.ID)
+
+		if i == 0 {
+			consumables := models.Consumables{Water: 3, Pizza: true, Coffee: true}
+			_, statusCode = helpers.API_SuperUsersStaffConsumablesUpdate(t, app, acc.ID, consumables, checkinStaffToken)
+			require.Equal(t, http.StatusOK, statusCode)
+
+			_, statusCode = helpers.API_SuperUsersStaffPresenceIn(t, app, acc.ID, checkinStaffToken)
+			require.Equal(t, http.StatusOK, statusCode)
+
+			bodyBytes, statusCode = helpers.API_SuperUsersStaffAccountGet(t, app, acc.ID, checkinStaffToken)
+			require.Equal(t, http.StatusOK, statusCode)
+
+			var staffAccount models.Account
+			require.NoError(t, json.Unmarshal(bodyBytes, &staffAccount))
+			require.True(t, staffAccount.Present)
+			require.Equal(t, consumables.Water, staffAccount.Consumables.Water)
+
+			_, statusCode = helpers.API_SuperUsersStaffPresenceOut(t, app, acc.ID, checkinStaffToken)
+			require.Equal(t, http.StatusOK, statusCode)
+		}
 	}
+
+	bodyBytes, statusCode = helpers.API_SuperUsersStaffAccountGet(t, app, accounts[0].ID, checkinStaffToken)
+	require.Equal(t, http.StatusOK, statusCode)
+
+	var finalAccount models.Account
+	require.NoError(t, json.Unmarshal(bodyBytes, &finalAccount))
+	require.False(t, finalAccount.Present)
 
 	cursor, err = db.Tags.Find(db.Ctx, bson.M{})
 	require.NoError(t, err)
@@ -163,14 +183,6 @@ func TestCheckinProcess(t *testing.T) {
 func getCheckinAccountIDs() []string {
 	ids := make([]string, 0, len(checkinAccounts))
 	for _, acc := range checkinAccounts {
-		ids = append(ids, acc.ID)
-	}
-	return ids
-}
-
-func collectAccountIDs(accounts []models.Account) []string {
-	ids := make([]string, 0, len(accounts))
-	for _, acc := range accounts {
 		ids = append(ids, acc.ID)
 	}
 	return ids

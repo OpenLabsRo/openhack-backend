@@ -89,7 +89,7 @@ func API_TeamsDelete(
 	)
 }
 
-func API_TeamsJoin(
+func API_TeamsMembersJoin(
 	t *testing.T,
 	app *fiber.App,
 	teamID string,
@@ -98,13 +98,13 @@ func API_TeamsJoin(
 
 	return RequestRunner(t, app,
 		"PATCH",
-		"/teams/join?id="+teamID,
+		"/teams/members/join?teamID="+teamID,
 		[]byte{},
 		&token,
 	)
 }
 
-func API_TeamsLeave(
+func API_TeamsMembersLeave(
 	t *testing.T,
 	app *fiber.App,
 	token string,
@@ -112,13 +112,13 @@ func API_TeamsLeave(
 
 	return RequestRunner(t, app,
 		"PATCH",
-		"/teams/leave",
+		"/teams/members/leave",
 		[]byte{},
 		&token,
 	)
 }
 
-func API_TeamsKick(
+func API_TeamsMembersKick(
 	t *testing.T,
 	app *fiber.App,
 	accountID string,
@@ -127,7 +127,7 @@ func API_TeamsKick(
 
 	return RequestRunner(t, app,
 		"PATCH",
-		"/teams/kick?id="+accountID,
+		"/teams/members/kick?accountID="+accountID,
 		[]byte{},
 		&token,
 	)

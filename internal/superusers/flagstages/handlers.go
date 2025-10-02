@@ -1,4 +1,4 @@
-package superusers
+package flagstages
 
 import (
 	"backend/internal/errmsg"
@@ -18,7 +18,7 @@ import (
 // @Success 200 {array} models.FlagStage
 // @Failure 401 {object} errmsg._SuperUserNoToken
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /superusers/flags/stages [get]
+// @Router /superusers/flagstages [get]
 func flagStagesGetHandler(c fiber.Ctx) error {
 	flagStages, err := models.GetFlagStages()
 	if err != nil {
@@ -41,7 +41,7 @@ func flagStagesGetHandler(c fiber.Ctx) error {
 // @Success 200 {object} models.FlagStage
 // @Failure 401 {object} errmsg._SuperUserNoToken
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /superusers/flags/stages [post]
+// @Router /superusers/flagstages [post]
 func flagStagesCreateHandler(c fiber.Ctx) error {
 	flagStage := models.FlagStage{}
 	json.Unmarshal(c.Body(), &flagStage)
@@ -67,7 +67,7 @@ func flagStagesCreateHandler(c fiber.Ctx) error {
 // @Success 200 {object} models.FlagStage
 // @Failure 401 {object} errmsg._SuperUserNoToken
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /superusers/flags/stages [delete]
+// @Router /superusers/flagstages [delete]
 func flagStagesDeleteHandler(c fiber.Ctx) error {
 	flagStage := models.FlagStage{ID: c.Query("id")}
 
@@ -92,7 +92,7 @@ func flagStagesDeleteHandler(c fiber.Ctx) error {
 // @Failure 401 {object} errmsg._SuperUserNoToken
 // @Failure 404 {object} errmsg._FlagStageNotFound
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /superusers/flags/stages/execute [post]
+// @Router /superusers/flagstages/execute [post]
 func flagStagesExecuteHandler(c fiber.Ctx) error {
 	flagStage := models.FlagStage{ID: c.Query("id")}
 	serr := flagStage.Get()

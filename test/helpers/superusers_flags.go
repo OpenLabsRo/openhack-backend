@@ -76,7 +76,7 @@ func API_SuperUsersFlagsReset(
 	token string,
 ) (bodyBytes []byte, statusCode int) {
 	return RequestRunner(t, app,
-		"PUT",
+		"POST",
 		"/superusers/flags/reset",
 		[]byte{},
 		&token,
@@ -129,7 +129,7 @@ func API_SuperUsersFlagStagesGet(
 ) (bodyBytes []byte, statusCode int) {
 	return RequestRunner(t, app,
 		"GET",
-		"/superusers/flags/stages",
+		"/superusers/flagstages",
 		[]byte{},
 		&token,
 	)
@@ -147,7 +147,7 @@ func API_SuperUsersFlagStagesCreate(
 
 	return RequestRunner(t, app,
 		"POST",
-		"/superusers/flags/stages",
+		"/superusers/flagstages",
 		sendBytes,
 		&token,
 	)
@@ -161,7 +161,7 @@ func API_SuperUsersFlagStagesDelete(
 ) (bodyBytes []byte, statusCode int) {
 	return RequestRunner(t, app,
 		"DELETE",
-		"/superusers/flags/stages?id="+id,
+		"/superusers/flagstages?id="+id,
 		[]byte{},
 		&token,
 	)
@@ -175,7 +175,7 @@ func API_SuperUsersFlagStagesExecute(
 ) (bodyBytes []byte, statusCode int) {
 	return RequestRunner(t, app,
 		"POST",
-		"/superusers/flags/stages/execute?id="+id,
+		"/superusers/flagstages/execute?id="+id,
 		[]byte{},
 		&token,
 	)

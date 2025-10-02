@@ -3,6 +3,7 @@ package superusers
 import (
 	"backend/internal"
 	"backend/internal/db"
+	"backend/test/helpers"
 	"flag"
 	"log"
 	"os"
@@ -23,6 +24,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	app = internal.SetupApp("test", *envRoot, *appVersion)
+	helpers.ResetTestCache()
 	clearEvents()
 
 	os.Exit(m.Run())

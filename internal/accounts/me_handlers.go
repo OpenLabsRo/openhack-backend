@@ -22,7 +22,7 @@ import (
 // @Success 200 {object} AccountTokenResponse
 // @Failure 401 {object} errmsg._AccountNoToken
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /accounts [patch]
+// @Router /accounts/me [patch]
 func AccountEditHandler(c fiber.Ctx) error {
 	var body struct {
 		Name string `json:"name" bson:"name"`

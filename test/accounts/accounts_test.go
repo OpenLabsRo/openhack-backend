@@ -35,8 +35,9 @@ func TestAccountsPing(t *testing.T) {
 	flag.Parse()
 
 	app = internal.SetupApp("test", *envRoot, *appVersion)
+	helpers.ResetTestCache()
 
-	req, _ := http.NewRequest("GET", "/accounts/ping", nil)
+	req, _ := http.NewRequest("GET", "/accounts/meta/ping", nil)
 	resp, err := app.Test(req)
 	if err != nil {
 		t.Fatalf("failed request: %v", err)
@@ -49,7 +50,7 @@ func TestAccountsPing(t *testing.T) {
 }
 
 func TestAccountsCheckNotInitialized(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_AccountsCheck(
+	bodyBytes, statusCode := helpers.API_AccountsAuthCheck(
 		t,
 		app,
 		testAccountEmail,
@@ -64,7 +65,7 @@ func TestAccountsCheckNotInitialized(t *testing.T) {
 
 func TestAccountsSetup(t *testing.T) {
 
-	bodyBytes, statusCode := helpers.API_SuperUsersLogin(
+	bodyBytes, statusCode := helpers.API_SuperUsersAuthLogin(
 		t,
 		app,
 		env.SUPERUSER_USERNAME,
@@ -78,7 +79,7 @@ func TestAccountsSetup(t *testing.T) {
 	}
 	json.Unmarshal(bodyBytes, &body)
 
-	bodyBytes, statusCode = helpers.API_SuperUsersAccountsInitialize(
+	bodyBytes, statusCode = helpers.API_SuperUsersParticipantsInitialize(
 		t,
 		app,
 		"accountstesting@example.com",
@@ -92,7 +93,7 @@ func TestAccountsSetup(t *testing.T) {
 }
 
 func TestAccountsCheckNotRegistered(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_AccountsCheck(
+	bodyBytes, statusCode := helpers.API_AccountsAuthCheck(
 		t,
 		app,
 		testAccountEmail,
@@ -109,7 +110,7 @@ func TestAccountsCheckNotRegistered(t *testing.T) {
 }
 
 func TestAccountsRegister(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_AccountsRegister(
+	bodyBytes, statusCode := helpers.API_AccountsAuthRegister(
 		t,
 		app,
 		testAccount.Email,
@@ -133,7 +134,7 @@ func TestAccountsRegister(t *testing.T) {
 }
 
 func TestAccountsCheckRegistered(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_AccountsCheck(
+	bodyBytes, statusCode := helpers.API_AccountsAuthCheck(
 		t,
 		app,
 		testAccountEmail,
@@ -157,7 +158,7 @@ func TestAccountsRegisterAlreadyRegistered(t *testing.T) {
 		Password: "testingpassword",
 	}
 
-	bodyBytes, statusCode := helpers.API_AccountsRegister(
+	bodyBytes, statusCode := helpers.API_AccountsAuthRegister(
 		t,
 		app,
 		testAccount.Email,
@@ -172,7 +173,7 @@ func TestAccountsRegisterAlreadyRegistered(t *testing.T) {
 }
 
 func TestAccountsRegisterNotInitialized(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_AccountsRegister(
+	bodyBytes, statusCode := helpers.API_AccountsAuthRegister(
 		t,
 		app,
 		"notinitialized@example.com",
@@ -187,7 +188,7 @@ func TestAccountsRegisterNotInitialized(t *testing.T) {
 }
 
 func TestAccountsLogin(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_AccountsLogin(
+	bodyBytes, statusCode := helpers.API_AccountsAuthLogin(
 		t,
 		app,
 		testAccount.Email,
@@ -214,7 +215,7 @@ func TestAccountsLogin(t *testing.T) {
 }
 
 func TestAccountsLoginWrongPassword(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_AccountsLogin(
+	bodyBytes, statusCode := helpers.API_AccountsAuthLogin(
 		t,
 		app,
 		testAccount.Email,
@@ -229,7 +230,7 @@ func TestAccountsLoginWrongPassword(t *testing.T) {
 }
 
 func TestAccountsLoginWrongEmail(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_AccountsLogin(
+	bodyBytes, statusCode := helpers.API_AccountsAuthLogin(
 		t,
 		app,
 		"wrongemail@example.com",
@@ -246,7 +247,7 @@ func TestAccountsLoginWrongEmail(t *testing.T) {
 func TestAccountsEdit(t *testing.T) {
 	updatedName := "Updated Name"
 
-	bodyBytes, statusCode := helpers.API_AccountsEdit(
+	bodyBytes, statusCode := helpers.API_AccountsProfileUpdate(
 		t,
 		app,
 		"Updated Name",
@@ -277,7 +278,7 @@ func TestAccountsEdit(t *testing.T) {
 func TestAccountsEditNoToken(t *testing.T) {
 	updatedName := "Updated Name"
 
-	bodyBytes, statusCode := helpers.API_AccountsEdit(
+	bodyBytes, statusCode := helpers.API_AccountsProfileUpdate(
 		t,
 		app,
 		updatedName,

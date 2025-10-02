@@ -22,7 +22,7 @@ import (
 // @Success 200 {object} SuperUserLoginResponse
 // @Failure 401 {object} errmsg._AccountLoginWrongPassword
 // @Failure 404 {object} errmsg._SuperUserNotExists
-// @Router /superusers/login [post]
+// @Router /superusers/auth/login [post]
 func loginHandler(c fiber.Ctx) error {
 	var body models.SuperUser
 	json.Unmarshal(c.Body(), &body)

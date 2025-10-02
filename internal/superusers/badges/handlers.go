@@ -1,4 +1,4 @@
-package superusers
+package badges
 
 import (
 	"backend/internal/db"
@@ -12,19 +12,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// badgePilesGetHandler computes badge pile assignments for all accounts.
+// pilesGetHandler computes badge pile assignments for all accounts.
 // @Summary Retrieve badge pile assignments for all accounts
 // @Description Hashes each account into deterministic piles so on-site staff can stage badge pickup.
-// @Tags Superusers Check-In
+// @Tags Superusers Badges
 // @Security SuperUserAuth
 // @Produce json
-// @Success 200 {object} BadgePilesResponse
+// @Success 200 {object} PilesResponse
 // @Failure 401 {object} errmsg._SuperUserNoToken
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /superusers/checkin/badges [get]
-func badgePilesGetHandler(c fiber.Ctx) error {
+// @Router /superusers/badges [get]
+func pilesGetHandler(c fiber.Ctx) error {
 	// get all Accounts
-	//
 	var accounts []models.Account
 	cursor, err := db.Accounts.Find(db.Ctx, bson.M{})
 	if err != nil {

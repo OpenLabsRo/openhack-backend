@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// TeamGetTeammatesHandler lists the teammates for the current account.
+// TeamMembersGetHandler lists the teammates for the current account.
 // @Summary List team members for the authenticated account
 // @Description Reads the cached roster for the caller's team to power team management UIs.
 // @Tags Teams Members
@@ -21,7 +21,7 @@ import (
 // @Failure 409 {object} errmsg._AccountHasNoTeam
 // @Failure 500 {object} errmsg._InternalServerError
 // @Router /teams/members [get]
-func TeamGetTeammatesHandler(c fiber.Ctx) error {
+func TeamMembersGetHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
 
@@ -49,23 +49,23 @@ func TeamGetTeammatesHandler(c fiber.Ctx) error {
 	return c.JSON(members)
 }
 
-// TeamJoinHandler lets the caller join a target team via query parameter.
+// TeamMembersJoinHandler lets the caller join a target team via query parameter.
 // @Summary Join an existing team by ID
 // @Description Validates capacity, attaches the caller, and returns a refreshed token plus updated roster.
 // @Tags Teams Members
 // @Security AccountAuth
 // @Produce json
-// @Param id query string true "Team ID"
+// @Param teamID query string true "Team ID"
 // @Success 200 {object} AccountMembersResponse
 // @Failure 401 {object} errmsg._AccountNoToken
 // @Failure 404 {object} errmsg._TeamNotFound
 // @Failure 409 {object} errmsg._AccountAlreadyHasTeam
 // @Failure 409 {object} errmsg._TeamFull
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /teams/join [patch]
-func TeamJoinHandler(c fiber.Ctx) error {
+// @Router /teams/members/join [patch]
+func TeamMembersJoinHandler(c fiber.Ctx) error {
 	// get all info on the team
-	team := models.Team{ID: c.Query("id")}
+	team := models.Team{ID: c.Query("teamID")}
 	err := team.Get()
 	if err != nil {
 		return utils.StatusError(
@@ -131,8 +131,8 @@ func TeamJoinHandler(c fiber.Ctx) error {
 // @Failure 404 {object} errmsg._TeamNotFound
 // @Failure 409 {object} errmsg._AccountHasNoTeam
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /teams/leave [patch]
-func TeamLeaveHandler(c fiber.Ctx) error {
+// @Router /teams/members/leave [patch]
+func TeamMembersLeaveHandler(c fiber.Ctx) error {
 	// unmarshal the body
 	var account models.Account
 	utils.GetLocals(c, "account", &account)
@@ -190,26 +190,26 @@ func TeamLeaveHandler(c fiber.Ctx) error {
 	})
 }
 
-// TeamKickHandler removes a teammate by account ID.
+// TeamMembersKickHandler removes a teammate by account ID.
 // @Summary Remove a teammate by account ID
 // @Description Allows captains to prune roster members and returns the updated list for confirmation.
 // @Tags Teams Members
 // @Security AccountAuth
 // @Produce json
-// @Param id query string true "Account ID"
+// @Param accountID query string true "Account ID"
 // @Success 200 {object} TeamMembersResponse
 // @Failure 401 {object} errmsg._AccountNoToken
 // @Failure 404 {object} errmsg._AccountNotFound
 // @Failure 404 {object} errmsg._TeamNotFound
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /teams/kick [patch]
-func TeamKickHandler(c fiber.Ctx) error {
+// @Router /teams/members/kick [patch]
+func TeamMembersKickHandler(c fiber.Ctx) error {
 	// getting the local account
 	var account models.Account
 	utils.GetLocals(c, "account", &account)
 
 	// finding the account to remove
-	accountToRemove := models.Account{ID: c.Query("id")}
+	accountToRemove := models.Account{ID: c.Query("accountID")}
 	err := accountToRemove.Get()
 	if err != nil {
 		return utils.StatusError(
