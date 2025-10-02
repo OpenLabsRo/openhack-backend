@@ -103,7 +103,7 @@ stamp_swagger_assets
 printf 'Swagger metadata stamped for %s\n' "${NEW_VERSION}"
 
 if (( GIT_PUSH )); then
-    git -C "${PROJECT_ROOT}" add VERSION doc.go cmd/server/main.go internal/app.go internal/swagger/docs
+    git -C "${PROJECT_ROOT}" add . 
     git -C "${PROJECT_ROOT}" commit -m "release: ${NEW_VERSION}" >/dev/null
     git -C "${PROJECT_ROOT}" tag -a "v${NEW_VERSION}" -m "Release ${NEW_VERSION}"
     git -C "${PROJECT_ROOT}" push
