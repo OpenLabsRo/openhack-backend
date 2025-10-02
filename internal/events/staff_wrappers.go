@@ -106,3 +106,43 @@ func (e *Emitter) StaffConsumablesUpdated(
 
 	e.EmitWindowed(evt)
 }
+
+func (e *Emitter) StaffPresentIn(
+	superuserID, accountID string,
+) {
+	evt := models.Event{
+		Action: "staff.present.in",
+
+		ActorRole: ActorSuperUser,
+		ActorID:   superuserID,
+
+		TargetType: TargetParticipant,
+		TargetID:   accountID,
+
+		Props: nil,
+
+		Key: "present.in|" + accountID,
+	}
+
+	e.EmitWindowed(evt)
+}
+
+func (e *Emitter) StaffPresentOut(
+	superuserID, accountID string,
+) {
+	evt := models.Event{
+		Action: "staff.present.out",
+
+		ActorRole: ActorSuperUser,
+		ActorID:   superuserID,
+
+		TargetType: TargetParticipant,
+		TargetID:   accountID,
+
+		Props: nil,
+
+		Key: "present.out|" + accountID,
+	}
+
+	e.EmitWindowed(evt)
+}

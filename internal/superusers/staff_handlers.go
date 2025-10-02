@@ -13,7 +13,7 @@ import (
 
 // checkinScanParticipantHandler handles badge scans for participants.
 // @Summary Scan a participant QR code
-// @Description Looks up the account by ID, emits telemetry, and returns the account plus computed badge pile.
+// @Description Looks up the account by ID, emits telemetry, and returns the account plus computed badge pile. This route also modifies the account to be checked-in.
 // @Tags Superusers Staff
 // @Security SuperUserAuth
 // @Produce json
@@ -124,7 +124,7 @@ func staffConsumablesPutHandler(c fiber.Ctx) error {
 	var su models.SuperUser
 	utils.GetLocals(c, "superuser", &su)
 
-	account := models.Account{ID: c.Params("id")}
+	account := models.Account{ID: c.Query("id")}
 	err := account.UpdateConsumables(consumables)
 	if err != nil {
 		return utils.StatusError(c,
@@ -133,6 +133,64 @@ func staffConsumablesPutHandler(c fiber.Ctx) error {
 	}
 
 	events.Em.StaffConsumablesUpdated(su.Username, account.ID, consumables)
+
+	return c.SendString("OK")
+}
+
+// staffPresentIn flags a participant as present.
+// @Summary flags a participant as present
+// @Description Creates a present in event, and changes the property of an account to present.
+// @Tags Superusers Staff
+// @Security SuperUserAuth
+// @Accept json
+// @Produce json
+// @Param id query string true "Account ID"
+// @Success 200 {string} string "OK"
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
+// @Router /superusers/staff/in [patch]
+func staffPresentIn(c fiber.Ctx) error {
+	var su models.SuperUser
+	utils.GetLocals(c, "superuser", &su)
+
+	account := models.Account{ID: c.Query("id")}
+	err := account.UpdatePresent(true)
+	if err != nil {
+		return utils.StatusError(c,
+			errmsg.InternalServerError(err),
+		)
+	}
+
+	events.Em.StaffPresentIn(su.Username, account.ID)
+
+	return c.SendString("OK")
+}
+
+// staffPresentOut flags a participant as not present.
+// @Summary flags a participant as not present
+// @Description Creates a present out event, and changes the property of an account to not present.
+// @Tags Superusers Staff
+// @Security SuperUserAuth
+// @Accept json
+// @Produce json
+// @Param id query string true "Account ID"
+// @Success 200 {string} string "OK"
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
+// @Router /superusers/staff/out [patch]
+func staffPresentOut(c fiber.Ctx) error {
+	var su models.SuperUser
+	utils.GetLocals(c, "superuser", &su)
+
+	account := models.Account{ID: c.Query("id")}
+	err := account.UpdatePresent(false)
+	if err != nil {
+		return utils.StatusError(c,
+			errmsg.InternalServerError(err),
+		)
+	}
+
+	events.Em.StaffPresentOut(su.Username, account.ID)
 
 	return c.SendString("OK")
 }

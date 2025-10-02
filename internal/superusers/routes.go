@@ -133,6 +133,20 @@ func Routes(app *fiber.App) {
 		}),
 		staffConsumablesPutHandler,
 	)
+	superusers.Patch("/staff/in",
+		models.SuperUserMiddlewareBuilder([]string{
+			"staff",
+		}),
+		staffPresentIn,
+	)
+
+	superusers.Patch("/staff/out",
+		models.SuperUserMiddlewareBuilder([]string{
+			"staff",
+		}),
+		staffPresentOut,
+	)
+
 }
 
 // superUserPingHandler responds to health probes for the superuser subsystem.

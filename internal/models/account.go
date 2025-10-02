@@ -32,15 +32,15 @@ type Account struct {
 	Name string `json:"name" bson:"name"`
 
 	// extra information about the user
-	MedicalConditions string `json:"medicalConditions" bson:"medicalConditions"`
-	FoodRestrictions  string `json:"foodRestrictions" bson:"foodRestrictions"`
-	University        string `json:"university" bson:"university"`
-	DOB               string `json:"dob" bson:"dob"`
-	PhoneNumber       string `json:"phoneNumber" bson:"phoneNumber"`
+	MedicalConditions string      `json:"medicalConditions" bson:"medicalConditions"`
+	FoodRestrictions  string      `json:"foodRestrictions" bson:"foodRestrictions"`
+	University        string      `json:"university" bson:"university"`
+	DOB               string      `json:"dob" bson:"dob"`
+	PhoneNumber       string      `json:"phoneNumber" bson:"phoneNumber"`
+	CheckedIn         bool        `json:"checkedIn" bson:"checkedIn"`
+	Consumables       Consumables `json:"consumables" bson:"consumables"`
 
-	CheckedIn bool `json:"checkedIn" bson:"checkedIn"`
-
-	Consumables Consumables `json:"consumables" bson:"consumables"`
+	Present bool `json:"present" bson:"present"`
 
 	TeamID string `json:"teamID" bson:"teamID"`
 }
@@ -261,6 +261,26 @@ func (acc *Account) UpdateConsumables(consumables Consumables) (err error) {
 	}
 
 	acc.Consumables = consumables
+
+	cacheAccount(acc)
+
+	return
+}
+
+func (acc *Account) UpdatePresent(pres bool) (err error) {
+	_, err = db.Accounts.UpdateOne(db.Ctx, bson.M{
+		"id": acc.ID,
+	}, bson.M{
+		"$set": bson.M{
+			"present": pres,
+		},
+	})
+
+	if err != nil {
+		return
+	}
+
+	acc.Present = pres
 
 	cacheAccount(acc)
 
