@@ -52,7 +52,7 @@ import (
 )
 
 // @title OpenHack Backend API
-// @version 25.10.03.0
+// @version 25.10.03.1
 // @description Backend API for OpenHack handling participant accounts, teams, feature flags, and superuser check-in tooling.
 // @BasePath /
 // @securityDefinitions.apikey AccountAuth
