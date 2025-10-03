@@ -104,7 +104,7 @@ func staffTagGetHandler(c fiber.Ctx) error {
 // @Security SuperUserAuth
 // @Accept json
 // @Produce json
-// @Param payload body TagAssignRequest true "Tag assignment"
+// @Param payload body models.Tag true "Tag assignment"
 // @Success 200 {object} models.Tag
 // @Failure 401 {object} errmsg._SuperUserNoToken
 // @Failure 409 {object} errmsg._TagIncomplete

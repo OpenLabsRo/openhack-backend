@@ -21,6 +21,7 @@ var SuperUsers *mongo.Collection
 var FlagStages *mongo.Collection
 var Events *mongo.Collection
 var Tags *mongo.Collection
+var Settings *mongo.Collection
 
 func InitDB(deployment string) error {
 	var err error
@@ -47,6 +48,7 @@ func InitDB(deployment string) error {
 	FlagStages = GetCollection(deployment, "flagstages", Client)
 	Events = GetCollection(deployment, "events", Client)
 	Tags = GetCollection(deployment, "tags", Client)
+	Settings = GetCollection(deployment, "settings", Client)
 
 	return nil
 }

@@ -13,4 +13,10 @@ func Routes(r fiber.Router) {
 		}),
 		pilesGetHandler,
 	)
+	r.Post("/",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		pilesComputeHandler,
+	)
 }

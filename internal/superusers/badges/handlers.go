@@ -6,6 +6,7 @@ import (
 	"backend/internal/errmsg"
 	"backend/internal/models"
 	"backend/internal/utils"
+	"encoding/json"
 	"fmt"
 
 	"github.com/gofiber/fiber/v3"
@@ -23,7 +24,6 @@ import (
 // @Failure 500 {object} errmsg._InternalServerError
 // @Router /superusers/badges [get]
 func pilesGetHandler(c fiber.Ctx) error {
-	// get all Accounts
 	var accounts []models.Account
 	cursor, err := db.Accounts.Find(db.Ctx, bson.M{})
 	if err != nil {
@@ -44,7 +44,11 @@ func pilesGetHandler(c fiber.Ctx) error {
 		)
 	}
 
-	salt := utils.BadgePileSalt()
+	salt, serr := loadBadgePileSalt()
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
+	}
+
 	sieve := make([][]models.Account, env.BADGE_PILES)
 
 	for _, v := range accounts {
@@ -53,4 +57,34 @@ func pilesGetHandler(c fiber.Ctx) error {
 	}
 
 	return c.JSON(sieve)
+}
+
+func pilesComputeHandler(c fiber.Ctx) error {
+	var body struct {
+		Trials int `json:"trials"`
+	}
+
+	if len(c.Body()) > 0 {
+		_ = json.Unmarshal(c.Body(), &body)
+	}
+
+	var accounts []models.Account
+	cursor, err := db.Accounts.Find(db.Ctx, bson.M{})
+	if err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
+	}
+
+	if err = cursor.All(db.Ctx, &accounts); err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
+	}
+
+	salt, counts, serr := computeAndPersistBadgePileSalt(accounts, body.Trials)
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
+	}
+
+	return c.JSON(bson.M{
+		"salt":   salt,
+		"counts": counts,
+	})
 }

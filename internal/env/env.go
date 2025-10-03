@@ -18,7 +18,6 @@ var MONGO_URI string
 var PREFORK bool
 var BADGE_PILES int
 
-// will fix this later
 var BADGE_PILES_SALT string
 
 // this is required

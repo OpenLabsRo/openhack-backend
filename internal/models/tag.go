@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Tag struct {
@@ -47,8 +49,26 @@ func (t *Tag) Assign() (serr errmsg.StatusError) {
 		return errmsg.TagIncomplete
 	}
 
-	_, err := db.Tags.InsertOne(db.Ctx, t)
-	if err != nil {
+	update := bson.M{
+		"id":        t.ID,
+		"accountID": t.AccountID,
+	}
+
+	opts := options.FindOneAndUpdate().
+		SetReturnDocument(options.After).
+		SetUpsert(true)
+
+	res := db.Tags.FindOneAndUpdate(
+		db.Ctx,
+		bson.M{"id": t.ID},
+		bson.M{"$set": update},
+		opts,
+	)
+
+	if err := res.Decode(t); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return errmsg.TagNotFound
+		}
 		return errmsg.InternalServerError(err)
 	}
 

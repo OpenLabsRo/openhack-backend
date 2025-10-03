@@ -9,19 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func API_SuperUsersBadgesGet(
-	t *testing.T,
-	app *fiber.App,
-	token string,
-) (bodyBytes []byte, statusCode int) {
-	return RequestRunner(t, app,
-		"GET",
-		"/superusers/badges",
-		[]byte{},
-		&token,
-	)
-}
-
 func API_SuperUsersStaffTagsGet(
 	t *testing.T,
 	app *fiber.App,

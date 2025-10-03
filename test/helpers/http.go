@@ -20,6 +20,7 @@ func RequestRunner(
 	path string,
 	sendBytes []byte,
 	token *string,
+	config ...fiber.TestConfig,
 ) (bodyBytes []byte, statusCode int) {
 	req, err := http.NewRequest(
 		method,
@@ -34,7 +35,12 @@ func RequestRunner(
 	}
 
 	// send request to the shared app
-	res, err := app.Test(req)
+	var res *http.Response
+	if len(config) > 0 {
+		res, err = app.Test(req, config[0])
+	} else {
+		res, err = app.Test(req)
+	}
 	require.NoError(t, err)
 
 	statusCode = res.StatusCode

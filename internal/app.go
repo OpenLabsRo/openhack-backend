@@ -4,8 +4,10 @@ import (
 	"backend/internal/accounts"
 	"backend/internal/db"
 	"backend/internal/env"
+	"backend/internal/errmsg"
 	"backend/internal/events"
 	"backend/internal/meta"
+	"backend/internal/models"
 	"backend/internal/superusers"
 	"backend/internal/teams"
 	"log"
@@ -37,26 +39,47 @@ func getEmitterConfig(deployment string) events.Config {
 	}
 }
 
+func InitBadgePileSalt() {
+	setting := &models.Setting{Name: models.SettingBadgePileSalt}
+
+	serr := setting.Get()
+	if serr == errmsg.EmptyStatusError {
+		env.BADGE_PILES_SALT = setting.Value
+		return
+	}
+
+	if serr != errmsg.SettingNotFound && serr != errmsg.EmptyStatusError {
+		log.Printf("failed to load badge pile salt from settings: %s", serr.Message)
+	}
+}
+
 func SetupApp(deployment string, envRoot string, appVersion string) *fiber.App {
 	app := fiber.New()
 
+	// initializing environment
 	env.Init(envRoot, appVersion)
 
+	// initializing db
 	if err := db.InitDB(deployment); err != nil {
 		log.Fatal("Could not connect to MongoDB")
 		return nil
 	}
 
+	// initializing cache
 	if err := db.InitCache(deployment); err != nil {
 		log.Fatal("Could not connect to Redis")
 		return nil
 	}
 
+	// creating the events emitter
 	events.Em = events.NewEmitter(
 		db.Events,
 		getEmitterConfig(deployment),
 		deployment,
 	)
+
+	// loading the BADLE_PILE_SALT
+	InitBadgePileSalt()
 
 	meta.Routes(app.Group("/meta"))
 	superusers.Routes(app.Group("/superusers"))
