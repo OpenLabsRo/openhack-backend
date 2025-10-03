@@ -13,6 +13,7 @@ import (
 var Ctx = context.Background()
 var RDB *redis.Client
 var Client *mongo.Client
+var DB_DEPLOYMENT string
 
 var Accounts *mongo.Collection
 var Teams *mongo.Collection
@@ -24,6 +25,7 @@ var Tags *mongo.Collection
 var Settings *mongo.Collection
 
 func InitDB(deployment string) error {
+	DB_DEPLOYMENT = deployment
 	var err error
 
 	Client, err = mongo.Connect(
@@ -86,22 +88,42 @@ func InitCache(deployment string) error {
 }
 
 func CacheSet(key string, value string) error {
+	if DB_DEPLOYMENT != "prod" {
+		return redis.Nil
+	}
+
 	return RDB.Set(Ctx, key, value, 0).Err()
 }
 
 func CacheSetBytes(key string, value []byte) error {
+	if DB_DEPLOYMENT != "prod" {
+		return redis.Nil
+	}
+
 	return RDB.Set(Ctx, key, value, 0).Err()
 }
 
 func CacheGet(key string) (string, error) {
+	if DB_DEPLOYMENT != "prod" {
+		return "", redis.Nil
+	}
+
 	return RDB.Get(Ctx, key).Result()
 }
 
 func CacheGetBytes(key string) ([]byte, error) {
+	if DB_DEPLOYMENT != "prod" {
+		return []byte{}, redis.Nil
+	}
+
 	return RDB.Get(Ctx, key).Bytes()
+
 }
 
 func CacheDel(key string) error {
+	if DB_DEPLOYMENT != "prod" {
+		return redis.Nil
+	}
 	_, err := RDB.Del(Ctx, key).Result()
 
 	return err

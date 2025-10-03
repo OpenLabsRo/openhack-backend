@@ -137,7 +137,7 @@ func (acc *Account) Delete() (err error) {
 	if acc.Email != "" {
 		cachedEmail = acc.Email
 	} else {
-		if data, cacheErr := db.CacheGetBytes(accountCacheKey(acc.ID)); cacheErr == nil {
+		if data, cacheErr := db.CacheGetBytes(accountCacheKey(acc.ID)); cacheErr != nil {
 			var cached Account
 			if jsonErr := json.Unmarshal(data, &cached); jsonErr == nil {
 				cachedEmail = cached.Email
