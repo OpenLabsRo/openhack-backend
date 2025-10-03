@@ -12,7 +12,8 @@ func Routes(r fiber.Router) {
 	// team operations
 	r.Get("", models.AccountMiddleware, TeamGetHandler)
 	r.Post("", models.AccountMiddleware, TeamCreateHandler)
-	r.Patch("", models.AccountMiddleware, TeamChangeHandler)
+	r.Patch("/name", models.AccountMiddleware, TeamChangeNameHandler)
+	r.Patch("/table", models.AccountMiddleware, TeamChangeTableHandler)
 	r.Delete("", models.AccountMiddleware, TeamDeleteHandler)
 
 	// members operations

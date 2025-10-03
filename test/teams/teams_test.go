@@ -116,8 +116,8 @@ func TestTeamsSetup(t *testing.T) {
 	}
 }
 
-func TestTeamsChangeHasNoTeam(t *testing.T) {
-	bodyBytes, statusCode := helpers.API_TeamsChange(
+func TestTeamsChangeNameHasNoTeam(t *testing.T) {
+	bodyBytes, statusCode := helpers.API_TeamsChangeName(
 		t,
 		app,
 		"whatever",
@@ -183,9 +183,9 @@ func TestTeamsCreateAlreadyHasTeam(t *testing.T) {
 	)
 }
 
-func TestTeamsChange(t *testing.T) {
+func TestTeamsNameChange(t *testing.T) {
 	newName := "Changed Team Name"
-	bodyBytes, statusCode := helpers.API_TeamsChange(
+	bodyBytes, statusCode := helpers.API_TeamsChangeName(
 		t,
 		app,
 		newName,
@@ -199,6 +199,27 @@ func TestTeamsChange(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, tempTeam.Name, newName)
+}
+
+func TestTeamsChangeTable(t *testing.T) {
+	newTable := "Table 42"
+	bodyBytes, statusCode := helpers.API_TeamsChangeTable(
+		t,
+		app,
+		newTable,
+		testAccountTokens[0],
+	)
+
+	require.Equal(t, http.StatusOK, statusCode)
+
+	var team models.Team
+	require.NoError(t, json.Unmarshal(bodyBytes, &team))
+	require.Equal(t, testTeamID, team.ID)
+	require.Equal(t, newTable, team.Table)
+
+	var stored models.Team
+	require.NoError(t, db.Teams.FindOne(db.Ctx, bson.M{"id": testTeamID}).Decode(&stored))
+	require.Equal(t, newTable, stored.Table)
 }
 
 func TestTeamsSubmissionsChangeName(t *testing.T) {

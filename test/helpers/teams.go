@@ -50,7 +50,7 @@ func API_TeamsGetMembers(
 	)
 }
 
-func API_TeamsChange(
+func API_TeamsChangeName(
 	t *testing.T,
 	app *fiber.App,
 	name string,
@@ -69,7 +69,30 @@ func API_TeamsChange(
 
 	return RequestRunner(t, app,
 		"PATCH",
-		"/teams",
+		"/teams/name",
+		sendBytes,
+		&token,
+	)
+}
+
+func API_TeamsChangeTable(
+	t *testing.T,
+	app *fiber.App,
+	table string,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	payload := struct {
+		Table string `json:"table"`
+	}{
+		Table: table,
+	}
+
+	sendBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	return RequestRunner(t, app,
+		"PATCH",
+		"/teams/table",
 		sendBytes,
 		&token,
 	)

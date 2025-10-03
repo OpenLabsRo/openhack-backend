@@ -92,21 +92,21 @@ func TeamCreateHandler(c fiber.Ctx) error {
 	})
 }
 
-// TeamChangeHandler updates the team's display name.
-// @Summary Rename the current team
+// TeamChangeNameHandler updates the team's display name.
+// @Summary Change the name of the current team
 // @Description Applies a new team name and broadcasts the change to the event stream.
 // @Tags Teams Core
 // @Security AccountAuth
 // @Accept json
 // @Produce json
-// @Param payload body TeamRenameRequest true "New team name"
+// @Param payload body TeamChangeNameRequest true "New team name"
 // @Success 200 {object} models.Team
 // @Failure 401 {object} errmsg._AccountNoToken
 // @Failure 409 {object} errmsg._AccountHasNoTeam
 // @Failure 404 {object} errmsg._TeamNotFound
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /teams [patch]
-func TeamChangeHandler(c fiber.Ctx) error {
+// @Router /teams/name [patch]
+func TeamChangeNameHandler(c fiber.Ctx) error {
 	account := models.Account{}
 	utils.GetLocals(c, "account", &account)
 
@@ -129,11 +129,58 @@ func TeamChangeHandler(c fiber.Ctx) error {
 		)
 	}
 
-	events.Em.TeamChangeName(
+	events.Em.TeamNameChange(
 		account.ID,
 		team.ID,
 		oldName,
 		team.Name,
+	)
+
+	return c.JSON(team)
+}
+
+// TeamChangeTableHandler updates the team's table
+// @Summary Changes the team's table
+// @Description Applies a new team table and broadcasts the change to the event stream.
+// @Tags Teams Core
+// @Security AccountAuth
+// @Accept json
+// @Produce json
+// @Param payload body TeamChangeTableRequest true "New table"
+// @Success 200 {object} models.Team
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 409 {object} errmsg._AccountHasNoTeam
+// @Failure 404 {object} errmsg._TeamNotFound
+// @Failure 500 {object} errmsg._InternalServerError
+// @Router /teams/table [patch]
+func TeamChangeTableHandler(c fiber.Ctx) error {
+	account := models.Account{}
+	utils.GetLocals(c, "account", &account)
+
+	if account.TeamID == "" {
+		return utils.StatusError(
+			c, errmsg.AccountHasNoTeam,
+		)
+	}
+
+	var body struct {
+		Table string `json:"table"`
+	}
+	json.Unmarshal(c.Body(), &body)
+
+	team := models.Team{ID: account.TeamID}
+	oldTable, serr := team.ChangeTable(body.Table)
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(
+			c, serr,
+		)
+	}
+
+	events.Em.TeamTableChange(
+		account.ID,
+		team.ID,
+		oldTable,
+		team.Table,
 	)
 
 	return c.JSON(team)

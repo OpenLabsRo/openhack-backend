@@ -22,6 +22,8 @@ type Team struct {
 		Pres string `json:"pres" bson:"pres"`
 	} `json:"submission" bson:"submission"`
 
+	Table string `json:"table" bson:"table"`
+
 	Deleted bool `json:"deleted" bson:"deleted"`
 }
 
@@ -184,6 +186,32 @@ func (t *Team) ChangeName(name string) (oldName string, serr errmsg.StatusError)
 	oldName = t.Name
 
 	t.Name = name
+
+	cacheTeam(t)
+
+	return
+}
+
+func (t *Team) ChangeTable(table string) (oldTable string, serr errmsg.StatusError) {
+	err := db.Teams.FindOneAndUpdate(db.Ctx, bson.M{
+		"id": t.ID,
+	}, bson.M{
+		"$set": bson.M{
+			"table": table,
+		},
+	}).Decode(t)
+
+	if err != nil {
+		return "", errmsg.InternalServerError(err)
+	}
+
+	if t.Name == "" {
+		return "", errmsg.TeamNotFound
+	}
+
+	oldTable = t.Table
+
+	t.Table = table
 
 	cacheTeam(t)
 

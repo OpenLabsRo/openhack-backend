@@ -22,11 +22,11 @@ func (e *Emitter) TeamCreate(
 	e.Emit(evt)
 }
 
-func (e *Emitter) TeamChangeName(
+func (e *Emitter) TeamNameChange(
 	accountID, teamID, oldName, newName string,
 ) {
 	evt := models.Event{
-		Action: "team.change.name",
+		Action: "team.name.change",
 
 		ActorRole: "participant",
 		ActorID:   accountID,
@@ -38,6 +38,31 @@ func (e *Emitter) TeamChangeName(
 			"oldName": oldName,
 			"newName": newName,
 		},
+
+		Key: "team.name.change|" + teamID,
+	}
+
+	e.EmitWindowed(evt)
+}
+
+func (e *Emitter) TeamTableChange(
+	accountID, teamID, oldTable, newTable string,
+) {
+	evt := models.Event{
+		Action: "team.table.change",
+
+		ActorRole: "participant",
+		ActorID:   accountID,
+
+		TargetType: "team",
+		TargetID:   teamID,
+
+		Props: map[string]any{
+			"oldTable": oldTable,
+			"newTable": newTable,
+		},
+
+		Key: "team.table.change|" + teamID,
 	}
 
 	e.EmitWindowed(evt)
@@ -47,7 +72,7 @@ func (e *Emitter) TeamMemberJoin(
 	accountID, teamID string,
 ) {
 	evt := models.Event{
-		Action: "team.member.add",
+		Action: "team.members.add",
 
 		ActorRole: "participant",
 		ActorID:   accountID,
@@ -65,7 +90,7 @@ func (e *Emitter) TeamMemberLeave(
 	accountID, teamID string,
 ) {
 	evt := models.Event{
-		Action: "team.member.exit",
+		Action: "team.members.exit",
 
 		ActorRole: ActorParticipant,
 		ActorID:   accountID,
@@ -74,6 +99,8 @@ func (e *Emitter) TeamMemberLeave(
 		TargetID:   teamID,
 
 		Props: nil,
+
+		Key: "team.members.exit|" + teamID + "|" + accountID,
 	}
 	e.EmitWindowed(evt)
 }
@@ -83,7 +110,7 @@ func (e *Emitter) TeamMemberKick(
 	kickedID string,
 ) {
 	evt := models.Event{
-		Action: "team.member.exit",
+		Action: "team.members.exit",
 
 		ActorRole: ActorParticipant,
 		ActorID:   actorID,
@@ -94,6 +121,8 @@ func (e *Emitter) TeamMemberKick(
 		Props: map[string]any{
 			"kickedID": kickedID,
 		},
+
+		Key: "team.members.exit|" + teamID + "|" + kickedID,
 	}
 
 	e.EmitWindowed(evt)
@@ -113,7 +142,7 @@ func (e *Emitter) TeamDelete(
 
 		Props: nil,
 
-		Key: "team.created|" + teamID,
+		Key: "team.deleted|" + teamID,
 	}
 
 	e.Emit(evt)

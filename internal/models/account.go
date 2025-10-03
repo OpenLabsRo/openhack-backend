@@ -16,11 +16,11 @@ import (
 )
 
 type Consumables struct {
-	Water      int  `json:"water" bson:"water"`
-	Pizza      bool `json:"pizza" bson:"pizza"`
-	Coffee     bool `json:"coffee" bson:"coffee"`
-	Jerky      bool `json:"jerky" bson:"jerky"`
-	Sandwiches int  `json:"sandwiches" bson:"sandwiches"`
+	Water      int  `json:"water" bson:"water" example:"0"`
+	Pizza      bool `json:"pizza" bson:"pizza" example:"false"`
+	Coffee     bool `json:"coffee" bson:"coffee" example:"false"`
+	Jerky      bool `json:"jerky" bson:"jerky" example:"false"`
+	Sandwiches int  `json:"sandwiches" bson:"sandwiches" example:"0"`
 }
 
 type Account struct {
