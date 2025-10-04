@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 )
 
 func getEmitterConfig(deployment string) events.Config {
@@ -55,6 +56,10 @@ func InitBadgePileSalt() {
 
 func SetupApp(deployment string, envRoot string, appVersion string) *fiber.App {
 	app := fiber.New()
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"*"},
+	}))
 
 	// initializing environment
 	env.Init(envRoot, appVersion)
