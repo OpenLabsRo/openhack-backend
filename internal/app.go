@@ -91,5 +91,12 @@ func SetupApp(deployment string, envRoot string, appVersion string) *fiber.App {
 	accounts.Routes(app.Group("/accounts"))
 	teams.Routes(app.Group("/teams"))
 
+	// temporary for list-unsubscribe
+	app.Get("/unsubscribe", func(c fiber.Ctx) error {
+		events.Em.ListUnsubscribe(c.Query("email"))
+
+		return c.SendString("OK")
+	})
+
 	return app
 }

@@ -57,3 +57,15 @@ func (e *Emitter) EmitWindowed(evt models.Event) {
 		_ = e.InsertOne(ctx, evt)
 	}
 }
+
+func (e *Emitter) ListUnsubscribe(email string) {
+	evt := models.Event{
+		Action:     "list-unsubscribe",
+		ActorRole:  "system",
+		ActorID:    "",
+		TargetType: "email",
+		TargetID:   email,
+	}
+
+	e.Emit(evt)
+}
