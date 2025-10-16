@@ -5,3 +5,5 @@ bin
 backend
 todo.txt
 .air.toml
+flagstages_config.json
+flags_config.json
