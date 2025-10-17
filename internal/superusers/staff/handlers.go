@@ -34,6 +34,14 @@ func staffRegisterHandler(c fiber.Ctx) error {
 		)
 	}
 
+	// Set the account as checked in
+	err = account.SetCheckedIn(true)
+	if err != nil {
+		return utils.StatusError(c,
+			errmsg.InternalServerError(err),
+		)
+	}
+
 	events.Em.StaffRegister(su.Username, account.ID)
 
 	return c.JSON(bson.M{

@@ -287,6 +287,26 @@ func (acc *Account) UpdatePresent(pres bool) (err error) {
 	return
 }
 
+func (acc *Account) SetCheckedIn(checkedIn bool) (err error) {
+	_, err = db.Accounts.UpdateOne(db.Ctx, bson.M{
+		"id": acc.ID,
+	}, bson.M{
+		"$set": bson.M{
+			"checkedIn": checkedIn,
+		},
+	})
+
+	if err != nil {
+		return
+	}
+
+	acc.CheckedIn = checkedIn
+
+	cacheAccount(acc)
+
+	return
+}
+
 func (acc *Account) AddToTeam(teamID string) (err error) {
 	_, err = db.Accounts.UpdateOne(db.Ctx, bson.M{
 		"id": acc.ID,
