@@ -1,7 +1,7 @@
 // Package backend provides top-level metadata for the OpenHack API.
 //
 // @title OpenHack Backend API
-// @version 25.10.17.0
+// @version 25.10.18.0
 // @description Backend API for OpenHack handling participant accounts, teams, feature flags, and superuser check-in tooling.
 // @BasePath /
 // @securityDefinitions.apikey AccountAuth
