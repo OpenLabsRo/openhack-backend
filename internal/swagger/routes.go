@@ -111,9 +111,10 @@ func Register(app *fiber.App) {
 			version = "docs"
 		}
 
-		if (os.Getenv("NO_HYPER")) == "true" {
+		if os.Getenv("NO_HYPER") == "false" || os.Getenv("NO_HYPER") == "" {
 			data = stampServers(c, data, "json", version)
 		}
+
 		c.Type("json", "utf-8")
 		return c.Send(data)
 	})
