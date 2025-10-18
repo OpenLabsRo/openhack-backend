@@ -95,12 +95,14 @@ func Register(app *fiber.App) {
 		version = "docs" // fallback if VERSION not set
 	}
 
-	group := app.Group("/" + version)
+	// group := app.Group("/" + version)
 
-	group.Get("/docs", renderUI)
-	group.Get("/docs/index.html", renderUI)
+	app.Get("/docs", func(c fiber.Ctx) error {
+		c.Type("html", "utf-8")
+		return c.SendString(uiTemplate)
+	})
 
-	group.Get("/docs/doc.json", func(c fiber.Ctx) error {
+	app.Get("/docs/doc.json", func(c fiber.Ctx) error {
 		data, err := loadDoc(embedJSONPath, diskJSONPath)
 		if err != nil {
 			return missingSpec(c, err)
@@ -112,19 +114,12 @@ func Register(app *fiber.App) {
 		}
 
 		if os.Getenv("NO_HYPER") == "false" || os.Getenv("NO_HYPER") == "" {
-			data = stampServers(c, data, "json", version)
+			data = stampJSON(c, data, version)
 		}
 
 		c.Type("json", "utf-8")
 		return c.Send(data)
 	})
-
-	// YAML support removed - only JSON doc is served.
-}
-
-func renderUI(c fiber.Ctx) error {
-	c.Type("html", "utf-8")
-	return c.SendString(uiTemplate)
 }
 
 func missingSpec(c fiber.Ctx, err error) error {
@@ -266,16 +261,7 @@ func ensureMap(root map[string]any, key string) map[string]any {
 	return created
 }
 
-func stampServers(c fiber.Ctx, data []byte, format string, version string) []byte {
-	switch format {
-	case "json":
-		return stampServersJSON(c, data, version)
-	default:
-		return data
-	}
-}
-
-func stampServersJSON(c fiber.Ctx, data []byte, version string) []byte {
+func stampJSON(c fiber.Ctx, data []byte, version string) []byte {
 	var doc map[string]any
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return data
