@@ -1,47 +1,71 @@
 package swagger
 
 import (
+	"backend/internal/env"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"backend/internal/env"
-
 	"github.com/gofiber/fiber/v3"
-	"gopkg.in/yaml.v3"
 )
 
 const (
 	embedJSONPath = "docs/swagger.json"
-	embedYAMLPath = "docs/swagger.yaml"
 	diskJSONPath  = "internal/swagger/docs/swagger.json"
-	diskYAMLPath  = "internal/swagger/docs/swagger.yaml"
+	// swaggerUIPath = "https://unpkg.com/swagger-ui-dist@latest"
+	swaggerUIPath = "https://openhack-swagger.vercel.app/"
 )
 
-const uiTemplate = `<!DOCTYPE html>
+var uiTemplate = fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>OpenHack Backend API Docs</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css" />
-  <style>
-    html, body { margin: 0; padding: 0; background: #fafafa; }
-    #swagger-ui { box-sizing: border-box; }
-  </style>
+  <link rel="icon" type="image/png" href="https://dl.openhack.ro/icons/logo.png" />
+  <link rel="stylesheet" href="%s/swagger-ui.css" />
+  
+	<style>
+	html, body { margin: 0; padding: 0; background: #000000; }`+
+	// #swagger-ui { box-sizing: border-box; background: #171717; }
+	// .swagger-ui .topbar { background: #000 !important; }
+	// .swagger-ui .info { background: #171717 !important; color: #fff !important; }
+	// .swagger-ui .opblock { background: #171717 !important; border-color: #333 !important; }
+	// .swagger-ui .opblock-summary { background: #171717 !important; color: #fff !important; }
+	// .swagger-ui .parameters { background: #171717 !important; color: #fff !important; }
+	// .swagger-ui .responses { background: #171717 !important; color: #fff !important; }
+	// .swagger-ui .response { background: #171717 !important; color: #fff !important; }
+	// .swagger-ui .model { background: #171717 !important; color: #fff !important; }
+	// .swagger-ui .model-title { color: #fff !important; }
+	// .swagger-ui .prop { background: #171717 !important; color: #fff !important; }
+	// .swagger-ui .parameter { background: #171717 !important; color: #fff !important; }
+	// .swagger-ui .parameter__name { color: #fff !important; }
+	// .swagger-ui .parameter__type { color: #fff !important; }
+	// .swagger-ui .response__title { color: #fff !important; }
+	// .swagger-ui .response__description { color: #fff !important; }
+	// .swagger-ui .markdown p { color: #fff !important; }
+	// .swagger-ui .markdown code { background: #333 !important; color: #fff !important; }
+	// .swagger-ui .btn { background: #333 !important; color: #fff !important; border-color: #555 !important; }
+	// .swagger-ui .btn:hover { background: #555 !important; }
+	// .swagger-ui .select { background: #333 !important; color: #fff !important; border-color: #555 !important; }
+	// .swagger-ui input { background: #333 !important; color: #fff !important; border-color: #555 !important; }
+	// .swagger-ui textarea { background: #333 !important; color: #fff !important; border-color: #555 !important; }
+	`</style>
 </head>
 <body>
   <div id="swagger-ui"></div>
-  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
-  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-standalone-preset.js"></script>
-  <script>
-  window.onload = () => {
-    window.ui = SwaggerUIBundle({
-      url: '/swagger/doc.json',
-      dom_id: '#swagger-ui',
+  <script src="%s/swagger-ui-bundle.js"></script>
+  <script src="%s/swagger-ui-standalone-preset.js"></script>
+	<script>
+	window.onload = () => {
+		window.ui = SwaggerUIBundle({
+			url: './docs/doc.json',
+			dom_id: '#swagger-ui',
       presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
       layout: 'StandaloneLayout',
       deepLinking: true,
@@ -58,7 +82,7 @@ const uiTemplate = `<!DOCTYPE html>
   };
   </script>
 </body>
-</html>`
+</html>`, swaggerUIPath, swaggerUIPath, swaggerUIPath)
 
 // Register wires swagger-ui routes backed by the generated doc files.
 func Register(app *fiber.App) {
@@ -66,28 +90,35 @@ func Register(app *fiber.App) {
 		return
 	}
 
-	app.Get("/swagger", renderUI)
-	app.Get("/swagger/index.html", renderUI)
+	version := env.VERSION
+	if version == "" {
+		version = "docs" // fallback if VERSION not set
+	}
 
-	app.Get("/swagger/doc.json", func(c fiber.Ctx) error {
+	group := app.Group("/" + version)
+
+	group.Get("/docs", renderUI)
+	group.Get("/docs/index.html", renderUI)
+
+	group.Get("/docs/doc.json", func(c fiber.Ctx) error {
 		data, err := loadDoc(embedJSONPath, diskJSONPath)
 		if err != nil {
 			return missingSpec(c, err)
 		}
 
+		version := env.VERSION
+		if version == "" {
+			version = "docs"
+		}
+
+		if (os.Getenv("NO_HYPER")) == "true" {
+			data = stampServers(c, data, "json", version)
+		}
 		c.Type("json", "utf-8")
 		return c.Send(data)
 	})
 
-	app.Get("/swagger/doc.yaml", func(c fiber.Ctx) error {
-		data, err := loadDoc(embedYAMLPath, diskYAMLPath)
-		if err != nil {
-			return missingSpec(c, err)
-		}
-
-		c.Type("yaml", "utf-8")
-		return c.Send(data)
-	})
+	// YAML support removed - only JSON doc is served.
 }
 
 func renderUI(c fiber.Ctx) error {
@@ -98,7 +129,7 @@ func renderUI(c fiber.Ctx) error {
 func missingSpec(c fiber.Ctx, err error) error {
 	if errors.Is(err, os.ErrNotExist) {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"message": "Swagger spec not generated yet. Run `swag init -g cmd/server/main.go -o internal/swagger/docs` to create doc.json/yaml.",
+			"message": "Swagger spec not generated yet. Run `swag init -g cmd/server/main.go -o internal/swagger/docs` to create doc.json.",
 		})
 	}
 
@@ -129,6 +160,11 @@ func loadDoc(embedPath string, diskPath string) ([]byte, error) {
 }
 
 func stampDoc(ext string, data []byte) []byte {
+	// If NO_HYPER is explicitly set to "true", skip version stamping.
+	if strings.EqualFold(strings.TrimSpace(env.NO_HYPER), "true") {
+		return data
+	}
+
 	version := strings.TrimSpace(env.VERSION)
 	if version == "" {
 		return data
@@ -147,8 +183,6 @@ func applyVersion(ext string, data []byte, version string) ([]byte, error) {
 	switch ext {
 	case ".json":
 		return updateJSONDoc(data, version)
-	case ".yaml", ".yml":
-		return updateYAMLDoc(data, version)
 	default:
 		return data, nil
 	}
@@ -172,17 +206,6 @@ func updateJSONDoc(data []byte, version string) ([]byte, error) {
 	}
 
 	return encoded, nil
-}
-
-func updateYAMLDoc(data []byte, version string) ([]byte, error) {
-	var doc map[string]any
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, err
-	}
-
-	stampDocMap(doc, version)
-
-	return yaml.Marshal(doc)
 }
 
 func stampDocMap(doc map[string]any, version string) {
@@ -240,4 +263,35 @@ func ensureMap(root map[string]any, key string) map[string]any {
 	created := map[string]any{}
 	root[key] = created
 	return created
+}
+
+func stampServers(c fiber.Ctx, data []byte, format string, version string) []byte {
+	switch format {
+	case "json":
+		return stampServersJSON(c, data, version)
+	default:
+		return data
+	}
+}
+
+func stampServersJSON(c fiber.Ctx, data []byte, version string) []byte {
+	var doc map[string]any
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return data
+	}
+
+	// swagger: 2.0
+	u, err := url.Parse(c.BaseURL())
+	if err == nil {
+		// basePath should include the version prefix
+		doc["basePath"] = "/" + strings.Trim(version, "/")
+		doc["schemes"] = []string{u.Scheme}
+	}
+
+	encoded, err := json.MarshalIndent(doc, "", "    ")
+	if err != nil {
+		return data
+	}
+
+	return encoded
 }

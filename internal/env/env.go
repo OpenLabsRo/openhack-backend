@@ -22,6 +22,7 @@ var BADGE_PILES_SALT string
 
 // this is required
 var VERSION string
+var NO_HYPER string
 
 const SUPERUSER_USERNAME = "testsuperuser"
 const SUPERUSER_PASSWORD = "testsuperuser"
@@ -41,6 +42,7 @@ func Init(envRoot string, appVersion string) {
 	MONGO_URI = os.Getenv("MONGO_URI")
 	JWT_SECRET = []byte(os.Getenv("JWT_SECRET"))
 	BADGE_PILES, _ = strconv.Atoi(os.Getenv("BADGE_PILES"))
+	NO_HYPER = os.Getenv("NO_HYPER")
 }
 
 func loadEnv(envRoot string) {
