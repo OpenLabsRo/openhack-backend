@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/gofiber/fiber/v3"
@@ -34,16 +35,20 @@ var (
 	testAccountTokens    []string
 
 	testTeamID string
+
+	// package-level flags
+	envRootFlag    = flag.String("env-root", "", "directory containing environment files")
+	appVersionFlag = flag.String("app-version", "", "application version override")
 )
 
-func TestTeamsPing(t *testing.T) {
-	envRoot := flag.String("env-root", "", "directory containing environment files")
-	appVersion := flag.String("app-version", "", "application version override")
-
+func TestMain(m *testing.M) {
 	flag.Parse()
-	app = internal.SetupApp("test", *envRoot, *appVersion)
+	app = internal.SetupApp("test", *envRootFlag, *appVersionFlag)
 	helpers.ResetTestCache()
+	os.Exit(m.Run())
+}
 
+func TestTeamsPing(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/teams/meta/ping", nil)
 	resp, err := app.Test(req)
 	if err != nil {

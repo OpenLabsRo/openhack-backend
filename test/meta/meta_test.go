@@ -3,6 +3,7 @@ package meta
 import (
 	"backend/internal"
 	"backend/internal/env"
+	"flag"
 	"io"
 	"net/http"
 	"sync"
@@ -15,13 +16,16 @@ import (
 var (
 	metaApp  *fiber.App
 	metaOnce sync.Once
+	// package-level flags
+	envRootFlag    = flag.String("env-root", "", "directory containing environment files")
+	appVersionFlag = flag.String("app-version", "", "application version override")
 )
 
 func metaTestApp(t *testing.T) *fiber.App {
 	t.Helper()
 
 	metaOnce.Do(func() {
-		metaApp = internal.SetupApp("test", "", "")
+		metaApp = internal.SetupApp("test", *envRootFlag, *appVersionFlag)
 	})
 
 	return metaApp

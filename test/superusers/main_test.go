@@ -15,15 +15,15 @@ import (
 
 var (
 	app *fiber.App
+	// package-level flags
+	envRootFlag    = flag.String("env-root", "", "directory containing environment files")
+	appVersionFlag = flag.String("app-version", "", "application version override")
 )
 
 func TestMain(m *testing.M) {
-	envRoot := flag.String("env-root", "", "directory containing environment files")
-	appVersion := flag.String("app-version", "", "application version override")
-
 	flag.Parse()
 
-	app = internal.SetupApp("test", *envRoot, *appVersion)
+	app = internal.SetupApp("test", *envRootFlag, *appVersionFlag)
 	helpers.ResetTestCache()
 	clearEvents()
 

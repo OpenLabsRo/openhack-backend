@@ -5,14 +5,15 @@ import (
 	"backend/internal/env"
 	"backend/internal/errmsg"
 	"backend/internal/models"
-	"flag"
 
 	"backend/test/helpers"
 
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/gofiber/fiber/v3"
@@ -28,14 +29,17 @@ var (
 	testAccountToken    string
 )
 
+// package-level test flags (registered during init)
+var (
+	envRootFlag    = flag.String("env-root", "", "directory containing environment files")
+	appVersionFlag = flag.String("app-version", "", "application version override")
+)
+
 func TestAccountsPing(t *testing.T) {
-	envRoot := flag.String("env-root", "", "directory containing environment files")
-	appVersion := flag.String("app-version", "", "application version override")
-
-	flag.Parse()
-
-	app = internal.SetupApp("test", *envRoot, *appVersion)
-	helpers.ResetTestCache()
+	// app is initialized in TestMain
+	if app == nil {
+		t.Fatalf("test app not initialized; ensure TestMain is present and registers flags")
+	}
 
 	req, _ := http.NewRequest("GET", "/accounts/meta/ping", nil)
 	resp, err := app.Test(req)
@@ -47,6 +51,17 @@ func TestAccountsPing(t *testing.T) {
 	bodyBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 	assert.Equal(t, string(bodyBytes), "PONG")
+}
+
+func TestMain(m *testing.M) {
+	// parse flags registered at package scope
+	flag.Parse()
+
+	app = internal.SetupApp("test", *envRootFlag, *appVersionFlag)
+	helpers.ResetTestCache()
+
+	// run tests
+	os.Exit(m.Run())
 }
 
 func TestAccountsCheckNotInitialized(t *testing.T) {
