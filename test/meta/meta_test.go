@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"sync"
 	"testing"
+	"os"
+
+	"backend/test/helpers"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/require"
@@ -29,6 +32,17 @@ func metaTestApp(t *testing.T) *fiber.App {
 	})
 
 	return metaApp
+}
+
+func TestMain(m *testing.M) {
+	// ensure flags are parsed and test environment is initialized
+	flag.Parse()
+
+	// initialize app and reset test cache
+	metaApp = internal.SetupApp("test", *envRootFlag, *appVersionFlag)
+	helpers.ResetTestCache()
+
+	os.Exit(m.Run())
 }
 
 func TestMetaPing(t *testing.T) {
