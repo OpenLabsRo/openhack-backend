@@ -2,15 +2,12 @@ package superusers
 
 import (
 	"backend/internal"
-	"backend/internal/db"
 	"backend/test/helpers"
 	"flag"
-	"log"
 	"os"
 	"testing"
 
 	"github.com/gofiber/fiber/v3"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 var (
@@ -25,17 +22,7 @@ func TestMain(m *testing.M) {
 
 	app = internal.SetupApp("test", *envRootFlag, *appVersionFlag)
 	helpers.ResetTestCache()
-	clearEvents()
+	helpers.ResetTestEvents()
 
 	os.Exit(m.Run())
-}
-
-func clearEvents() {
-	if db.Events == nil {
-		log.Fatal("events collection not initialized")
-	}
-
-	if _, err := db.Events.DeleteMany(db.Ctx, bson.M{}); err != nil {
-		log.Fatalf("failed to clear events collection: %v", err)
-	}
 }

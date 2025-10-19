@@ -6,9 +6,9 @@ import (
 	"flag"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"testing"
-	"os"
 
 	"backend/test/helpers"
 
@@ -41,6 +41,7 @@ func TestMain(m *testing.M) {
 	// initialize app and reset test cache
 	metaApp = internal.SetupApp("test", *envRootFlag, *appVersionFlag)
 	helpers.ResetTestCache()
+	helpers.ResetTestEvents()
 
 	os.Exit(m.Run())
 }

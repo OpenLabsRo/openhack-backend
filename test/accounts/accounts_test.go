@@ -59,6 +59,7 @@ func TestMain(m *testing.M) {
 
 	app = internal.SetupApp("test", *envRootFlag, *appVersionFlag)
 	helpers.ResetTestCache()
+	helpers.ResetTestEvents()
 
 	// run tests
 	os.Exit(m.Run())

@@ -45,6 +45,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	app = internal.SetupApp("test", *envRootFlag, *appVersionFlag)
 	helpers.ResetTestCache()
+	helpers.ResetTestEvents()
 	os.Exit(m.Run())
 }
 
