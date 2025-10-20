@@ -1,7 +1,6 @@
 package superusers
 
 import (
-	"backend/internal"
 	"backend/internal/db"
 	"backend/internal/env"
 	"backend/internal/models"
@@ -12,14 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 var (
-	badgeApp *fiber.App
-
 	badgeTestSuperUserToken string
 	badgeOriginalEnvSalt    string
 	badgeOriginalSetting    models.Setting
@@ -28,25 +24,14 @@ var (
 	badgeCreatedAccounts []models.Account
 )
 
-func init() {
-	badgeApp = internal.SetupApp("test", "", "")
-	helpers.ResetTestCache()
-	clearBadgeEvents()
-}
-
-func clearBadgeEvents() {
-	if db.Events == nil {
-		return
-	}
-	_, _ = db.Events.DeleteMany(db.Ctx, bson.M{})
-}
-
 func TestBadgePilesInitialSalt(t *testing.T) {
+	require.NotNil(t, app, "test app should be initialized in TestMain")
+
 	badgeOriginalEnvSalt = env.BADGE_PILES_SALT
 
 	bodyBytes, statusCode := helpers.API_SuperUsersAuthLogin(
 		t,
-		badgeApp,
+		app,
 		env.SUPERUSER_USERNAME,
 		env.SUPERUSER_PASSWORD,
 	)
@@ -73,7 +58,7 @@ func TestBadgePilesCreateAccounts(t *testing.T) {
 
 		bodyBytes, statusCode := helpers.API_SuperUsersParticipantsInitialize(
 			t,
-			badgeApp,
+			app,
 			email,
 			name,
 			badgeTestSuperUserToken,
@@ -96,7 +81,7 @@ func TestBadgePilesComputeSalt(t *testing.T) {
 	start := time.Now()
 	bodyBytes, statusCode := helpers.API_SuperUsersBadgesCompute(
 		t,
-		badgeApp,
+		app,
 		&trials,
 		badgeTestSuperUserToken,
 	)
@@ -120,7 +105,7 @@ func TestBadgePilesFetchPiles(t *testing.T) {
 
 	bodyBytes, statusCode := helpers.API_SuperUsersBadgesGet(
 		t,
-		badgeApp,
+		app,
 		badgeTestSuperUserToken,
 	)
 	require.Equal(t, http.StatusOK, statusCode)
