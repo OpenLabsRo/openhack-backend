@@ -1,6 +1,4 @@
 #!/bin/bash
-set -euo pipefail
-
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VERSION_FILE="${PROJECT_ROOT}/VERSION"
 
