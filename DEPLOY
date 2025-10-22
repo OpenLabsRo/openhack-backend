@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
 # Configuration
 REMOTE_USER="sunshine"       # update with remote username
 REMOTE_HOST="api.openhack.ro"   # update with remote host

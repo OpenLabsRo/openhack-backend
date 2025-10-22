@@ -1,6 +1,4 @@
 #!/bin/bash
-set -euo pipefail
-
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VERSION_FILE="${PROJECT_ROOT}/VERSION"
 DATE_PREFIX="$(date '+%y.%m.%d')"
@@ -103,7 +101,7 @@ stamp_swagger_assets
 printf 'Swagger metadata stamped for %s\n' "${NEW_VERSION}"
 
 if (( GIT_PUSH )); then
-    git -C "${PROJECT_ROOT}" add . 
+    git -C "${PROJECT_ROOT}" add .
     git -C "${PROJECT_ROOT}" commit -m "release: ${NEW_VERSION}" >/dev/null
     git -C "${PROJECT_ROOT}" tag -a "v${NEW_VERSION}" -m "Release ${NEW_VERSION}"
     git -C "${PROJECT_ROOT}" push
