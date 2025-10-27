@@ -31,6 +31,8 @@ type Account struct {
 
 	Name string `json:"name" bson:"name"`
 
+	Flags []string `json:"flags" bson:"flags"`
+
 	// extra information about the user
 	MedicalConditions string      `json:"medicalConditions" bson:"medicalConditions"`
 	FoodRestrictions  string      `json:"foodRestrictions" bson:"foodRestrictions"`

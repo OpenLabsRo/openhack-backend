@@ -120,9 +120,27 @@ func TestTeamsSetup(t *testing.T) {
 
 		require.Equal(t, body.Account.Email, testAccountEmails[i])
 	}
+
+	// Initialize flags (turn off all)
+	_, statusCode = helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"0",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
 }
 
 func TestTeamsChangeNameHasNoTeam(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	bodyBytes, statusCode := helpers.API_TeamsChangeName(
 		t,
 		app,
@@ -138,6 +156,15 @@ func TestTeamsChangeNameHasNoTeam(t *testing.T) {
 }
 
 func TestTeamsGetHasNoTeam(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	bodyBytes, statusCode := helpers.API_TeamsGet(
 		t,
 		app,
@@ -152,6 +179,15 @@ func TestTeamsGetHasNoTeam(t *testing.T) {
 }
 
 func TestTeamsCreate(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	bodyBytes, statusCode := helpers.API_TeamsCreate(
 		t,
 		app,
@@ -176,6 +212,15 @@ func TestTeamsCreate(t *testing.T) {
 }
 
 func TestTeamsCreateAlreadyHasTeam(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	bodyBytes, statusCode := helpers.API_TeamsCreate(
 		t,
 		app,
@@ -190,6 +235,15 @@ func TestTeamsCreateAlreadyHasTeam(t *testing.T) {
 }
 
 func TestTeamsNameChange(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	newName := "Changed Team Name"
 	bodyBytes, statusCode := helpers.API_TeamsChangeName(
 		t,
@@ -208,6 +262,15 @@ func TestTeamsNameChange(t *testing.T) {
 }
 
 func TestTeamsChangeTable(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	newTable := "Table 42"
 	bodyBytes, statusCode := helpers.API_TeamsChangeTable(
 		t,
@@ -229,6 +292,15 @@ func TestTeamsChangeTable(t *testing.T) {
 }
 
 func TestTeamsSubmissionsChangeName(t *testing.T) {
+	// Enable Stage 4 for submission operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"4",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	newName := "Changed Submission Name"
 	bodyBytes, statusCode := helpers.API_TeamsSubmissionsChangeName(
 		t,
@@ -247,6 +319,15 @@ func TestTeamsSubmissionsChangeName(t *testing.T) {
 }
 
 func TestTeamsSubmissionChangeDesc(t *testing.T) {
+	// Enable Stage 4 for submission operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"4",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	newDesc := "Changed Description"
 	bodyBytes, statusCode := helpers.API_TeamsSubmissionsChangeDesc(
 		t,
@@ -265,6 +346,15 @@ func TestTeamsSubmissionChangeDesc(t *testing.T) {
 }
 
 func TestTeamsSubmissionChangeRepo(t *testing.T) {
+	// Enable Stage 4 for submission operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"4",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	newRepo := "Changed Repo"
 	bodyBytes, statusCode := helpers.API_TeamsSubmissionsChangeRepo(
 		t,
@@ -283,6 +373,15 @@ func TestTeamsSubmissionChangeRepo(t *testing.T) {
 }
 
 func TestTeamsSubmissionChangePres(t *testing.T) {
+	// Enable Stage 4 for submission operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"4",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	newPres := "Changed Pres"
 	bodyBytes, statusCode := helpers.API_TeamsSubmissionsChangePres(
 		t,
@@ -301,6 +400,15 @@ func TestTeamsSubmissionChangePres(t *testing.T) {
 }
 
 func TestTeamsJoinNotFound(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	bodyBytes, statusCode := helpers.API_TeamsMembersJoin(
 		t,
 		app,
@@ -317,6 +425,15 @@ func TestTeamsJoinNotFound(t *testing.T) {
 
 // 1, 2, and 3 join 0's team
 func TestTeamsJoin(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	for i := 1; i <= 3; i++ {
 		bodyBytes, statusCode := helpers.API_TeamsMembersJoin(
 			t,
@@ -358,6 +475,15 @@ func TestTeamsGetMembers(t *testing.T) {
 }
 
 func TestTeamsJoinTeamFull(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	bodyBytes, statusCode := helpers.API_TeamsMembersJoin(
 		t,
 		app,
@@ -373,6 +499,15 @@ func TestTeamsJoinTeamFull(t *testing.T) {
 }
 
 func TestTeamsJoinAlreadyHasTeam(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	bodyBytes, statusCode := helpers.API_TeamsMembersJoin(
 		t,
 		app,
@@ -388,6 +523,15 @@ func TestTeamsJoinAlreadyHasTeam(t *testing.T) {
 }
 
 func TestTeamsLeave(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	bodyBytes, statusCode := helpers.API_TeamsMembersLeave(
 		t,
 		app,
@@ -410,6 +554,15 @@ func TestTeamsLeave(t *testing.T) {
 }
 
 func TestTeamLeaveHasNoTeam(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	bodyBytes, statusCode := helpers.API_TeamsMembersLeave(
 		t,
 		app,
@@ -424,6 +577,15 @@ func TestTeamLeaveHasNoTeam(t *testing.T) {
 }
 
 func TestTeamKick(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	for i := 2; i <= 3; i++ {
 		_, statusCode := helpers.API_TeamsMembersKick(
 			t,
@@ -437,6 +599,15 @@ func TestTeamKick(t *testing.T) {
 }
 
 func TestTeamKickAccountNotFound(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	bodyBytes, statusCode := helpers.API_TeamsMembersKick(
 		t,
 		app,
@@ -452,6 +623,15 @@ func TestTeamKickAccountNotFound(t *testing.T) {
 }
 
 func TestTeamsDelete(t *testing.T) {
+	// Enable Stage 3 for team operations
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"3",
+		testSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
 	bodyBytes, statusCode := helpers.API_TeamsDelete(
 		t,
 		app,
@@ -473,6 +653,14 @@ func TestTeamsDelete(t *testing.T) {
 }
 
 func TestTeamsCleanup(t *testing.T) {
+	// Reset flags by executing initialize flagstage
+	_, _ = helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"0",
+		testSuperUserToken,
+	)
+
 	// delete the team
 	db.Teams.DeleteOne(context.Background(), bson.M{"id": testTeamID})
 

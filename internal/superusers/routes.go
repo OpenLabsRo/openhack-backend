@@ -6,6 +6,7 @@ import (
 	"backend/internal/superusers/badges"
 	"backend/internal/superusers/flags"
 	"backend/internal/superusers/flagstages"
+	"backend/internal/superusers/judging"
 	"backend/internal/superusers/participants"
 	"backend/internal/superusers/staff"
 
@@ -30,6 +31,7 @@ func Routes(r fiber.Router) {
 	flags.Routes(r.Group("/flags"))
 	flagstages.Routes(r.Group("/flagstages"))
 	badges.Routes(r.Group("/badges"))
+	judging.Routes(r.Group("/judging"))
 	participants.Routes(r.Group("/participants"))
 
 	staff.Routes(r.Group("/staff"))

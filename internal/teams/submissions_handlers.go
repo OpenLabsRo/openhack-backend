@@ -10,6 +10,39 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+// TeamSubmissionGetHandler returns the submission data for the authenticated account's team.
+// @Summary Fetch the team submission
+// @Description Retrieves the current submission details including name, description, repo, and presentation links.
+// @Tags Teams Submissions
+// @Security AccountAuth
+// @Produce json
+// @Success 200 {object} SubmissionResponse
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 409 {object} errmsg._AccountHasNoTeam
+// @Failure 500 {object} errmsg._InternalServerError
+// @Router /teams/submissions [get]
+func TeamSubmissionGetHandler(c fiber.Ctx) error {
+	account := models.Account{}
+	utils.GetLocals(c, "account", &account)
+
+	if account.TeamID == "" {
+		return utils.StatusError(
+			c, errmsg.AccountHasNoTeam,
+		)
+	}
+
+	team := models.Team{ID: account.TeamID}
+	err := team.Get()
+
+	if err != nil {
+		return utils.StatusError(
+			c, errmsg.InternalServerError(err),
+		)
+	}
+
+	return c.JSON(team.Submission)
+}
+
 // TeamSubmissionChangeNameHandler updates the submission name field.
 // @Summary Update the team submission name
 // @Description Records a new project name and emits an event so judges see the latest label.

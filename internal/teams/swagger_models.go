@@ -31,6 +31,14 @@ type SubmissionPresRequest struct {
 	Pres string `json:"pres" example:"https://www.youtube.com/watch?v=dQw4w9WgXcQ"`
 }
 
+// SubmissionResponse represents the submission data returned by GET /teams/submissions.
+type SubmissionResponse struct {
+	Name string `json:"name" example:"My Project"`
+	Desc string `json:"desc" example:"A brief description of my project"`
+	Repo string `json:"repo" example:"https://github.com/user/repo"`
+	Pres string `json:"pres" example:"https://www.youtube.com/watch?v=dQw4w9WgXcQ"`
+}
+
 // AccountMembersResponse reflects the token, account, and teammate list returned by join/leave operations.
 type AccountMembersResponse struct {
 	Token   string           `json:"token"`

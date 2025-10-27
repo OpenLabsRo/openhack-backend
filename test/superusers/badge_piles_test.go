@@ -3,6 +3,7 @@ package superusers
 import (
 	"backend/internal/db"
 	"backend/internal/env"
+	"backend/internal/errmsg"
 	"backend/internal/models"
 	"backend/test/helpers"
 	"encoding/json"
@@ -15,6 +16,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+const (
+	badgeAccountsToCreate    = 52
+	badgePileSaltSettingName = "badgePileSalt"
+)
+
 var (
 	badgeTestSuperUserToken string
 	badgeOriginalEnvSalt    string
@@ -22,6 +28,7 @@ var (
 	badgeOriginalSaltExists bool
 
 	badgeCreatedAccounts []models.Account
+	badgePileSaltSetting models.Setting
 )
 
 func TestBadgePilesInitialSalt(t *testing.T) {
@@ -43,17 +50,22 @@ func TestBadgePilesInitialSalt(t *testing.T) {
 	require.NoError(t, json.Unmarshal(bodyBytes, &loginResp))
 	badgeTestSuperUserToken = loginResp.Token
 
-	t.Logf("Environment badge pile salt on startup: %q", badgeOriginalEnvSalt)
+	// Fetch existing badge pile salt setting from database
+	badgePileSaltSetting.Name = badgePileSaltSettingName
+	err := badgePileSaltSetting.Get()
+	if err == errmsg.EmptyStatusError {
+		badgeOriginalSaltExists = true
+		badgeOriginalSetting = badgePileSaltSetting
+	}
+
+	fmt.Printf("Environment badge pile salt on startup: %q\n", badgeOriginalEnvSalt)
 }
 
 func TestBadgePilesCreateAccounts(t *testing.T) {
 	require.NotEmpty(t, badgeTestSuperUserToken, "superuser token should be initialized")
 
-	const totalNewAccounts = 60
-	baseSuffix := time.Now().UnixNano()
-
-	for i := 0; i < totalNewAccounts; i++ {
-		email := fmt.Sprintf("badge_pile_test_%d_%d@test.com", baseSuffix, i)
+	for i := range badgeAccountsToCreate {
+		email := fmt.Sprintf("badge_pile_test_%d@test.com", i)
 		name := fmt.Sprintf("Badge Pile Test %d", i)
 
 		bodyBytes, statusCode := helpers.API_SuperUsersParticipantsInitialize(
@@ -70,12 +82,14 @@ func TestBadgePilesCreateAccounts(t *testing.T) {
 		badgeCreatedAccounts = append(badgeCreatedAccounts, acc)
 	}
 
-	t.Logf("Created %d accounts for badge pile evaluation", len(badgeCreatedAccounts))
+	require.Len(t, badgeCreatedAccounts, badgeAccountsToCreate)
+	fmt.Printf("Created %d accounts for badge pile evaluation\n", len(badgeCreatedAccounts))
 }
 
 func TestBadgePilesComputeSalt(t *testing.T) {
 	require.NotEmpty(t, badgeTestSuperUserToken, "superuser token should be initialized")
 	require.NotEmpty(t, badgeCreatedAccounts, "badge accounts should be seeded")
+	require.Len(t, badgeCreatedAccounts, badgeAccountsToCreate, "should have %d created accounts before computing salt", badgeAccountsToCreate)
 
 	trials := 10_000
 	start := time.Now()
@@ -94,10 +108,10 @@ func TestBadgePilesComputeSalt(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal(bodyBytes, &computeResp))
 
-	t.Logf("Computed badge pile salt: %d", computeResp.Salt)
-	t.Logf("Reported pile counts from compute endpoint: %v", computeResp.Counts)
-	t.Logf("Environment badge pile salt after compute: %q", env.BADGE_PILES_SALT)
-	t.Logf("Computing badge piles took: %s", duration)
+	fmt.Printf("Computed badge pile salt: %d\n", computeResp.Salt)
+	fmt.Printf("Reported pile counts from compute endpoint: %v\n", computeResp.Counts)
+	fmt.Printf("Environment badge pile salt after compute: %q\n", env.BADGE_PILES_SALT)
+	fmt.Printf("Computing badge piles took: %s\n", duration)
 }
 
 func TestBadgePilesFetchPiles(t *testing.T) {
@@ -120,9 +134,11 @@ func TestBadgePilesFetchPiles(t *testing.T) {
 	}
 
 	newAccountCounts := make([]int, len(piles))
+	totalAccountsInPiles := 0
 
 	for idx, pile := range piles {
 		totalCounts[idx] = len(pile)
+		totalAccountsInPiles += len(pile)
 		for _, acc := range pile {
 			if _, ok := newAccountSet[acc.ID]; ok {
 				newAccountCounts[idx]++
@@ -130,9 +146,18 @@ func TestBadgePilesFetchPiles(t *testing.T) {
 		}
 	}
 
-	t.Logf("Total accounts per pile: %v", totalCounts)
-	t.Logf("Newly created accounts per pile: %v", newAccountCounts)
-	t.Logf("Environment badge pile salt during fetch: %q", env.BADGE_PILES_SALT)
+	require.Equal(t, badgeAccountsToCreate, len(badgeCreatedAccounts), "created accounts should equal constant")
+
+	totalNewAccountsInPiles := 0
+	for _, count := range newAccountCounts {
+		totalNewAccountsInPiles += count
+	}
+	require.Equal(t, badgeAccountsToCreate, totalNewAccountsInPiles, "sum of newly created accounts across piles should equal total created")
+
+	fmt.Printf("Total accounts per pile: %v\n", totalCounts)
+	fmt.Printf("Newly created accounts per pile: %v\n", newAccountCounts)
+	fmt.Printf("Total newly created accounts in piles: %d (expected: %d)\n", totalNewAccountsInPiles, badgeAccountsToCreate)
+	fmt.Printf("Environment badge pile salt during fetch: %q\n", env.BADGE_PILES_SALT)
 }
 
 func TestBadgePilesCleanup(t *testing.T) {
@@ -142,10 +167,12 @@ func TestBadgePilesCleanup(t *testing.T) {
 	badgeCreatedAccounts = nil
 
 	if badgeOriginalSaltExists {
-		t.Logf("Original badge pile salt before test: %s", badgeOriginalSetting.Value)
+		fmt.Printf("Original badge pile salt before test: %s\n", badgeOriginalSetting.Value)
+		// Restore original setting
+		_ = badgeOriginalSetting.Update()
 	} else {
 		t.Log("No badge pile salt existed prior to test; keeping newly generated value")
 	}
 
-	t.Logf("Badge pile salt retained in settings; environment currently: %q", env.BADGE_PILES_SALT)
+	fmt.Printf("Badge pile salt retained in settings; environment currently: %q\n", env.BADGE_PILES_SALT)
 }

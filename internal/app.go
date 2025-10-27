@@ -6,6 +6,7 @@ import (
 	"backend/internal/env"
 	"backend/internal/errmsg"
 	"backend/internal/events"
+	"backend/internal/judge"
 	"backend/internal/meta"
 	"backend/internal/models"
 	"backend/internal/superusers"
@@ -40,16 +41,18 @@ func getEmitterConfig(deployment string) events.Config {
 	}
 }
 
-func InitBadgePileSalt() {
+func initBadgePileSalt() {
 	setting := &models.Setting{Name: models.SettingBadgePileSalt}
 
 	serr := setting.Get()
 	if serr == errmsg.EmptyStatusError {
-		env.BADGE_PILES_SALT = setting.Value
+		if salt, ok := setting.Value.(string); ok {
+			env.BADGE_PILES_SALT = salt
+		}
 		return
 	}
 
-	if serr != errmsg.SettingNotFound && serr != errmsg.EmptyStatusError {
+	if serr != errmsg.SettingNotFound {
 		log.Printf("failed to load badge pile salt from settings: %s", serr.Message)
 	}
 }
@@ -83,13 +86,14 @@ func SetupApp(deployment string, envRoot string, appVersion string) *fiber.App {
 		deployment,
 	)
 
-	// loading the BADLE_PILE_SALT
-	InitBadgePileSalt()
+	// loading the BADGE_PILE_SALT
+	initBadgePileSalt()
 
 	meta.Routes(app.Group("/meta"))
 	superusers.Routes(app.Group("/superusers"))
 	accounts.Routes(app.Group("/accounts"))
 	teams.Routes(app.Group("/teams"))
+	judge.Routes(app.Group("/judge"))
 
 	// temporary for list-unsubscribe
 	app.Get("/unsubscribe", func(c fiber.Ctx) error {

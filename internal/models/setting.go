@@ -12,10 +12,13 @@ import (
 )
 
 var SettingBadgePileSalt = "badgePileSalt"
+var SettingTeamOrder = "teamOrder"
+var SettingJudgeOrder = "judgeOrder"
+var SettingJudgeOffset = "judgeOffset"
 
 type Setting struct {
 	Name  string `json:"name" bson:"name"`
-	Value string `json:"value" bson:"value"`
+	Value any    `json:"value" bson:"value"`
 }
 
 func (s *Setting) Get() errmsg.StatusError {

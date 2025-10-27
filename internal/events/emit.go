@@ -16,6 +16,7 @@ var (
 	TargetParticipant = "participant"
 	TargetTeam        = "team"
 	TargetSubmission  = "submission"
+	TargetJudge       = "judge"
 )
 
 func (e *Emitter) Emit(evt models.Event) {

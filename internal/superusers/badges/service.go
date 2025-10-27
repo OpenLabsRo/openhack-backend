@@ -44,7 +44,7 @@ func computeAndPersistBadgePileSalt(accounts []models.Account, trials int) (uint
 		return 0, nil, serr
 	}
 
-	env.BADGE_PILES_SALT = setting.Value
+	env.BADGE_PILES_SALT = fmt.Sprintf("%s", setting.Value)
 
 	return salt, counts, errmsg.EmptyStatusError
 }
@@ -61,12 +61,12 @@ func loadBadgePileSalt() (uint32, errmsg.StatusError) {
 		return 0, serr
 	}
 
-	saltValue, err := strconv.ParseUint(setting.Value, 10, 32)
+	saltValue, err := strconv.ParseUint(fmt.Sprintf("%s", setting.Value), 10, 32)
 	if err != nil {
 		return 0, errmsg.InternalServerError(err)
 	}
 
-	env.BADGE_PILES_SALT = setting.Value
+	env.BADGE_PILES_SALT = fmt.Sprintf("%s", setting.Value)
 
 	return uint32(saltValue), errmsg.EmptyStatusError
 }

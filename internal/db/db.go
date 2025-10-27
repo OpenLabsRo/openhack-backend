@@ -23,6 +23,8 @@ var FlagStages *mongo.Collection
 var Events *mongo.Collection
 var Tags *mongo.Collection
 var Settings *mongo.Collection
+var Judges *mongo.Collection
+var Judgments *mongo.Collection
 
 func InitDB(deployment string) error {
 	DB_DEPLOYMENT = deployment
@@ -51,6 +53,8 @@ func InitDB(deployment string) error {
 	Events = GetCollection(deployment, "events", Client)
 	Tags = GetCollection(deployment, "tags", Client)
 	Settings = GetCollection(deployment, "settings", Client)
+	Judges = GetCollection(deployment, "judges", Client)
+	Judgments = GetCollection(deployment, "judgments", Client)
 
 	return nil
 }

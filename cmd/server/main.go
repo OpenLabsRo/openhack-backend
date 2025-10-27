@@ -19,6 +19,13 @@ package main
 // @tag.description Staff passport scanning and presence tooling endpoints.
 // @tag.name Superusers Badges
 // @tag.description Badge assignment and pile lookup endpoints.
+// @tag.name Superusers Judging
+// @tag.description Judge token generation and judging initialization endpoints.
+
+// @tag.name Judges Auth
+// @tag.description Judge token upgrade and authentication flows.
+// @tag.name Judges Core
+// @tag.description Judge team assignment and judging endpoints.
 
 // @tag.name Accounts Meta
 // @tag.description Meta routes like ping and whoami

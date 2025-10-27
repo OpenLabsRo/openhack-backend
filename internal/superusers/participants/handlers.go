@@ -1,6 +1,7 @@
 package participants
 
 import (
+	"backend/internal/db"
 	"backend/internal/errmsg"
 	"backend/internal/events"
 	"backend/internal/models"
@@ -8,6 +9,7 @@ import (
 	"encoding/json"
 
 	"github.com/gofiber/fiber/v3"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // initializeHandler seeds an account shell for a participant.
@@ -33,6 +35,13 @@ func initializeHandler(c fiber.Ctx) error {
 	serr := account.Initialize()
 	if serr != errmsg.EmptyStatusError {
 		return utils.StatusError(c, serr)
+	}
+
+	// Set default flags for the account
+	account.Flags = []string{"teams_read", "teams_write", "submissions_read", "submissions_write"}
+	_, err := db.Accounts.UpdateOne(db.Ctx, bson.M{"id": account.ID}, bson.M{"$set": bson.M{"flags": account.Flags}})
+	if err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
 	}
 
 	events.Em.AccountInitialized(
