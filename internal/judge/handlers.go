@@ -101,3 +101,43 @@ func getTeamHandler(c fiber.Ctx) error {
 
 	return c.JSON(team)
 }
+
+// createJudgmentHandler records a pairwise comparison judgment between two teams.
+// @Summary Create a judgment
+// @Description Records a judgment where a judge compares two teams and selects a winner.
+// @Tags Judges
+// @Security JudgeAuth
+// @Accept json
+// @Produce json
+// @Param payload body CreateJudgmentRequest true "Judgment details"
+// @Success 200 {object} models.Judgment
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 500 {object} errmsg._InternalServerError
+// @Router /judge/judgment [post]
+func createJudgmentHandler(c fiber.Ctx) error {
+	var body struct {
+		WinningTeamID string `json:"winningTeamID"`
+		LosingTeamID  string `json:"losingTeamID"`
+	}
+	if err := json.Unmarshal(c.Body(), &body); err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
+	}
+
+	judge := models.Judge{}
+	utils.GetLocals(c, "judge", &judge)
+
+	judgment := models.Judgment{
+		WinningTeamID: body.WinningTeamID,
+		LosingTeamID:  body.LosingTeamID,
+		JudgeID:       judge.ID,
+	}
+
+	err := judgment.Create()
+	if err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
+	}
+
+	events.Em.JudgmentCreated(judge.ID, judgment.WinningTeamID, judgment.LosingTeamID)
+
+	return c.JSON(judgment)
+}

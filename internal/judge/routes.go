@@ -21,4 +21,9 @@ func Routes(r fiber.Router) {
 		models.FlagsMiddlewareBuilder([]string{"judging"}),
 		getTeamHandler,
 	)
+	r.Post("/judgment",
+		models.JudgeMiddleware,
+		models.FlagsMiddlewareBuilder([]string{"judging"}),
+		createJudgmentHandler,
+	)
 }

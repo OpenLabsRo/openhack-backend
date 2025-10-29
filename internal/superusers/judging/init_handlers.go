@@ -13,6 +13,26 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// getCoprimeMultipliers returns a list of numbers coprime to n
+// These are used to generate diverse permutations while maintaining some structure
+func getCoprimeMultipliers(n int) []int {
+	coprimes := []int{}
+	for i := 1; i < n; i++ {
+		if gcd(i, n) == 1 {
+			coprimes = append(coprimes, i)
+		}
+	}
+	return coprimes
+}
+
+// gcd computes the greatest common divisor using Euclidean algorithm
+func gcd(a, b int) int {
+	for b != 0 {
+		a, b = b, a%b
+	}
+	return a
+}
+
 // judgeInitHandler initializes judging settings: team order, judge order, and judge offsets.
 // @Summary Initialize judging configuration
 // @Description Scrambles teams and judges randomly, creates teamOrder and judgeOrder settings, and calculates judge offsets with wrapping.
@@ -60,29 +80,59 @@ func judgeInitHandler(c fiber.Ctx) error {
 		))
 	}
 
-	// Extract team IDs and shuffle
+	// Extract team IDs and create TWO base orders for better coverage
 	teamIDs := make([]string, numTeams)
 	for i, team := range teams {
 		teamIDs[i] = team.ID
 	}
-	rand.Shuffle(len(teamIDs), func(i, j int) {
-		teamIDs[i], teamIDs[j] = teamIDs[j], teamIDs[i]
+
+	// Create first base order (shuffled)
+	teamOrderA := make([]string, numTeams)
+	copy(teamOrderA, teamIDs)
+	rand.Shuffle(len(teamOrderA), func(i, j int) {
+		teamOrderA[i], teamOrderA[j] = teamOrderA[j], teamOrderA[i]
 	})
 
-	// Create or update teamOrder setting (JSON string)
-	teamOrderJSON, err := json.Marshal(teamIDs)
+	// Create second base order (different shuffle)
+	teamOrderB := make([]string, numTeams)
+	copy(teamOrderB, teamIDs)
+	rand.Shuffle(len(teamOrderB), func(i, j int) {
+		teamOrderB[i], teamOrderB[j] = teamOrderB[j], teamOrderB[i]
+	})
+
+	// Ensure the two orders are actually different
+	for {
+		different := false
+		for i := range teamOrderA {
+			if teamOrderA[i] != teamOrderB[i] {
+				different = true
+				break
+			}
+		}
+		if different {
+			break
+		}
+		// Re-shuffle B if identical to A
+		rand.Shuffle(len(teamOrderB), func(i, j int) {
+			teamOrderB[i], teamOrderB[j] = teamOrderB[j], teamOrderB[i]
+		})
+	}
+
+	// Store both base orders as JSON arrays in a single setting
+	baseOrders := [][]string{teamOrderA, teamOrderB}
+	baseOrdersJSON, err := json.Marshal(baseOrders)
 	if err != nil {
 		return utils.StatusError(c, errmsg.InternalServerError(err))
 	}
 	teamOrderSetting := models.Setting{
 		Name:  models.SettingTeamOrder,
-		Value: string(teamOrderJSON),
+		Value: string(baseOrdersJSON),
 	}
 	if serr := teamOrderSetting.Save(); serr != errmsg.EmptyStatusError {
 		return utils.StatusError(c, serr)
 	}
 
-	events.Em.JudgeInitTeamOrderSet(superuser.Username, teamIDs)
+	events.Em.JudgeInitTeamOrderSet(superuser.Username, teamOrderA)
 
 	// Extract judge IDs and shuffle
 	judgeIDs := make([]string, numJudges)
@@ -108,12 +158,37 @@ func judgeInitHandler(c fiber.Ctx) error {
 
 	events.Em.JudgeInitJudgeOrderSet(superuser.Username, judgeIDs)
 
-	// Calculate and create judgeOffset
-	// Each judge index is offset by its position, wrapping around based on number of teams
+	// Calculate judge offsets, multipliers, and base order assignments
+	// Split judges between two base orders for better coverage
 	judgeOffsets := make([]int, numJudges)
+	judgeMultipliers := make([]int, numJudges)
+	judgeBaseOrders := make([]int, numJudges) // 0 = use teamOrderA, 1 = use teamOrderB
+
+	// Get all numbers coprime to numTeams
+	coprimes := getCoprimeMultipliers(numTeams)
+	if len(coprimes) == 0 {
+		return utils.StatusError(c, errmsg.InternalServerError(
+			&errorMessage{message: "no coprime multipliers found"},
+		))
+	}
+
 	for i := range numJudges {
 		judgeOffsets[i] = i % numTeams
+		// Cycle through coprime multipliers
+		judgeMultipliers[i] = coprimes[i%len(coprimes)]
+		// Alternate between base orders
+		judgeBaseOrders[i] = i % 2
 	}
+
+	// Shuffle multipliers for more randomness
+	rand.Shuffle(len(judgeMultipliers), func(i, j int) {
+		judgeMultipliers[i], judgeMultipliers[j] = judgeMultipliers[j], judgeMultipliers[i]
+	})
+
+	// Shuffle base order assignments
+	rand.Shuffle(len(judgeBaseOrders), func(i, j int) {
+		judgeBaseOrders[i], judgeBaseOrders[j] = judgeBaseOrders[j], judgeBaseOrders[i]
+	})
 
 	// Create or update judgeOffset setting (JSON string)
 	judgeOffsetJSON, err := json.Marshal(judgeOffsets)
@@ -128,14 +203,43 @@ func judgeInitHandler(c fiber.Ctx) error {
 		return utils.StatusError(c, serr)
 	}
 
+	// Create or update judgeMultiplier setting (JSON string)
+	judgeMultiplierJSON, err := json.Marshal(judgeMultipliers)
+	if err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
+	}
+	judgeMultiplierSetting := models.Setting{
+		Name:  models.SettingJudgeMultiplier,
+		Value: string(judgeMultiplierJSON),
+	}
+	if serr := judgeMultiplierSetting.Save(); serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
+	}
+
+	// Create or update judgeBaseOrder setting (JSON string)
+	judgeBaseOrderJSON, err := json.Marshal(judgeBaseOrders)
+	if err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
+	}
+	judgeBaseOrderSetting := models.Setting{
+		Name:  models.SettingJudgeBaseOrder,
+		Value: string(judgeBaseOrderJSON),
+	}
+	if serr := judgeBaseOrderSetting.Save(); serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
+	}
+
 	events.Em.JudgeInitOffsetSet(superuser.Username, judgeOffsets, numTeams)
 
 	return c.JSON(JudgeInitResponse{
-		TeamOrder:   teamIDs,
-		JudgeOrder:  judgeIDs,
-		JudgeOffset: judgeOffsets,
-		NumTeams:    numTeams,
-		NumJudges:   numJudges,
+		TeamOrderA:      teamOrderA,
+		TeamOrderB:      teamOrderB,
+		JudgeOrder:      judgeIDs,
+		JudgeOffset:     judgeOffsets,
+		JudgeMultiplier: judgeMultipliers,
+		JudgeBaseOrder:  judgeBaseOrders,
+		NumTeams:        numTeams,
+		NumJudges:       numJudges,
 	})
 }
 

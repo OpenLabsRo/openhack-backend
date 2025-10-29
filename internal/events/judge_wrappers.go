@@ -146,3 +146,26 @@ func (e *Emitter) JudgeCreated(
 
 	e.Emit(evt)
 }
+
+func (e *Emitter) JudgmentCreated(
+	judgeID string,
+	winningTeamID string,
+	losingTeamID string,
+) {
+	evt := models.Event{
+		Action: "judgment.created",
+
+		ActorRole: ActorJudge,
+		ActorID:   judgeID,
+
+		TargetType: "judgment",
+		TargetID:   "judgment",
+
+		Props: map[string]any{
+			"winningTeamID": winningTeamID,
+			"losingTeamID":  losingTeamID,
+		},
+	}
+
+	e.Emit(evt)
+}

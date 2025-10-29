@@ -16,11 +16,14 @@ type JudgeConnectResponse struct {
 	Token string `json:"token"`
 }
 
-// JudgeInitResponse returns the result of judge initialization with team order, judge order, and offsets.
+// JudgeInitResponse returns the result of judge initialization with two base team orders, judge order, offsets, multipliers, and base order assignments.
 type JudgeInitResponse struct {
-	TeamOrder   []string `json:"teamOrder"`
-	JudgeOrder  []string `json:"judgeOrder"`
-	JudgeOffset []int    `json:"judgeOffset"`
-	NumTeams    int      `json:"numTeams"`
-	NumJudges   int      `json:"numJudges"`
+	TeamOrderA      []string `json:"teamOrderA"`
+	TeamOrderB      []string `json:"teamOrderB"`
+	JudgeOrder      []string `json:"judgeOrder"`
+	JudgeOffset     []int    `json:"judgeOffset"`
+	JudgeMultiplier []int    `json:"judgeMultiplier"`
+	JudgeBaseOrder  []int    `json:"judgeBaseOrder"`
+	NumTeams        int      `json:"numTeams"`
+	NumJudges       int      `json:"numJudges"`
 }

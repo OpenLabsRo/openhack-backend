@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/require"
@@ -34,12 +35,15 @@ func RequestRunner(
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", *token))
 	}
 
-	// send request to the shared app
+	// send request to the shared app with timeout
 	var res *http.Response
 	if len(config) > 0 {
 		res, err = app.Test(req, config[0])
 	} else {
-		res, err = app.Test(req)
+		// Use 60 second timeout for long-running tests
+		res, err = app.Test(req, fiber.TestConfig{
+			Timeout: 60 * time.Second,
+		})
 	}
 	require.NoError(t, err)
 

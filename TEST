@@ -17,7 +17,7 @@ if [[ $# -gt 0 ]]; then
 	esac
 fi
 
-go_cmd=(go test ./test/... -v -count=1)
+go_cmd=(go test ./test/... -v -count=1 -p 1)
 
 if (( $# )); then
 	go_cmd+=(-args)

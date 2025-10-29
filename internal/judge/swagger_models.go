@@ -17,3 +17,9 @@ type JudgeUpgradeResponse struct {
 type NextTeamResponse struct {
 	TeamID string `json:"teamID" example:"team_001"`
 }
+
+// CreateJudgmentRequest contains the teams being compared in a judgment.
+type CreateJudgmentRequest struct {
+	WinningTeamID string `json:"winningTeamID" example:"team_001"`
+	LosingTeamID  string `json:"losingTeamID" example:"team_002"`
+}

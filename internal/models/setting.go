@@ -15,6 +15,8 @@ var SettingBadgePileSalt = "badgePileSalt"
 var SettingTeamOrder = "teamOrder"
 var SettingJudgeOrder = "judgeOrder"
 var SettingJudgeOffset = "judgeOffset"
+var SettingJudgeMultiplier = "judgeMultiplier"
+var SettingJudgeBaseOrder = "judgeBaseOrder"
 
 type Setting struct {
 	Name  string `json:"name" bson:"name"`

@@ -90,15 +90,19 @@ func (j *Judge) Delete() (err error) {
 }
 
 func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
-	// Get team order setting (JSON string)
+	// Get team order setting (JSON string containing two base orders)
 	teamOrderSetting := &Setting{Name: SettingTeamOrder}
 	if err := teamOrderSetting.Get(); err != errmsg.EmptyStatusError {
 		return "", err
 	}
 
-	var teamOrder []string
-	if err := json.Unmarshal([]byte(teamOrderSetting.Value.(string)), &teamOrder); err != nil {
+	var baseOrders [][]string
+	if err := json.Unmarshal([]byte(teamOrderSetting.Value.(string)), &baseOrders); err != nil {
 		return "", errmsg.InternalServerError(err)
+	}
+
+	if len(baseOrders) < 2 {
+		return "", errmsg.InternalServerError(&errorMessage{message: "team order setting must contain two base orders"})
 	}
 
 	// Get judge offset setting (JSON string)
@@ -109,6 +113,28 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 
 	var judgeOffsets []int
 	if err := json.Unmarshal([]byte(judgeOffsetSetting.Value.(string)), &judgeOffsets); err != nil {
+		return "", errmsg.InternalServerError(err)
+	}
+
+	// Get judge multiplier setting (JSON string)
+	judgeMultiplierSetting := &Setting{Name: SettingJudgeMultiplier}
+	if err := judgeMultiplierSetting.Get(); err != errmsg.EmptyStatusError {
+		return "", err
+	}
+
+	var judgeMultipliers []int
+	if err := json.Unmarshal([]byte(judgeMultiplierSetting.Value.(string)), &judgeMultipliers); err != nil {
+		return "", errmsg.InternalServerError(err)
+	}
+
+	// Get judge base order assignment setting (JSON string)
+	judgeBaseOrderSetting := &Setting{Name: SettingJudgeBaseOrder}
+	if err := judgeBaseOrderSetting.Get(); err != errmsg.EmptyStatusError {
+		return "", err
+	}
+
+	var judgeBaseOrders []int
+	if err := json.Unmarshal([]byte(judgeBaseOrderSetting.Value.(string)), &judgeBaseOrders); err != nil {
 		return "", errmsg.InternalServerError(err)
 	}
 
@@ -136,22 +162,29 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 		return "", errmsg.InternalServerError(&errorMessage{message: "judge not found in judge order"})
 	}
 
-	numTeams := len(teamOrder)
-	offsetTeam := judgeOffsets[judgeIndex]
+	// Select which base order this judge uses (0 or 1)
+	baseOrderIndex := judgeBaseOrders[judgeIndex]
+	teamOrder := baseOrders[baseOrderIndex]
 
-	// If CurrentTeam is -1, apply the offset on first request
+	numTeams := len(teamOrder)
+	offset := judgeOffsets[judgeIndex]
+	multiplier := judgeMultipliers[judgeIndex]
+
+	// If CurrentTeam is -1, this is the first request - start at step 0
 	if j.CurrentTeam == -1 {
-		j.CurrentTeam = offsetTeam
+		j.CurrentTeam = 0
 	} else {
-		// If CurrentTeam is not -1 and next team would be the offset, judging is finished
-		nextIndex := (j.CurrentTeam + 1) % numTeams
-		if nextIndex == offsetTeam {
+		// Check if we've completed all teams
+		if j.CurrentTeam >= numTeams-1 {
 			return "", errmsg.JudgingFinished
 		}
-
-		// Move to next team
-		j.CurrentTeam = nextIndex
+		// Move to next step
+		j.CurrentTeam++
 	}
+
+	// Calculate team index using coprime multiplier formula:
+	// index = (offset + step * multiplier) % numTeams
+	teamIndex := (offset + j.CurrentTeam*multiplier) % numTeams
 
 	// Update judge's CurrentTeam in database
 	_, err := db.Judges.UpdateOne(db.Ctx, bson.M{
@@ -165,8 +198,8 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 		return "", errmsg.InternalServerError(err)
 	}
 
-	// Return the team ID at current position
-	currentTeamID := teamOrder[j.CurrentTeam]
+	// Return the team ID at calculated position
+	currentTeamID := teamOrder[teamIndex]
 
 	return currentTeamID, errmsg.EmptyStatusError
 }

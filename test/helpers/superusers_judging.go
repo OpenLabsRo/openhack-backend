@@ -118,3 +118,29 @@ func API_JudgeTeamInfo(
 		&token,
 	)
 }
+
+func API_JudgeCreateJudgment(
+	t *testing.T,
+	app *fiber.App,
+	winningTeamID string,
+	losingTeamID string,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	payload := struct {
+		WinningTeamID string `json:"winningTeamID"`
+		LosingTeamID  string `json:"losingTeamID"`
+	}{
+		WinningTeamID: winningTeamID,
+		LosingTeamID:  losingTeamID,
+	}
+
+	sendBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	return RequestRunner(t, app,
+		"POST",
+		"/judge/judgment",
+		sendBytes,
+		&token,
+	)
+}
