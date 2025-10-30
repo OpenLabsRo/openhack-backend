@@ -99,7 +99,8 @@ func TestAccountsSetup(t *testing.T) {
 		t,
 		app,
 		"accountstesting@example.com",
-		"Accounts Testing",
+		"Accounts",
+		"Testing",
 		body.Token,
 	)
 	require.Equal(t, http.StatusOK, statusCode)

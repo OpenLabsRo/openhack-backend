@@ -95,7 +95,8 @@ func TestTeamsSetup(t *testing.T) {
 			t,
 			app,
 			fmt.Sprintf("teamstesting%v@example.com", i),
-			fmt.Sprintf("Accounts Testing %v", i),
+			"Accounts Testing",
+			fmt.Sprintf("%v", i),
 			body.Token,
 		)
 		require.Equal(t, http.StatusOK, statusCode)

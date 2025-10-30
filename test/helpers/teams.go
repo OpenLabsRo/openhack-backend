@@ -121,7 +121,7 @@ func API_TeamsMembersJoin(
 
 	return RequestRunner(t, app,
 		"PATCH",
-		"/teams/members/join?teamID="+teamID,
+		"/teams/members/join?id="+teamID,
 		[]byte{},
 		&token,
 	)

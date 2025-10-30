@@ -66,13 +66,15 @@ func TestBadgePilesCreateAccounts(t *testing.T) {
 
 	for i := range badgeAccountsToCreate {
 		email := fmt.Sprintf("badge_pile_test_%d@test.com", i)
-		name := fmt.Sprintf("Badge Pile Test %d", i)
+		firstName := "Badge Pile Test"
+		lastName := fmt.Sprintf("%d", i)
 
 		bodyBytes, statusCode := helpers.API_SuperUsersParticipantsInitialize(
 			t,
 			app,
 			email,
-			name,
+			firstName,
+			lastName,
 			badgeTestSuperUserToken,
 		)
 		require.Equal(t, http.StatusOK, statusCode)

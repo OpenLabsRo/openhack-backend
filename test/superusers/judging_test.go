@@ -117,13 +117,15 @@ func TestJudgingCreateAccounts(t *testing.T) {
 
 	for i := range numParticipants {
 		email := fmt.Sprintf("test_account_%d@test.com", i)
-		name := fmt.Sprintf("Test Account %d", i)
+		firstName := "Test Account"
+		lastName := fmt.Sprintf("%d", i)
 
 		bodyBytes, statusCode := helpers.API_SuperUsersParticipantsInitialize(
 			t,
 			app,
 			email,
-			name,
+			firstName,
+			lastName,
 			judgingTestSuperUserToken,
 		)
 		require.Equal(t, http.StatusOK, statusCode)

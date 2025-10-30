@@ -78,9 +78,10 @@ func bootstrapCheckinFixtures(t *testing.T) error {
 
 	for i := 0; i < checkinAccountCount; i++ {
 		email := fmt.Sprintf("checkin_test_%d@test.com", i)
-		display := fmt.Sprintf("Checkin Test %d", i)
+		firstName := "Checkin Test"
+		lastName := fmt.Sprintf("%d", i)
 
-		bodyBytes, status = helpers.API_SuperUsersParticipantsInitialize(t, app, email, display, checkinSuperUserToken)
+		bodyBytes, status = helpers.API_SuperUsersParticipantsInitialize(t, app, email, firstName, lastName, checkinSuperUserToken)
 		if status != http.StatusOK {
 			return fmt.Errorf("initialize account %s: status %d", email, status)
 		}
