@@ -8,6 +8,7 @@ import (
 
 func Routes(r fiber.Router) {
 	r.Get("/meta/ping", teamPingHandler)
+	r.Get("/meta/preview", TeamPreviewHandler)
 
 	// team operations
 	r.Get("", models.AccountMiddleware, models.FlagsMiddlewareBuilder([]string{"teams_read"}), TeamGetHandler)

@@ -24,7 +24,8 @@ type AccountTokenResponse struct {
 	Account models.Account `json:"account"`
 }
 
-// AccountEditRequest provides the shape for display-name updates.
+// AccountEditRequest provides the shape for name updates.
 type AccountEditRequest struct {
-	Name string `json:"name"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 }

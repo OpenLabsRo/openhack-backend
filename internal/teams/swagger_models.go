@@ -56,3 +56,13 @@ type AccountTokenResponse struct {
 	Token   string         `json:"token"`
 	Account models.Account `json:"account"`
 }
+
+// TeamPreviewResponse represents preview details of a team retrieved by the preview endpoint.
+type TeamPreviewResponse struct {
+	ID           string             `json:"id" example:"team_abc123"`
+	Name         string             `json:"name" example:"Team Awesome"`
+	Table        string             `json:"table" example:"A1"`
+	MembersCount int                `json:"members_count" example:"3"`
+	Members      []models.Account   `json:"members"`
+	Submission   SubmissionResponse `json:"submission"`
+}

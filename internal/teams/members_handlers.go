@@ -65,7 +65,7 @@ func TeamMembersGetHandler(c fiber.Ctx) error {
 // @Router /teams/members/join [patch]
 func TeamMembersJoinHandler(c fiber.Ctx) error {
 	// get all info on the team
-	team := models.Team{ID: c.Query("teamID")}
+	team := models.Team{ID: c.Query("id")}
 	err := team.Get()
 	if err != nil {
 		return utils.StatusError(

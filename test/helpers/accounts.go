@@ -89,14 +89,17 @@ func API_AccountsAuthLogin(
 func API_AccountsProfileUpdate(
 	t *testing.T,
 	app *fiber.App,
-	name string,
+	firstName string,
+	lastName string,
 	token string,
 ) (bodyBytes []byte, statusCode int) {
 	// payload for edit request
 	payload := struct {
-		Name string `json:"name"`
+		FirstName string `json:"firstName"`
+		LastName  string `json:"lastName"`
 	}{
-		Name: name,
+		FirstName: firstName,
+		LastName:  lastName,
 	}
 
 	// marshalling the payload into JSON

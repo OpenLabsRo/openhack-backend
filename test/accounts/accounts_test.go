@@ -261,12 +261,14 @@ func TestAccountsLoginWrongEmail(t *testing.T) {
 }
 
 func TestAccountsEdit(t *testing.T) {
-	updatedName := "Updated Name"
+	updatedFirstName := "Updated"
+	updatedLastName := "Name"
 
 	bodyBytes, statusCode := helpers.API_AccountsProfileUpdate(
 		t,
 		app,
-		"Updated Name",
+		updatedFirstName,
+		updatedLastName,
 		testAccountToken,
 	)
 
@@ -284,7 +286,8 @@ func TestAccountsEdit(t *testing.T) {
 	// assertions
 	require.NotEmpty(t, body.Account.ID, "expected ID to be set")
 	require.NotEmpty(t, body.Token, "expected token to be set")
-	require.Equal(t, body.Account.Name, updatedName, "expected name to be equal to payload")
+	require.Equal(t, body.Account.FirstName, updatedFirstName, "expected firstName to be equal to payload")
+	require.Equal(t, body.Account.LastName, updatedLastName, "expected lastName to be equal to payload")
 
 	// updating the account and token
 	testAccountToken = body.Token
@@ -292,12 +295,14 @@ func TestAccountsEdit(t *testing.T) {
 }
 
 func TestAccountsEditNoToken(t *testing.T) {
-	updatedName := "Updated Name"
+	updatedFirstName := "Updated"
+	updatedLastName := "Name"
 
 	bodyBytes, statusCode := helpers.API_AccountsProfileUpdate(
 		t,
 		app,
-		updatedName,
+		updatedFirstName,
+		updatedLastName,
 		"",
 	)
 

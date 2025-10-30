@@ -114,13 +114,15 @@ func TestSuperUsersWhoAmI(t *testing.T) {
 
 func TestSuperUsersAccountsInitialize(t *testing.T) {
 	testAccountEmail := "initializeaccounttest@example.com"
-	testAccountName := "Test Initialize"
+	testAccountFirstName := "Test"
+	testAccountLastName := "Initialize"
 
 	bodyBytes, statusCode := helpers.API_SuperUsersParticipantsInitialize(
 		t,
 		app,
 		testAccountEmail,
-		testAccountName,
+		testAccountFirstName,
+		testAccountLastName,
 		testSuperUserToken,
 	)
 
@@ -134,7 +136,8 @@ func TestSuperUsersAccountsInitialize(t *testing.T) {
 	// assertions
 	require.NotEmpty(t, testAccount.ID, "expected ID to be set")
 	require.Equal(t, testAccountEmail, testAccount.Email, "email should match")
-	require.Equal(t, testAccountName, testAccount.Name, "name should match")
+	require.Equal(t, testAccountFirstName, testAccount.FirstName, "firstName should match")
+	require.Equal(t, testAccountLastName, testAccount.LastName, "lastName should match")
 }
 
 func TestSuperUsersAccountsInitializeDuplicateEmail(t *testing.T) {
@@ -142,7 +145,8 @@ func TestSuperUsersAccountsInitializeDuplicateEmail(t *testing.T) {
 		t,
 		app,
 		testAccount.Email,
-		"Test Initialize",
+		"Test",
+		"Initialize",
 		testSuperUserToken,
 	)
 

@@ -29,7 +29,8 @@ type Account struct {
 	Email    string `json:"email" bson:"email"`
 	Password string `json:"password" bson:"password"`
 
-	Name string `json:"name" bson:"name"`
+	FirstName string `json:"firstName" bson:"firstName"`
+	LastName  string `json:"lastName" bson:"lastName"`
 
 	Flags []string `json:"flags" bson:"flags"`
 
@@ -201,7 +202,7 @@ func (acc *Account) ExistsAndHasPassword() (exists bool, has bool) {
 		return false, false
 	}
 
-	exists = acc.Name != ""
+	exists = acc.FirstName != "" || acc.LastName != ""
 	has = acc.Password != ""
 
 	return exists, has
@@ -229,20 +230,23 @@ func (acc *Account) CreatePassword(password string) (serr errmsg.StatusError) {
 	return
 }
 
-func (acc *Account) EditName(name string) (err error) {
+func (acc *Account) EditName(firstName, lastName string) (err error) {
 
 	_, err = db.Accounts.UpdateOne(db.Ctx, bson.M{
 		"id": acc.ID,
 	}, bson.M{
 		"$set": bson.M{
-			"name": name},
+			"firstName": firstName,
+			"lastName":  lastName,
+		},
 	})
 
 	if err != nil {
 		return
 	}
 
-	acc.Name = name
+	acc.FirstName = firstName
+	acc.LastName = lastName
 
 	cacheAccount(acc)
 

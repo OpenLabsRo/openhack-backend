@@ -51,16 +51,19 @@ func API_SuperUsersParticipantsInitialize(
 	t *testing.T,
 	app *fiber.App,
 	email string,
-	name string,
+	firstName string,
+	lastName string,
 	token string,
 ) (bodyBytes []byte, statusCode int) {
 	// payload
 	payload := struct {
-		Email string `json:"email"`
-		Name  string `json:"name"`
+		Email     string `json:"email"`
+		FirstName string `json:"firstName"`
+		LastName  string `json:"lastName"`
 	}{
-		Email: email,
-		Name:  name,
+		Email:     email,
+		FirstName: firstName,
+		LastName:  lastName,
 	}
 
 	// marshalling the payload into JSON
