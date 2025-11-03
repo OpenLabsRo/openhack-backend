@@ -5,13 +5,16 @@ import (
 	"backend/internal/env"
 	"backend/internal/errmsg"
 	"backend/internal/models"
+	"backend/internal/utils"
 	"backend/test/helpers"
 	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
+	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -109,7 +112,7 @@ func TestJudgingPairsCreateJudgesWithPairs(t *testing.T) {
 
 	// Create solo judges (each solo judge is their own group)
 	fmt.Printf("\nCreating %d solo judges:\n", numSoloJudges)
-	for solo := 0; solo < numSoloJudges; solo++ {
+	for solo := range numSoloJudges {
 		judgeID := fmt.Sprintf("judge_%d", judgeIdx)
 		judgeName := fmt.Sprintf("Judge Solo %d", solo+1)
 
@@ -145,10 +148,10 @@ func TestJudgingPairsCreateJudgesWithPairs(t *testing.T) {
 
 	// Create pairs of 2 judges
 	fmt.Printf("\nCreating %d pairs of 2 judges:\n", numPairJudges)
-	for pair := 0; pair < numPairJudges; pair++ {
+	for pair := range numPairJudges {
 		groupID := numSoloJudges + pair
 		pairAttr := fmt.Sprintf("group_%02d", groupID)
-		for member := 0; member < 2; member++ {
+		for member := range 2 {
 			judgeID := fmt.Sprintf("judge_%d", judgeIdx)
 			judgeName := fmt.Sprintf("Judge Pair %d-%d", pair+1, member+1)
 
@@ -184,10 +187,10 @@ func TestJudgingPairsCreateJudgesWithPairs(t *testing.T) {
 
 	// Create trios of 3 judges
 	fmt.Printf("\nCreating %d trio(s) of 3 judges:\n", numTrioJudges)
-	for trio := 0; trio < numTrioJudges; trio++ {
+	for trio := range numTrioJudges {
 		groupID := numSoloJudges + numPairJudges + trio
 		pairAttr := fmt.Sprintf("group_%02d", groupID)
-		for member := 0; member < 3; member++ {
+		for member := range 3 {
 			judgeID := fmt.Sprintf("judge_%d", judgeIdx)
 			judgeName := fmt.Sprintf("Judge Trio %d-%d", trio+1, member+1)
 
@@ -259,7 +262,7 @@ func TestJudgingPairsFormTeams(t *testing.T) {
 
 	// Create teams with configured sizes
 	accountIdx := 0
-	for i := 0; i < numPairingTeams; i++ {
+	for i := range numPairingTeams {
 		team := models.Team{
 			ID:      fmt.Sprintf("test_pair_team_%d", i),
 			Name:    fmt.Sprintf("Test Pair Team %d", i+1),
@@ -429,13 +432,13 @@ func TestJudgingPairsPairingValidation(t *testing.T) {
 
 	// Build expected group sizes dynamically
 	var expectedGroupSizes []int
-	for i := 0; i < numSoloJudges; i++ {
+	for range numSoloJudges {
 		expectedGroupSizes = append(expectedGroupSizes, 1)
 	}
-	for i := 0; i < numPairJudges; i++ {
+	for range numPairJudges {
 		expectedGroupSizes = append(expectedGroupSizes, 2)
 	}
-	for i := 0; i < numTrioJudges; i++ {
+	for range numTrioJudges {
 		expectedGroupSizes = append(expectedGroupSizes, 3)
 	}
 
@@ -776,8 +779,227 @@ func TestJudgingPairsFullSimulation(t *testing.T) {
 	fmt.Printf("========================================\n")
 }
 
+// TestJudgingPairsCrowdBTScoring runs the Crowd Bradley-Terry algorithm on the created judgments
+func TestJudgingPairsCrowdBTScoring(t *testing.T) {
+	fmt.Printf("\n========================================\n")
+	fmt.Printf("    CROWD BT SCORING ALGORITHM\n")
+	fmt.Printf("========================================\n\n")
+
+	// Fetch all judgments from database
+	cursor, err := db.Judgments.Find(db.Ctx, bson.M{})
+	require.NoError(t, err)
+	defer cursor.Close(db.Ctx)
+
+	var dbJudgments []models.Judgment
+	err = cursor.All(db.Ctx, &dbJudgments)
+	require.NoError(t, err)
+
+	fmt.Printf("Loaded %d judgments from database\n", len(dbJudgments))
+	if len(dbJudgments) == 0 {
+		fmt.Printf("⚠ No judgments found - skipping scoring\n")
+		return
+	}
+
+	// Convert to utils.JudgmentWithJudge format
+	judgments := make([]utils.JudgmentWithJudge, len(dbJudgments))
+	for i, j := range dbJudgments {
+		judgments[i] = utils.JudgmentWithJudge{
+			WinningTeamID: j.WinningTeamID,
+			LosingTeamID:  j.LosingTeamID,
+			JudgeID:       j.JudgeID,
+		}
+	}
+
+	fmt.Printf("Running Crowd BT algorithm...\n")
+
+	// Time the algorithm
+	startTime := time.Now()
+
+	// Run the algorithm
+	scorer := utils.NewCrowdBTScorer()
+	scores := scorer.Score(judgments)
+	ranking := scorer.RankTeams()
+	judgeReliability := scorer.GetJudgeReliabilityAll()
+	teamUncertainty := scorer.GetTeamUncertainty()
+
+	elapsedTime := time.Since(startTime)
+
+	fmt.Printf("✓ Algorithm completed in %v\n\n", elapsedTime)
+
+	// Print team rankings
+	fmt.Printf("========================================\n")
+	fmt.Printf("        TEAM RANKINGS (by Mu)\n")
+	fmt.Printf("========================================\n\n")
+	fmt.Printf("Rank | Team       | μ (Skill)  | σ² (Unc.)    | Confidence | Notes\n")
+	fmt.Printf("-----|------------|------------|--------------|------------|---------------------\n")
+
+	for i, teamID := range ranking {
+		mu := scores[teamID]
+		sigmaSq := teamUncertainty[teamID]
+		confidence := 1.0 / (1.0 + sigmaSq)
+		note := ""
+
+		if confidence > 0.9 {
+			note = "Very high confidence"
+		} else if confidence > 0.8 {
+			note = "High confidence"
+		} else if confidence > 0.6 {
+			note = "Medium confidence"
+		} else if confidence > 0.4 {
+			note = "Low confidence"
+		} else {
+			note = "Very low confidence"
+		}
+
+		fmt.Printf("%4d | %-10s | %10.4f | %12.4f | %10.4f | %s\n",
+			i+1, teamID, mu, sigmaSq, confidence, note)
+	}
+
+	fmt.Printf("\n")
+	fmt.Printf("━━━ EXPLANATION OF SIGMA-SQUARED (σ²) ━━━\n")
+	fmt.Printf("σ² = Variance/Uncertainty in the team's skill estimate\n")
+	fmt.Printf("  • σ² ≈ 0.1-0.5: HIGH CONFIDENCE (many judgments, strong consensus)\n")
+	fmt.Printf("  • σ² ≈ 0.5-1.5: MEDIUM CONFIDENCE (moderate data, some variation)\n")
+	fmt.Printf("  • σ² > 1.5:     LOW CONFIDENCE (few judgments or lots of conflict)\n\n")
+
+	fmt.Printf("━━━ EXPLANATION OF CONFIDENCE ━━━\n")
+	fmt.Printf("Confidence = 1 / (1 + σ²)  [ranges from 0 to 1]\n")
+	fmt.Printf("  • 0.0 = completely uncertain\n")
+	fmt.Printf("  • 0.5 = 50% confident\n")
+	fmt.Printf("  • 1.0 = perfect confidence (σ²=0, infinite judgments)\n")
+	fmt.Printf("Example: σ²=1.0 → confidence=0.5 (50%% sure of ranking)\n\n")
+
+	// Print judge reliability
+	fmt.Printf("========================================\n")
+	fmt.Printf("       JUDGE RELIABILITY (α, β)\n")
+	fmt.Printf("========================================\n\n")
+
+	// Count judgments per judge
+	judgeCount := make(map[string]int)
+	for _, j := range dbJudgments {
+		judgeCount[j.JudgeID]++
+	}
+
+	// Sort judges by ID for consistent output
+	var judgeIDs []string
+	for judgeID := range judgeReliability {
+		judgeIDs = append(judgeIDs, judgeID)
+	}
+	sort.Strings(judgeIDs)
+
+	fmt.Printf("Judge      | α (Alpha)  | β (Beta)   | α/β Ratio  | #Judgments | Class\n")
+	fmt.Printf("-----------|------------|------------|------------|------------|----------------\n")
+
+	for _, judgeID := range judgeIDs {
+		params := judgeReliability[judgeID]
+		alpha := params[0]
+		beta := params[1]
+		ratio := 1.0
+		if beta > 0 {
+			ratio = alpha / beta
+		}
+		count := judgeCount[judgeID]
+
+		// Interpret reliability
+		reliability := "unknown"
+		if ratio > 2.0 {
+			reliability = "highly_reliable"
+		} else if ratio > 1.0 {
+			reliability = "reliable"
+		} else if ratio < 0.5 {
+			reliability = "noisy"
+		} else {
+			reliability = "neutral"
+		}
+
+		fmt.Printf("%-10s | %10.4f | %10.4f | %10.4f | %10d | %s\n",
+			judgeID, alpha, beta, ratio, count, reliability)
+	}
+
+	fmt.Printf("\n")
+	fmt.Printf("━━━ WHY JUDGES APPEAR RELIABLE DESPITE RANDOM JUDGMENTS ━━━\n")
+	fmt.Printf("Initial Priors: α=10.0, β=1.0\n")
+	fmt.Printf("  These priors assume judges are generally reliable.\n\n")
+
+	fmt.Printf("What Happens with Random Judgments:\n")
+	fmt.Printf("  1. Random votes create roughly balanced wins/losses per team\n")
+	fmt.Printf("  2. Team skill estimates converge to ~equal values (all ≈0)\n")
+	fmt.Printf("  3. When comparing ~equal-skilled teams, RANDOM votes look \"expected\"\n")
+	fmt.Printf("  4. The algorithm interprets this as: \"judge voted for likely winner\"\n")
+	fmt.Printf("  5. Result: α stays high, β stays low → high α/β ratio\n\n")
+
+	fmt.Printf("What WOULD show a judge is unreliable (high β):\n")
+	fmt.Printf("  • Consistently voting for clearly-weaker teams\n")
+	fmt.Printf("  • Pattern of voting opposite to established skill differences\n")
+	fmt.Printf("  • Systematic bias that contradicts the learned rankings\n\n")
+
+	// Summary statistics
+	fmt.Printf("========================================\n")
+	fmt.Printf("         ALGORITHM SUMMARY\n")
+	fmt.Printf("========================================\n\n")
+
+	fmt.Printf("Execution time:           %v\n", elapsedTime)
+	fmt.Printf("Teams scored:             %d\n", len(scores))
+	fmt.Printf("Judges evaluated:         %d\n", len(judgeReliability))
+	fmt.Printf("Total judgments:          %d\n", len(judgments))
+	fmt.Printf("Avg judgments per judge:  %.1f\n", float64(len(judgments))/float64(len(judgeReliability)))
+
+	// Calculate average confidence
+	var totalConfidence float64
+	for _, sigmaSq := range teamUncertainty {
+		confidence := 1.0 / (1.0 + sigmaSq)
+		totalConfidence += confidence
+	}
+	avgConfidence := totalConfidence / float64(len(teamUncertainty))
+	fmt.Printf("Average ranking confidence: %.4f\n", avgConfidence)
+
+	// Find most and least reliable judges
+	var mostReliable, leastReliable string
+	var mostRatio, leastRatio float64 = -1, 1000000
+
+	for _, judgeID := range judgeIDs {
+		params := judgeReliability[judgeID]
+		ratio := 1.0
+		if params[1] > 0 {
+			ratio = params[0] / params[1]
+		}
+
+		if ratio > mostRatio {
+			mostRatio = ratio
+			mostReliable = judgeID
+		}
+		if ratio < leastRatio {
+			leastRatio = ratio
+			leastReliable = judgeID
+		}
+	}
+
+	fmt.Printf("\nMost reliable judge:      %s (α/β = %.4f)\n", mostReliable, mostRatio)
+	fmt.Printf("Least reliable judge:     %s (α/β = %.4f)\n", leastReliable, leastRatio)
+
+	// Find highest and lowest ranked teams
+	if len(ranking) > 0 {
+		bestTeam := ranking[0]
+		worstTeam := ranking[len(ranking)-1]
+		bestSigmaSq := teamUncertainty[bestTeam]
+		worstSigmaSq := teamUncertainty[worstTeam]
+		bestConfidence := 1.0 / (1.0 + bestSigmaSq)
+		worstConfidence := 1.0 / (1.0 + worstSigmaSq)
+
+		fmt.Printf("\nHighest ranked team:      %s (μ=%.4f, σ²=%.4f, conf=%.4f)\n",
+			bestTeam, scores[bestTeam], bestSigmaSq, bestConfidence)
+		fmt.Printf("Lowest ranked team:       %s (μ=%.4f, σ²=%.4f, conf=%.4f)\n",
+			worstTeam, scores[worstTeam], worstSigmaSq, worstConfidence)
+	}
+
+	fmt.Printf("\n========================================\n")
+	fmt.Printf("✓ CROWD BT SCORING COMPLETE\n")
+	fmt.Printf("========================================\n\n")
+}
+
 // TestJudgingPairsCleanup cleans up resources
 func TestJudgingPairsCleanup(t *testing.T) {
+
 	_, err := db.Judges.DeleteMany(db.Ctx, bson.M{})
 	require.NoError(t, err)
 
