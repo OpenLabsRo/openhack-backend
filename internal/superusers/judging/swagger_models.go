@@ -16,14 +16,23 @@ type JudgeConnectResponse struct {
 	Token string `json:"token"`
 }
 
-// JudgeInitResponse returns the result of judge initialization with two base team orders, judge order, offsets, multipliers, and base order assignments.
+// JudgeInitResponse returns the result of judge initialization with judge pair groups.
 type JudgeInitResponse struct {
-	TeamOrderA      []string `json:"teamOrderA"`
-	TeamOrderB      []string `json:"teamOrderB"`
-	JudgeOrder      []string `json:"judgeOrder"`
-	JudgeOffset     []int    `json:"judgeOffset"`
-	JudgeMultiplier []int    `json:"judgeMultiplier"`
-	JudgeBaseOrder  []int    `json:"judgeBaseOrder"`
-	NumTeams        int      `json:"numTeams"`
-	NumJudges       int      `json:"numJudges"`
+	Message       string        `json:"message"`
+	NumTeams      int           `json:"numTeams"`
+	NumJudges     int           `json:"numJudges"`
+	NumPairGroups int           `json:"numPairGroups"`
+	NumSteps      int           `json:"numSteps"`
+	Collisions    int           `json:"collisions"`
+	PairGroups    []interface{} `json:"pairGroups"`
+	TeamOrderA    []string      `json:"teamOrderA"`
+	TeamOrderB    []string      `json:"teamOrderB"`
+}
+
+// JudgePairGroup represents a group of judges that are paired together.
+type JudgePairGroup struct {
+	GroupID   int      `json:"groupId"`
+	JudgeIDs  []string `json:"judgeIds"`
+	PairAttr  string   `json:"pairAttr"`
+	NumJudges int      `json:"numJudges"`
 }

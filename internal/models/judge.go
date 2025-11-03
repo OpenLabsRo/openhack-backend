@@ -18,6 +18,7 @@ type Judge struct {
 	ID          string `bson:"id" json:"id"`
 	Name        string `bson:"name" json:"name"`
 	CurrentTeam int    `bson:"currentTeam" json:"currentTeam"`
+	Pair        string `bson:"pair" json:"pair"`
 }
 
 func (j *Judge) IssueJudgeConnectToken() (token string) {
@@ -90,101 +91,71 @@ func (j *Judge) Delete() (err error) {
 }
 
 func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
-	// Get team order setting (JSON string containing two base orders)
-	teamOrderSetting := &Setting{Name: SettingTeamOrder}
-	if err := teamOrderSetting.Get(); err != errmsg.EmptyStatusError {
+	// Fetch the initialization matrix
+	matrixSetting := &Setting{Name: SettingJudgeInitMatrix}
+	if err := matrixSetting.Get(); err != errmsg.EmptyStatusError {
 		return "", err
 	}
 
-	var baseOrders [][]string
-	if err := json.Unmarshal([]byte(teamOrderSetting.Value.(string)), &baseOrders); err != nil {
+	var matrixObj struct {
+		Steps  int        `json:"steps"`
+		Groups int        `json:"groups"`
+		Matrix [][]string `json:"matrix"`
+	}
+	if err := json.Unmarshal([]byte(matrixSetting.Value.(string)), &matrixObj); err != nil {
 		return "", errmsg.InternalServerError(err)
 	}
 
-	if len(baseOrders) < 2 {
-		return "", errmsg.InternalServerError(&errorMessage{message: "team order setting must contain two base orders"})
+	numSteps := matrixObj.Steps
+	numGroups := matrixObj.Groups
+	matrix := matrixObj.Matrix
+
+	if numSteps == 0 {
+		return "", errmsg.InternalServerError(&errorMessage{message: "no steps available"})
 	}
 
-	// Get judge offset setting (JSON string)
-	judgeOffsetSetting := &Setting{Name: SettingJudgeOffset}
-	if err := judgeOffsetSetting.Get(); err != errmsg.EmptyStatusError {
+	// Get judge to group index mapping
+	judgeToGroupIndexSetting := &Setting{Name: SettingJudgeToGroupIndex}
+	if err := judgeToGroupIndexSetting.Get(); err != errmsg.EmptyStatusError {
 		return "", err
 	}
 
-	var judgeOffsets []int
-	if err := json.Unmarshal([]byte(judgeOffsetSetting.Value.(string)), &judgeOffsets); err != nil {
+	var judgeToGroupIdx map[string]int
+	if err := json.Unmarshal([]byte(judgeToGroupIndexSetting.Value.(string)), &judgeToGroupIdx); err != nil {
 		return "", errmsg.InternalServerError(err)
 	}
 
-	// Get judge multiplier setting (JSON string)
-	judgeMultiplierSetting := &Setting{Name: SettingJudgeMultiplier}
-	if err := judgeMultiplierSetting.Get(); err != errmsg.EmptyStatusError {
-		return "", err
+	// Get this judge's pair group index
+	groupIdx, exists := judgeToGroupIdx[j.ID]
+	if !exists {
+		return "", errmsg.InternalServerError(&errorMessage{message: "judge not found in pair group mapping"})
 	}
 
-	var judgeMultipliers []int
-	if err := json.Unmarshal([]byte(judgeMultiplierSetting.Value.(string)), &judgeMultipliers); err != nil {
-		return "", errmsg.InternalServerError(err)
+	if groupIdx < 0 || groupIdx >= numGroups {
+		return "", errmsg.InternalServerError(&errorMessage{message: "invalid pair group index"})
 	}
 
-	// Get judge base order assignment setting (JSON string)
-	judgeBaseOrderSetting := &Setting{Name: SettingJudgeBaseOrder}
-	if err := judgeBaseOrderSetting.Get(); err != errmsg.EmptyStatusError {
-		return "", err
-	}
-
-	var judgeBaseOrders []int
-	if err := json.Unmarshal([]byte(judgeBaseOrderSetting.Value.(string)), &judgeBaseOrders); err != nil {
-		return "", errmsg.InternalServerError(err)
-	}
-
-	// Get judge order setting to find this judge's index (JSON string)
-	judgeOrderSetting := &Setting{Name: SettingJudgeOrder}
-	if err := judgeOrderSetting.Get(); err != errmsg.EmptyStatusError {
-		return "", err
-	}
-
-	var judgeOrder []string
-	if err := json.Unmarshal([]byte(judgeOrderSetting.Value.(string)), &judgeOrder); err != nil {
-		return "", errmsg.InternalServerError(err)
-	}
-
-	// Find this judge's index in judgeOrder
-	judgeIndex := -1
-	for i, jID := range judgeOrder {
-		if jID == j.ID {
-			judgeIndex = i
-			break
-		}
-	}
-
-	if judgeIndex == -1 {
-		return "", errmsg.InternalServerError(&errorMessage{message: "judge not found in judge order"})
-	}
-
-	// Select which base order this judge uses (0 or 1)
-	baseOrderIndex := judgeBaseOrders[judgeIndex]
-	teamOrder := baseOrders[baseOrderIndex]
-
-	numTeams := len(teamOrder)
-	offset := judgeOffsets[judgeIndex]
-	multiplier := judgeMultipliers[judgeIndex]
-
-	// If CurrentTeam is -1, this is the first request - start at step 0
-	if j.CurrentTeam == -1 {
+	// Initialize on first call: -1 becomes 0
+	currentStep := j.CurrentTeam
+	if currentStep == -1 {
+		currentStep = 0
 		j.CurrentTeam = 0
-	} else {
-		// Check if we've completed all teams
-		if j.CurrentTeam >= numTeams-1 {
-			return "", errmsg.JudgingFinished
-		}
-		// Move to next step
-		j.CurrentTeam++
 	}
 
-	// Calculate team index using coprime multiplier formula:
-	// index = (offset + step * multiplier) % numTeams
-	teamIndex := (offset + j.CurrentTeam*multiplier) % numTeams
+	// Check if we've exhausted all steps
+	if currentStep >= numSteps {
+		return "", errmsg.JudgingFinished
+	}
+
+	// Read the assignment for this step from the matrix
+	// If blank, return empty string (rest), but don't skip forward
+	assignedTeamID := ""
+	if len(matrix) > currentStep && len(matrix[currentStep]) > groupIdx {
+		assignedTeamID = matrix[currentStep][groupIdx]
+	}
+
+	// Increment step for next call (whether this step was blank or not)
+	j.CurrentTeam = currentStep + 1
 
 	// Update judge's CurrentTeam in database
 	_, err := db.Judges.UpdateOne(db.Ctx, bson.M{
@@ -198,10 +169,7 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 		return "", errmsg.InternalServerError(err)
 	}
 
-	// Return the team ID at calculated position
-	currentTeamID := teamOrder[teamIndex]
-
-	return currentTeamID, errmsg.EmptyStatusError
+	return assignedTeamID, errmsg.EmptyStatusError
 }
 
 // errorMessage is a simple error wrapper for the InternalServerError function

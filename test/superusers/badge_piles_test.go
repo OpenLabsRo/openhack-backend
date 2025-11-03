@@ -31,6 +31,18 @@ var (
 	badgePileSaltSetting models.Setting
 )
 
+func TestBadgePilesPreCleanup(t *testing.T) {
+	// Clean up any leftover test data from previous runs
+	_, err := db.Accounts.DeleteMany(db.Ctx, bson.M{"email": bson.M{"$regex": "^badge_pile_test_"}})
+	require.NoError(t, err)
+	_, err = db.Accounts.DeleteMany(db.Ctx, bson.M{"email": bson.M{"$regex": "^test_pair_account_"}})
+	require.NoError(t, err)
+	_, err = db.Judges.DeleteMany(db.Ctx, bson.M{"id": bson.M{"$regex": "^judge_"}})
+	require.NoError(t, err)
+	_, err = db.Teams.DeleteMany(db.Ctx, bson.M{"id": bson.M{"$regex": "^test_pair_team_"}})
+	require.NoError(t, err)
+}
+
 func TestBadgePilesInitialSalt(t *testing.T) {
 	require.NotNil(t, app, "test app should be initialized in TestMain")
 

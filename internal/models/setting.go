@@ -13,10 +13,11 @@ import (
 
 var SettingBadgePileSalt = "badgePileSalt"
 var SettingTeamOrder = "teamOrder"
-var SettingJudgeOrder = "judgeOrder"
-var SettingJudgeOffset = "judgeOffset"
-var SettingJudgeMultiplier = "judgeMultiplier"
-var SettingJudgeBaseOrder = "judgeBaseOrder"
+var SettingJudgePairGroups = "judgePairGroups"
+var SettingJudgePairOffset = "judgePairOffset"
+var SettingJudgePairMultiplier = "judgePairMultiplier"
+var SettingJudgeToGroupIndex = "judgeToGroupIndex"
+var SettingJudgeInitMatrix = "judgeInitMatrix"
 
 type Setting struct {
 	Name  string `json:"name" bson:"name"`
