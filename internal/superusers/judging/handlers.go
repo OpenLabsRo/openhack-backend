@@ -91,3 +91,62 @@ func judgeCreateHandler(c fiber.Ctx) error {
 
 	return c.JSON(judge)
 }
+
+// computeRankingsHandler computes team rankings using the CrowdBT algorithm
+// from all judgments currently in the database.
+// @Summary Compute team rankings from judgments
+// @Description Uses the Crowd Bradley-Terry algorithm to compute team rankings and judge reliability scores from all judgments in the database.
+// @Tags Superusers Judging
+// @Security SuperUserAuth
+// @Accept json
+// @Produce json
+// @Success 200 {object} ComputeRankingsResponse
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
+// @Router /superusers/judging/compute-rankings [post]
+func computeRankingsHandler(c fiber.Ctx) error {
+	// Fetch all judgments from the database
+	judgments, serr := models.GetAllJudgments()
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
+	}
+
+	// Convert Judgment models to JudgmentWithJudge format for the scorer
+	var scorerJudgments []utils.JudgmentWithJudge
+	for _, judgment := range judgments {
+		scorerJudgments = append(scorerJudgments, utils.JudgmentWithJudge{
+			WinningTeamID: judgment.WinningTeamID,
+			LosingTeamID:  judgment.LosingTeamID,
+			JudgeID:       judgment.JudgeID,
+		})
+	}
+
+	// Run the CrowdBT scorer
+	scorer := utils.NewCrowdBTScorer()
+	scorer.Score(scorerJudgments)
+
+	// Build the response
+	rankedTeams := scorer.RankTeams()
+	teamScores := scorer.GetTeamScores()
+	teamUncertainty := scorer.GetTeamUncertainty()
+	judgeReliability := scorer.GetJudgeReliabilityAll()
+
+	// Convert judge reliability maps to a cleaner format
+	judgeStats := make(map[string]map[string]float64)
+	for judgeID, params := range judgeReliability {
+		judgeStats[judgeID] = map[string]float64{
+			"alpha": params[0],
+			"beta":  params[1],
+		}
+	}
+
+	response := map[string]interface{}{
+		"rankedTeams":      rankedTeams,
+		"teamScores":       teamScores,
+		"teamUncertainty":  teamUncertainty,
+		"judgeReliability": judgeStats,
+		"judgmentCount":    len(judgments),
+	}
+
+	return c.JSON(response)
+}

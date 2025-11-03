@@ -36,3 +36,12 @@ type JudgePairGroup struct {
 	PairAttr  string   `json:"pairAttr"`
 	NumJudges int      `json:"numJudges"`
 }
+
+// ComputeRankingsResponse returns the computed team rankings using CrowdBT algorithm.
+type ComputeRankingsResponse struct {
+	RankedTeams      []string                      `json:"rankedTeams" description:"Team IDs sorted by skill (mu) descending"`
+	TeamScores       map[string]float64            `json:"teamScores" description:"Team skill estimates (mu)"`
+	TeamUncertainty  map[string]float64            `json:"teamUncertainty" description:"Team skill uncertainty (sigma_sq)"`
+	JudgeReliability map[string]map[string]float64 `json:"judgeReliability" description:"Judge reliability parameters (alpha, beta)"`
+	JudgmentCount    int                           `json:"judgmentCount" description:"Total number of judgments processed"`
+}

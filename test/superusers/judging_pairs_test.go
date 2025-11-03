@@ -522,6 +522,26 @@ func TestJudgingPairsFullSimulation(t *testing.T) {
 		groupToJudges[groupIdx] = append(groupToJudges[groupIdx], judgeID)
 	}
 
+	// Identify unreliable judges in the trio group with opposite biases
+	// Judge 0: always votes for PRIOR team (left bias)
+	// Judge 1: always votes for CURRENT team (right bias)
+	// Judge 2: control with random voting
+	unreliableJudges := make(map[string]string)   // judgeID -> "prior" or "current"
+	trioGroupIdx := numSoloJudges + numPairJudges // Should be 12
+	if judges, ok := groupToJudges[trioGroupIdx]; ok && len(judges) >= 2 {
+		// Make first judge vote for prior (left bias)
+		unreliableJudges[judges[0]] = "prior"
+		// Make second judge vote for current (right bias)
+		unreliableJudges[judges[1]] = "current"
+		fmt.Printf("\n⚠ UNRELIABLE JUDGES DETECTED FOR TESTING:\n")
+		fmt.Printf("  %s - will always vote for PRIOR team (left bias)\n", judges[0])
+		fmt.Printf("  %s - will always vote for CURRENT team (right bias)\n", judges[1])
+		if len(judges) > 2 {
+			fmt.Printf("  %s - acts as control (normal random voting)\n", judges[2])
+		}
+		fmt.Printf("\n")
+	}
+
 	// Track statistics
 	type StepStats struct {
 		AssignedGroups   map[int]string // groupIdx -> teamID
@@ -535,6 +555,8 @@ func TestJudgingPairsFullSimulation(t *testing.T) {
 	totalCollisionsAcrossSteps := 0
 	judgeTeamHistory := make(map[string][]string) // judgeID -> list of team IDs in order
 	totalJudgmentsCreated := 0
+	unreliableJudgmentCount := make(map[string]int)   // Track biased judgments per unreliable judge
+	unreliableJudgmentBias := make(map[string]string) // Track bias direction per unreliable judge
 
 	// Run simulation for all steps
 	fmt.Printf("========================================\n")
@@ -600,14 +622,34 @@ func TestJudgingPairsFullSimulation(t *testing.T) {
 			if len(judgeTeamHistory[judge.ID]) > 0 {
 				previousTeam := judgeTeamHistory[judge.ID][len(judgeTeamHistory[judge.ID])-1]
 
-				// Randomly decide who wins
+				// Determine who wins based on judge reliability
 				var winningTeam, losingTeam string
-				if rand.Float32() < 0.5 {
-					winningTeam = teamID
-					losingTeam = previousTeam
+				biasMarker := ""
+
+				if bias, isUnreliable := unreliableJudges[judge.ID]; isUnreliable {
+					// Unreliable judges have systematic biases
+					unreliableJudgmentCount[judge.ID]++
+					unreliableJudgmentBias[judge.ID] = bias
+					if bias == "prior" {
+						// Always vote for previous team
+						winningTeam = previousTeam
+						losingTeam = teamID
+						biasMarker = " [BIASED LEFT: always votes for prior team]"
+					} else if bias == "current" {
+						// Always vote for current team
+						winningTeam = teamID
+						losingTeam = previousTeam
+						biasMarker = " [BIASED RIGHT: always votes for current team]"
+					}
 				} else {
-					winningTeam = previousTeam
-					losingTeam = teamID
+					// Reliable judges vote randomly
+					if rand.Float32() < 0.5 {
+						winningTeam = teamID
+						losingTeam = previousTeam
+					} else {
+						winningTeam = previousTeam
+						losingTeam = teamID
+					}
 				}
 
 				_, statusCode := helpers.API_JudgeCreateJudgment(
@@ -619,7 +661,7 @@ func TestJudgingPairsFullSimulation(t *testing.T) {
 				)
 				require.Equal(t, http.StatusOK, statusCode)
 				totalJudgmentsCreated++
-				fmt.Printf("    → Created judgment: %s vs %s (winner: %s)\n", previousTeam, teamID, winningTeam)
+				fmt.Printf("    → Created judgment: %s vs %s (winner: %s)%s\n", previousTeam, teamID, winningTeam, biasMarker)
 			}
 
 			// Add to history for next comparison
@@ -760,6 +802,27 @@ func TestJudgingPairsFullSimulation(t *testing.T) {
 	}
 	fmt.Printf("\n")
 
+	// Unreliable judges summary
+	if len(unreliableJudgmentCount) > 0 {
+		fmt.Printf("========================================\n")
+		fmt.Printf("  UNRELIABLE JUDGES BEHAVIOR SUMMARY\n")
+		fmt.Printf("========================================\n\n")
+		for judgeID, count := range unreliableJudgmentCount {
+			bias := unreliableJudgmentBias[judgeID]
+			if bias == "prior" {
+				fmt.Printf("  %s: Made %d biased judgments (LEFT bias: always voted for prior team)\n", judgeID, count)
+			} else if bias == "current" {
+				fmt.Printf("  %s: Made %d biased judgments (RIGHT bias: always voted for current team)\n", judgeID, count)
+			}
+		}
+		fmt.Printf("\nExpected Gavel Algorithm Result:\n")
+		fmt.Printf("  • Both unreliable judges should show LOW α/β ratio (high beta value)\n")
+		fmt.Printf("  • LEFT bias judge: systematically voted for prior, contradicting skill rankings\n")
+		fmt.Printf("  • RIGHT bias judge: systematically voted for current, contradicting skill rankings\n")
+		fmt.Printf("  • Algorithm should infer: α ↓ (reduced reliability), β ↑ (increased noise) for both\n")
+		fmt.Printf("  • Control judge (if present) should maintain HIGH α/β ratio\n\n")
+	}
+
 	fmt.Printf("========================================\n")
 	if len(teamsJudged) == len(createdPairingTeams) && totalCollisionsAcrossSteps == 0 && len(judgments) > 0 {
 		fmt.Printf("✓ FULL SIMULATION COMPLETED SUCCESSFULLY\n")
@@ -865,7 +928,7 @@ func TestJudgingPairsCrowdBTScoring(t *testing.T) {
 	fmt.Printf("━━━ EXPLANATION OF CONFIDENCE ━━━\n")
 	fmt.Printf("Confidence = 1 / (1 + σ²)  [ranges from 0 to 1]\n")
 	fmt.Printf("  • 0.0 = completely uncertain\n")
-	fmt.Printf("  • 0.5 = 50% confident\n")
+	fmt.Printf("  • 0.5 = 50%% confident\n")
 	fmt.Printf("  • 1.0 = perfect confidence (σ²=0, infinite judgments)\n")
 	fmt.Printf("Example: σ²=1.0 → confidence=0.5 (50%% sure of ranking)\n\n")
 
@@ -992,14 +1055,142 @@ func TestJudgingPairsCrowdBTScoring(t *testing.T) {
 			worstTeam, scores[worstTeam], worstSigmaSq, worstConfidence)
 	}
 
-	fmt.Printf("\n========================================\n")
+	fmt.Printf("========================================\n")
 	fmt.Printf("✓ CROWD BT SCORING COMPLETE\n")
+	fmt.Printf("========================================\n\n")
+}
+
+// TestJudgingPairsComputeRankingsEndpoint tests the compute-rankings endpoint
+func TestJudgingPairsComputeRankingsEndpoint(t *testing.T) {
+	require.NotNil(t, app, "app should be initialized")
+
+	fmt.Printf("\n========================================\n")
+	fmt.Printf("    COMPUTE RANKINGS ENDPOINT TEST\n")
+	fmt.Printf("========================================\n\n")
+
+	// Call the compute rankings endpoint
+	bodyBytes, statusCode := helpers.API_SuperUsersJudgingComputeRankings(
+		t,
+		app,
+		pairingTestSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode, "compute-rankings endpoint should return 200")
+
+	// Parse response
+	var response struct {
+		RankedTeams      []string                      `json:"rankedTeams"`
+		TeamScores       map[string]float64            `json:"teamScores"`
+		TeamUncertainty  map[string]float64            `json:"teamUncertainty"`
+		JudgeReliability map[string]map[string]float64 `json:"judgeReliability"`
+		JudgmentCount    int                           `json:"judgmentCount"`
+	}
+
+	err := json.Unmarshal(bodyBytes, &response)
+	require.NoError(t, err, "response should be valid JSON")
+
+	fmt.Printf("Response parsed successfully\n")
+	fmt.Printf("Judgments processed: %d\n", response.JudgmentCount)
+	fmt.Printf("Teams ranked: %d\n", len(response.RankedTeams))
+	fmt.Printf("Judges evaluated: %d\n", len(response.JudgeReliability))
+
+	// Validate response structure
+	require.Greater(t, len(response.RankedTeams), 0, "should have ranked teams")
+	require.Equal(t, len(response.RankedTeams), len(response.TeamScores), "ranked teams should match team scores")
+	require.Equal(t, len(response.RankedTeams), len(response.TeamUncertainty), "ranked teams should match team uncertainty")
+	require.Greater(t, response.JudgmentCount, 0, "should have processed judgments")
+
+	// Verify team scores are in descending order
+	for i := 0; i < len(response.RankedTeams)-1; i++ {
+		team1 := response.RankedTeams[i]
+		team2 := response.RankedTeams[i+1]
+		score1 := response.TeamScores[team1]
+		score2 := response.TeamScores[team2]
+		require.GreaterOrEqual(t, score1, score2, "teams should be sorted by score descending")
+	}
+
+	// Verify all scores have uncertainty values
+	for teamID := range response.TeamScores {
+		_, hasUncertainty := response.TeamUncertainty[teamID]
+		require.True(t, hasUncertainty, "all teams should have uncertainty values")
+	}
+
+	// Verify judge reliability parameters are positive
+	for judgeID, params := range response.JudgeReliability {
+		alpha, hasAlpha := params["alpha"]
+		beta, hasBeta := params["beta"]
+		require.True(t, hasAlpha, "judge %s should have alpha parameter", judgeID)
+		require.True(t, hasBeta, "judge %s should have beta parameter", judgeID)
+		require.Greater(t, alpha, 0.0, "judge %s alpha should be positive", judgeID)
+		require.Greater(t, beta, 0.0, "judge %s beta should be positive", judgeID)
+	}
+
+	// Print full rankings
+	fmt.Printf("\n========================================\n")
+	fmt.Printf("         FULL RANKINGS\n")
+	fmt.Printf("========================================\n\n")
+	fmt.Printf("Rank | Team ID              | Score (μ) | Uncertainty | Confidence\n")
+	fmt.Printf("-----|----------------------|-----------|-------------|------------\n")
+	for i, teamID := range response.RankedTeams {
+		score := response.TeamScores[teamID]
+		uncertainty := response.TeamUncertainty[teamID]
+		confidence := 1.0 / (1.0 + uncertainty)
+		fmt.Printf("%4d | %-20s | %9.4f | %11.4f | %.4f\n", i+1, teamID, score, uncertainty, confidence)
+	}
+
+	// Print finalists (top 3)
+	fmt.Printf("\n========================================\n")
+	fmt.Printf("         🏆 FINALISTS 🏆\n")
+	fmt.Printf("========================================\n\n")
+	numFinalists := 3
+	if len(response.RankedTeams) < 3 {
+		numFinalists = len(response.RankedTeams)
+	}
+	for i := 0; i < numFinalists; i++ {
+		teamID := response.RankedTeams[i]
+		score := response.TeamScores[teamID]
+		uncertainty := response.TeamUncertainty[teamID]
+		confidence := 1.0 / (1.0 + uncertainty)
+		fmt.Printf("%d. %s (μ=%.4f, σ²=%.4f, confidence=%.4f)\n", i+1, teamID, score, uncertainty, confidence)
+	}
+
+	// Print judge confidence analysis
+	fmt.Printf("\n========================================\n")
+	fmt.Printf("    JUDGE RELIABILITY ANALYSIS\n")
+	fmt.Printf("========================================\n\n")
+	fmt.Printf("Judge ID             | Alpha      | Beta       | Alpha/Beta | Reliability\n")
+	fmt.Printf("---------------------|------------|------------|------------|------------------\n")
+
+	var judgeIDs []string
+	for judgeID := range response.JudgeReliability {
+		judgeIDs = append(judgeIDs, judgeID)
+	}
+	sort.Strings(judgeIDs)
+
+	for _, judgeID := range judgeIDs {
+		params := response.JudgeReliability[judgeID]
+		alpha := params["alpha"]
+		beta := params["beta"]
+		ratio := alpha / beta
+		reliability := "unknown"
+		if ratio > 2.0 {
+			reliability = "highly_reliable"
+		} else if ratio > 1.0 {
+			reliability = "reliable"
+		} else if ratio < 0.5 {
+			reliability = "noisy"
+		} else {
+			reliability = "neutral"
+		}
+		fmt.Printf("%-20s | %10.4f | %10.4f | %10.4f | %s\n", judgeID, alpha, beta, ratio, reliability)
+	}
+
+	fmt.Printf("\n========================================\n")
+	fmt.Printf("✓ COMPUTE RANKINGS ENDPOINT TEST PASSED\n")
 	fmt.Printf("========================================\n\n")
 }
 
 // TestJudgingPairsCleanup cleans up resources
 func TestJudgingPairsCleanup(t *testing.T) {
-
 	_, err := db.Judges.DeleteMany(db.Ctx, bson.M{})
 	require.NoError(t, err)
 

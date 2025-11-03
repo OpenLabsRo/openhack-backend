@@ -144,3 +144,16 @@ func API_JudgeCreateJudgment(
 		&token,
 	)
 }
+
+func API_SuperUsersJudgingComputeRankings(
+	t *testing.T,
+	app *fiber.App,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	return RequestRunner(t, app,
+		"POST",
+		"/superusers/judging/compute-rankings",
+		[]byte{},
+		&token,
+	)
+}

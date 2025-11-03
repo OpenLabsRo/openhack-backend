@@ -14,6 +14,13 @@ func Routes(r fiber.Router) {
 		judgeInitHandler,
 	)
 
+	r.Post("/compute-rankings",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		computeRankingsHandler,
+	)
+
 	judge := r.Group("/judge")
 
 	judge.Post("",
