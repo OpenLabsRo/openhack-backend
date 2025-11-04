@@ -1308,9 +1308,9 @@ func TestJudgingPairsParticipantVoting(t *testing.T) {
 		require.Equal(t, http.StatusOK, statusCode)
 
 		var statusResp struct {
-			VotingOpen bool     `json:"votingOpen"`
-			HasVoted   bool     `json:"hasVoted"`
-			Finalists  []string `json:"finalists"`
+			VotingOpen bool          `json:"votingOpen"`
+			HasVoted   bool          `json:"hasVoted"`
+			Finalists  []models.Team `json:"finalists"`
 		}
 		err = json.Unmarshal(statusBody, &statusResp)
 		require.NoError(t, err)
@@ -1327,7 +1327,7 @@ func TestJudgingPairsParticipantVoting(t *testing.T) {
 		require.Equal(t, http.StatusOK, statusCode)
 
 		var finalistsResp struct {
-			Finalists []map[string]interface{} `json:"finalists"`
+			Finalists []models.Team `json:"finalists"`
 		}
 		err = json.Unmarshal(finalistsBody, &finalistsResp)
 		require.NoError(t, err)

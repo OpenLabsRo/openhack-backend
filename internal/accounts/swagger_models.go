@@ -32,14 +32,14 @@ type AccountEditRequest struct {
 
 // VotingStatusResponse returns the current voting status for a participant.
 type VotingStatusResponse struct {
-	VotingOpen bool     `json:"votingOpen"`
-	HasVoted   bool     `json:"hasVoted"`
-	Finalists  []string `json:"finalists"`
+	VotingOpen bool          `json:"votingOpen"`
+	HasVoted   bool          `json:"hasVoted"`
+	Finalists  []models.Team `json:"finalists"`
 }
 
 // VotingFinalistsResponse returns the list of finalist teams.
 type VotingFinalistsResponse struct {
-	Finalists []map[string]interface{} `json:"finalists"`
+	Finalists []models.Team `json:"finalists"`
 }
 
 // VotingCastRequest contains the team ID to vote for.
