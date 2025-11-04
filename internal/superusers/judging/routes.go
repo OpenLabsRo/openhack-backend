@@ -18,6 +18,7 @@ func Routes(r fiber.Router) {
 		models.SuperUserMiddlewareBuilder([]string{
 			"admin",
 		}),
+		models.FlagsMiddlewareBuilder([]string{"judging"}),
 		computeRankingsHandler,
 	)
 

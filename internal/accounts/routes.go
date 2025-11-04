@@ -28,4 +28,9 @@ func Routes(r fiber.Router) {
 
 	// flags
 	r.Get("/flags", models.AccountMiddleware, GetFlagsHandler)
+
+	// voting
+	r.Get("/voting/status", models.AccountMiddleware, votingStatusHandler)
+	r.Get("/voting/finalists", models.AccountMiddleware, models.FlagsMiddlewareBuilder([]string{"voting"}), votingFinalistsHandler)
+	r.Post("/voting/vote", models.AccountMiddleware, models.FlagsMiddlewareBuilder([]string{"voting"}), votingCastVoteHandler)
 }

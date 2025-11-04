@@ -126,3 +126,52 @@ func API_AccountsGetFlags(
 		&token,
 	)
 }
+
+func API_AccountsVotingStatus(
+	t *testing.T,
+	app *fiber.App,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	return RequestRunner(t, app,
+		"GET",
+		"/accounts/voting/status",
+		nil,
+		&token,
+	)
+}
+
+func API_AccountsVotingFinalists(
+	t *testing.T,
+	app *fiber.App,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	return RequestRunner(t, app,
+		"GET",
+		"/accounts/voting/finalists",
+		nil,
+		&token,
+	)
+}
+
+func API_AccountsVotingCastVote(
+	t *testing.T,
+	app *fiber.App,
+	teamID string,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	payload := struct {
+		TeamID string `json:"teamID"`
+	}{
+		TeamID: teamID,
+	}
+
+	sendBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	return RequestRunner(t, app,
+		"POST",
+		"/accounts/voting/vote",
+		sendBytes,
+		&token,
+	)
+}

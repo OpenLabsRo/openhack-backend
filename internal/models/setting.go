@@ -18,6 +18,9 @@ var SettingJudgePairOffset = "judgePairOffset"
 var SettingJudgePairMultiplier = "judgePairMultiplier"
 var SettingJudgeToGroupIndex = "judgeToGroupIndex"
 var SettingJudgeInitMatrix = "judgeInitMatrix"
+var SettingFinalist1 = "finalist_1"
+var SettingFinalist2 = "finalist_2"
+var SettingFinalist3 = "finalist_3"
 
 type Setting struct {
 	Name  string `json:"name" bson:"name"`

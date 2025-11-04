@@ -29,3 +29,25 @@ type AccountEditRequest struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 }
+
+// VotingStatusResponse returns the current voting status for a participant.
+type VotingStatusResponse struct {
+	VotingOpen bool     `json:"votingOpen"`
+	HasVoted   bool     `json:"hasVoted"`
+	Finalists  []string `json:"finalists"`
+}
+
+// VotingFinalistsResponse returns the list of finalist teams.
+type VotingFinalistsResponse struct {
+	Finalists []map[string]interface{} `json:"finalists"`
+}
+
+// VotingCastRequest contains the team ID to vote for.
+type VotingCastRequest struct {
+	TeamID string `json:"teamID"`
+}
+
+// VotingCastResponse returns confirmation of vote submission.
+type VotingCastResponse struct {
+	Message string `json:"message"`
+}

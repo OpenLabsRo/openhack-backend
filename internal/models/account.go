@@ -46,6 +46,8 @@ type Account struct {
 	Present bool `json:"present" bson:"present"`
 
 	TeamID string `json:"teamID" bson:"teamID"`
+
+	HasVoted bool `json:"hasVoted" bson:"hasVoted"`
 }
 
 func (acc Account) GenToken() string {
@@ -348,6 +350,25 @@ func (acc *Account) RemoveFromTeam(teamID string) (err error) {
 
 	acc.TeamID = ""
 
+	cacheAccount(acc)
+
+	return
+}
+
+func (acc *Account) SetHasVoted() (err error) {
+	_, err = db.Accounts.UpdateOne(db.Ctx, bson.M{
+		"id": acc.ID,
+	}, bson.M{
+		"$set": bson.M{
+			"hasVoted": true,
+		},
+	})
+
+	if err != nil {
+		return
+	}
+
+	acc.HasVoted = true
 	cacheAccount(acc)
 
 	return

@@ -140,6 +140,16 @@ func computeRankingsHandler(c fiber.Ctx) error {
 		}
 	}
 
+	// Save top 3 finalists to settings
+	if len(rankedTeams) >= 3 {
+		finalist1 := &models.Setting{Name: models.SettingFinalist1, Value: rankedTeams[0]}
+		finalist1.Save()
+		finalist2 := &models.Setting{Name: models.SettingFinalist2, Value: rankedTeams[1]}
+		finalist2.Save()
+		finalist3 := &models.Setting{Name: models.SettingFinalist3, Value: rankedTeams[2]}
+		finalist3.Save()
+	}
+
 	response := map[string]interface{}{
 		"rankedTeams":      rankedTeams,
 		"teamScores":       teamScores,

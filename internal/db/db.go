@@ -25,6 +25,7 @@ var Tags *mongo.Collection
 var Settings *mongo.Collection
 var Judges *mongo.Collection
 var Judgments *mongo.Collection
+var Votes *mongo.Collection
 
 func InitDB(deployment string) error {
 	DB_DEPLOYMENT = deployment
@@ -55,6 +56,7 @@ func InitDB(deployment string) error {
 	Settings = GetCollection(deployment, "settings", Client)
 	Judges = GetCollection(deployment, "judges", Client)
 	Judgments = GetCollection(deployment, "judgments", Client)
+	Votes = GetCollection(deployment, "votes", Client)
 
 	return nil
 }

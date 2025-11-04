@@ -1189,6 +1189,255 @@ func TestJudgingPairsComputeRankingsEndpoint(t *testing.T) {
 	fmt.Printf("========================================\n\n")
 }
 
+// TestJudgingPairsParticipantVoting tests the participant voting system
+func TestJudgingPairsParticipantVoting(t *testing.T) {
+	require.NotNil(t, app, "app should be initialized")
+
+	fmt.Printf("\n========================================\n")
+	fmt.Printf("    PARTICIPANT VOTING TEST\n")
+	fmt.Printf("========================================\n\n")
+
+	// Enable judging stage (stage 6) to compute rankings
+	_, statusCode := helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"6",
+		pairingTestSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode, "should be able to execute judging stage")
+
+	// Get finalists from compute rankings endpoint
+	rankingBody, statusCode := helpers.API_SuperUsersJudgingComputeRankings(
+		t,
+		app,
+		pairingTestSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode)
+
+	// Now switch to voting stage (stage 8: Public Voting)
+	_, statusCode = helpers.API_SuperUsersFlagStagesExecute(
+		t,
+		app,
+		"8",
+		pairingTestSuperUserToken,
+	)
+	require.Equal(t, http.StatusOK, statusCode, "should be able to execute voting stage")
+
+	var rankingResp struct {
+		RankedTeams []string `json:"rankedTeams"`
+	}
+	errUnmarshal := json.Unmarshal(rankingBody, &rankingResp)
+	require.NoError(t, errUnmarshal)
+	require.GreaterOrEqual(t, len(rankingResp.RankedTeams), 3, "should have at least 3 teams to rank")
+
+	// Get top 3 finalists
+	finalist1 := rankingResp.RankedTeams[0]
+	finalist2 := rankingResp.RankedTeams[1]
+	finalist3 := rankingResp.RankedTeams[2]
+
+	fmt.Printf("Finalists:\n")
+	fmt.Printf("  1. %s\n", finalist1)
+	fmt.Printf("  2. %s\n", finalist2)
+	fmt.Printf("  3. %s\n", finalist3)
+	fmt.Printf("\n")
+
+	// Verify finalists are saved to settings
+	f1Setting := &models.Setting{Name: models.SettingFinalist1}
+	f2Setting := &models.Setting{Name: models.SettingFinalist2}
+	f3Setting := &models.Setting{Name: models.SettingFinalist3}
+
+	serr := f1Setting.Get()
+	require.Equal(t, errmsg.EmptyStatusError, serr)
+	require.Equal(t, finalist1, f1Setting.Value.(string))
+
+	serr = f2Setting.Get()
+	require.Equal(t, errmsg.EmptyStatusError, serr)
+	require.Equal(t, finalist2, f2Setting.Value.(string))
+
+	serr = f3Setting.Get()
+	require.Equal(t, errmsg.EmptyStatusError, serr)
+	require.Equal(t, finalist3, f3Setting.Value.(string))
+
+	fmt.Printf("✓ Finalists saved to settings\n\n")
+
+	// Cast votes for all participants
+	fmt.Printf("========================================\n")
+	fmt.Printf("      VOTING PHASE\n")
+	fmt.Printf("========================================\n\n")
+
+	voteCastLog := make(map[string]string) // accountID -> finalist team ID
+
+	finalists := []string{finalist1, finalist2, finalist3}
+
+	// First, register all accounts with passwords
+	const participantPassword = "testpassword123"
+	for _, account := range createdPairingAccounts {
+		// Register account with password
+		_, statusCode := helpers.API_AccountsAuthRegister(
+			t,
+			app,
+			account.Email,
+			participantPassword,
+		)
+		require.Equal(t, http.StatusOK, statusCode, "should be able to register account %s", account.Email)
+	}
+
+	for _, account := range createdPairingAccounts {
+		// Login as participant
+		loginBody, statusCode := helpers.API_AccountsAuthLogin(
+			t,
+			app,
+			account.Email,
+			participantPassword,
+		)
+		require.Equal(t, http.StatusOK, statusCode, "should be able to login")
+
+		var loginResp struct {
+			Token string `json:"token"`
+		}
+		err := json.Unmarshal(loginBody, &loginResp)
+		require.NoError(t, err)
+		participantToken := loginResp.Token
+
+		// Get voting status
+		statusBody, statusCode := helpers.API_AccountsVotingStatus(
+			t,
+			app,
+			participantToken,
+		)
+		require.Equal(t, http.StatusOK, statusCode)
+
+		var statusResp struct {
+			VotingOpen bool     `json:"votingOpen"`
+			HasVoted   bool     `json:"hasVoted"`
+			Finalists  []string `json:"finalists"`
+		}
+		err = json.Unmarshal(statusBody, &statusResp)
+		require.NoError(t, err)
+		require.True(t, statusResp.VotingOpen, "voting should be open")
+		require.False(t, statusResp.HasVoted, "participant should not have voted yet")
+		require.Equal(t, 3, len(statusResp.Finalists), "should have 3 finalists")
+
+		// Get finalists for this participant
+		finalistsBody, statusCode := helpers.API_AccountsVotingFinalists(
+			t,
+			app,
+			participantToken,
+		)
+		require.Equal(t, http.StatusOK, statusCode)
+
+		var finalistsResp struct {
+			Finalists []map[string]interface{} `json:"finalists"`
+		}
+		err = json.Unmarshal(finalistsBody, &finalistsResp)
+		require.NoError(t, err)
+		require.Equal(t, 3, len(finalistsResp.Finalists), "should receive 3 finalists")
+
+		// Randomly select a finalist to vote for
+		selectedFinalist := finalists[rand.Intn(len(finalists))]
+
+		// Cast vote
+		voteBody, statusCode := helpers.API_AccountsVotingCastVote(
+			t,
+			app,
+			selectedFinalist,
+			participantToken,
+		)
+		require.Equal(t, http.StatusOK, statusCode, "vote should be recorded for %s", account.ID)
+
+		var voteResp struct {
+			Message string `json:"message"`
+		}
+		err = json.Unmarshal(voteBody, &voteResp)
+		require.NoError(t, err)
+
+		voteCastLog[account.ID] = selectedFinalist
+
+		fmt.Printf("  %s voted for %s\n", account.Email, selectedFinalist)
+
+		// Verify hasVoted is now true
+		statusBody2, statusCode := helpers.API_AccountsVotingStatus(
+			t,
+			app,
+			participantToken,
+		)
+		require.Equal(t, http.StatusOK, statusCode)
+
+		var statusResp2 struct {
+			HasVoted bool `json:"hasVoted"`
+		}
+		err = json.Unmarshal(statusBody2, &statusResp2)
+		require.NoError(t, err)
+		require.True(t, statusResp2.HasVoted, "participant should have voted after casting vote")
+
+		// Try to vote again - should fail
+		_, statusCode = helpers.API_AccountsVotingCastVote(
+			t,
+			app,
+			selectedFinalist,
+			participantToken,
+		)
+		require.Equal(t, http.StatusConflict, statusCode, "double vote should be rejected")
+	}
+
+	fmt.Printf("\n✓ %d participants voted successfully\n\n", len(voteCastLog))
+
+	// Print vote log
+	fmt.Printf("========================================\n")
+	fmt.Printf("         VOTES CAST LOG\n")
+	fmt.Printf("========================================\n\n")
+	for accountID, teamID := range voteCastLog {
+		fmt.Printf("  %s → %s\n", accountID, teamID)
+	}
+	fmt.Printf("\n")
+
+	// Verify votes in database
+	fmt.Printf("========================================\n")
+	fmt.Printf("      VOTE VERIFICATION\n")
+	fmt.Printf("========================================\n\n")
+
+	cursor, err := db.Votes.Find(db.Ctx, bson.M{})
+	require.NoError(t, err)
+	defer cursor.Close(db.Ctx)
+
+	var dbVotes []models.Vote
+	err = cursor.All(db.Ctx, &dbVotes)
+	require.NoError(t, err)
+
+	fmt.Printf("Votes in database: %d\n", len(dbVotes))
+	fmt.Printf("Votes logged: %d\n", len(voteCastLog))
+	require.Equal(t, len(voteCastLog), len(dbVotes), "vote count should match")
+
+	// Count votes per finalist
+	voteCount := make(map[string]int)
+	for _, vote := range dbVotes {
+		voteCount[vote.Choice]++
+	}
+
+	fmt.Printf("\nVote Distribution:\n")
+	for _, finalist := range finalists {
+		count := voteCount[finalist]
+		fmt.Printf("  %s: %d votes\n", finalist, count)
+	}
+
+	// Verify all votes are for valid finalists
+	for _, vote := range dbVotes {
+		isValid := false
+		for _, finalist := range finalists {
+			if vote.Choice == finalist {
+				isValid = true
+				break
+			}
+		}
+		require.True(t, isValid, "vote for %s should be for a valid finalist", vote.Choice)
+	}
+
+	fmt.Printf("\n✓ All votes verified\n")
+	fmt.Printf("========================================\n")
+	fmt.Printf("✓ PARTICIPANT VOTING TEST PASSED\n")
+	fmt.Printf("========================================\n\n")
+}
+
 // TestJudgingPairsCleanup cleans up resources
 func TestJudgingPairsCleanup(t *testing.T) {
 	_, err := db.Judges.DeleteMany(db.Ctx, bson.M{})
@@ -1201,6 +1450,9 @@ func TestJudgingPairsCleanup(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = db.Judgments.DeleteMany(db.Ctx, bson.M{})
+	require.NoError(t, err)
+
+	_, err = db.Votes.DeleteMany(db.Ctx, bson.M{})
 	require.NoError(t, err)
 
 	fmt.Printf("Cleanup complete\n")
