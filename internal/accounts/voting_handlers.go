@@ -120,7 +120,6 @@ func votingFinalistsHandler(c fiber.Ctx) error {
 // @Produce json
 // @Param payload body VotingCastRequest true "Team ID to vote for"
 // @Success 200 {object} VotingCastResponse
-// @Failure 400 {object} errmsg._BadRequest
 // @Failure 401 {object} errmsg._AccountNoToken
 // @Failure 403 {object} errmsg._FlagRequired
 // @Failure 409 {object} errmsg._AccountAlreadyRegistered
@@ -144,15 +143,7 @@ func votingCastVoteHandler(c fiber.Ctx) error {
 	var body struct {
 		TeamID string `json:"teamID"`
 	}
-	if err := json.Unmarshal(c.Body(), &body); err != nil {
-		statusErr := errmsg.NewStatusError(400, "invalid request body")
-		return utils.StatusError(c, statusErr)
-	}
-
-	if body.TeamID == "" {
-		statusErr := errmsg.NewStatusError(400, "teamID is required")
-		return utils.StatusError(c, statusErr)
-	}
+	json.Unmarshal(c.Body(), &body)
 
 	// Validate team ID is one of the finalists
 	finalist1Setting := &models.Setting{Name: models.SettingFinalist1}
