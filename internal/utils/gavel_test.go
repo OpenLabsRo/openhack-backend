@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"backend/internal/utils"
 	"fmt"
 	"math"
 	"math/rand"
@@ -56,7 +55,7 @@ func TestCrowdBTVarianceRealisticScale(t *testing.T) {
 	fmt.Printf("Generated %d synthetic judgments (120 pairs × %d judgments each)\n\n", len(judgments), numJudgmentsPerPair)
 
 	// Run the algorithm
-	scorer := utils.NewCrowdBTScorer()
+	scorer := NewCrowdBTScorer()
 	recoveredMu := scorer.Score(judgments)
 	judgeReliability := scorer.GetJudgeReliabilityAll()
 	teamUncertainty := scorer.GetTeamUncertainty()
@@ -223,7 +222,7 @@ func TestCrowdBTVarianceWithMultipleBiasedJudges(t *testing.T) {
 		teamIDs[i] = fmt.Sprintf("team_%d", i)
 	}
 
-	judgments := make([]utils.JudgmentWithJudge, 0)
+	judgments := make([]JudgmentWithJudge, 0)
 	globalPairCounter := 0
 
 	// Generate all 120 team pairs × 10 judgments each with mixed judge assignment
@@ -274,7 +273,7 @@ func TestCrowdBTVarianceWithMultipleBiasedJudges(t *testing.T) {
 					}
 				}
 
-				judgment := utils.JudgmentWithJudge{
+				judgment := JudgmentWithJudge{
 					WinningTeamID: winner,
 					LosingTeamID:  loser,
 					JudgeID:       judgeID,
@@ -289,7 +288,7 @@ func TestCrowdBTVarianceWithMultipleBiasedJudges(t *testing.T) {
 		len(judgments))
 
 	// Run the algorithm
-	scorer := utils.NewCrowdBTScorer()
+	scorer := NewCrowdBTScorer()
 	scorer.Score(judgments)
 	judgeReliability := scorer.GetJudgeReliabilityAll()
 
@@ -369,8 +368,8 @@ func TestCrowdBTVarianceWithMultipleBiasedJudges(t *testing.T) {
 }
 
 // generateRealisticSyntheticJudgments creates judgments matching realistic test setup
-func generateRealisticSyntheticJudgments(groundTruthMu map[string]float64, numJudges, numJudgmentsPerPair int) []utils.JudgmentWithJudge {
-	judgments := []utils.JudgmentWithJudge{}
+func generateRealisticSyntheticJudgments(groundTruthMu map[string]float64, numJudges, numJudgmentsPerPair int) []JudgmentWithJudge {
+	judgments := []JudgmentWithJudge{}
 
 	teamIDs := make([]string, 0, len(groundTruthMu))
 	for teamID := range groundTruthMu {
@@ -397,7 +396,7 @@ func generateRealisticSyntheticJudgments(groundTruthMu map[string]float64, numJu
 				judgeID := fmt.Sprintf("judge_%d", globalJudgeCounter%numJudges)
 				globalJudgeCounter++
 
-				judgment := utils.JudgmentWithJudge{
+				judgment := JudgmentWithJudge{
 					JudgeID: judgeID,
 				}
 
@@ -419,8 +418,8 @@ func generateRealisticSyntheticJudgments(groundTruthMu map[string]float64, numJu
 }
 
 // generateBiasedJudgments creates judgments where judge always votes for higher-indexed team
-func generateBiasedJudgments(teamIDs []string, judgeID string, numJudgmentsPerPair int) []utils.JudgmentWithJudge {
-	judgments := []utils.JudgmentWithJudge{}
+func generateBiasedJudgments(teamIDs []string, judgeID string, numJudgmentsPerPair int) []JudgmentWithJudge {
+	judgments := []JudgmentWithJudge{}
 
 	// For each pair of teams
 	for i := 0; i < len(teamIDs); i++ {
@@ -430,7 +429,7 @@ func generateBiasedJudgments(teamIDs []string, judgeID string, numJudgmentsPerPa
 
 			// Biased judge always votes for higher index (team2)
 			for range numJudgmentsPerPair {
-				judgment := utils.JudgmentWithJudge{
+				judgment := JudgmentWithJudge{
 					WinningTeamID: team2,
 					LosingTeamID:  team1,
 					JudgeID:       judgeID,
@@ -444,8 +443,8 @@ func generateBiasedJudgments(teamIDs []string, judgeID string, numJudgmentsPerPa
 }
 
 // generateInverseBiasedJudgments creates judgments where judge always votes for lower-indexed team
-func generateInverseBiasedJudgments(teamIDs []string, judgeID string, numJudgmentsPerPair int) []utils.JudgmentWithJudge {
-	judgments := []utils.JudgmentWithJudge{}
+func generateInverseBiasedJudgments(teamIDs []string, judgeID string, numJudgmentsPerPair int) []JudgmentWithJudge {
+	judgments := []JudgmentWithJudge{}
 
 	// For each pair of teams
 	for i := 0; i < len(teamIDs); i++ {
@@ -455,7 +454,7 @@ func generateInverseBiasedJudgments(teamIDs []string, judgeID string, numJudgmen
 
 			// Biased judge always votes for lower index (team1)
 			for range numJudgmentsPerPair {
-				judgment := utils.JudgmentWithJudge{
+				judgment := JudgmentWithJudge{
 					WinningTeamID: team1,
 					LosingTeamID:  team2,
 					JudgeID:       judgeID,
