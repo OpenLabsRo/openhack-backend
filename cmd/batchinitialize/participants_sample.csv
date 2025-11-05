@@ -1,0 +1,5 @@
+FirstName,LastName,University,Date of Birth,Team Name,Phone Number,Medical conditions,Dietary Restrictions,Email
+John,Doe,University of Technology,1998-05-15,Team Alpha,+1234567890,None,Vegetarian,john.doe@email.com
+Jane,Smith,State University,1999-03-22,Team Alpha,+1234567891,Asthma,Vegan,jane.smith@email.com
+Mike,Johnson,Tech Institute,2000-07-10,Team Beta,+1234567892,None,None,mike.johnson@email.com
+Sarah,Williams,Engineering School,1997-11-08,Team Beta,+1234567893,Nut Allergy,Gluten-free,sarah.williams@email.com

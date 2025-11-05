@@ -7,3 +7,4 @@ todo.txt
 .air.toml
 flagstages_config.json
 flags_config.json
+cmd/batchinitialize/participants.csv
