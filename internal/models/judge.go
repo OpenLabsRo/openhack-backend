@@ -90,11 +90,16 @@ func (j *Judge) Delete() (err error) {
 	return
 }
 
-func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
-	// Fetch the initialization matrix
+type judgeAssignmentContext struct {
+	steps    int
+	matrix   [][]string
+	groupIdx int
+}
+
+func (j *Judge) resolveAssignmentContext() (*judgeAssignmentContext, errmsg.StatusError) {
 	matrixSetting := &Setting{Name: SettingJudgeInitMatrix}
 	if err := matrixSetting.Get(); err != errmsg.EmptyStatusError {
-		return "", err
+		return nil, err
 	}
 
 	var matrixObj struct {
@@ -103,7 +108,7 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 		Matrix [][]string `json:"matrix"`
 	}
 	if err := json.Unmarshal([]byte(matrixSetting.Value.(string)), &matrixObj); err != nil {
-		return "", errmsg.InternalServerError(err)
+		return nil, errmsg.InternalServerError(err)
 	}
 
 	numSteps := matrixObj.Steps
@@ -111,28 +116,41 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 	matrix := matrixObj.Matrix
 
 	if numSteps == 0 {
-		return "", errmsg.InternalServerError(&errorMessage{message: "no steps available"})
+		return nil, errmsg.InternalServerError(&errorMessage{message: "no steps available"})
 	}
 
 	// Get judge to group index mapping
 	judgeToGroupIndexSetting := &Setting{Name: SettingJudgeToGroupIndex}
 	if err := judgeToGroupIndexSetting.Get(); err != errmsg.EmptyStatusError {
-		return "", err
+		return nil, err
 	}
 
 	var judgeToGroupIdx map[string]int
 	if err := json.Unmarshal([]byte(judgeToGroupIndexSetting.Value.(string)), &judgeToGroupIdx); err != nil {
-		return "", errmsg.InternalServerError(err)
+		return nil, errmsg.InternalServerError(err)
 	}
 
 	// Get this judge's pair group index
 	groupIdx, exists := judgeToGroupIdx[j.ID]
 	if !exists {
-		return "", errmsg.InternalServerError(&errorMessage{message: "judge not found in pair group mapping"})
+		return nil, errmsg.InternalServerError(&errorMessage{message: "judge not found in pair group mapping"})
 	}
 
 	if groupIdx < 0 || groupIdx >= numGroups {
-		return "", errmsg.InternalServerError(&errorMessage{message: "invalid pair group index"})
+		return nil, errmsg.InternalServerError(&errorMessage{message: "invalid pair group index"})
+	}
+
+	return &judgeAssignmentContext{
+		steps:    numSteps,
+		matrix:   matrix,
+		groupIdx: groupIdx,
+	}, errmsg.EmptyStatusError
+}
+
+func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
+	context, serr := j.resolveAssignmentContext()
+	if serr != errmsg.EmptyStatusError {
+		return "", serr
 	}
 
 	// Initialize on first call: -1 becomes 0
@@ -143,15 +161,15 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 	}
 
 	// Check if we've exhausted all steps
-	if currentStep >= numSteps {
+	if currentStep >= context.steps {
 		return "", errmsg.JudgingFinished
 	}
 
 	// Read the assignment for this step from the matrix
 	// If blank, return empty string (rest), but don't skip forward
 	assignedTeamID := ""
-	if len(matrix) > currentStep && len(matrix[currentStep]) > groupIdx {
-		assignedTeamID = matrix[currentStep][groupIdx]
+	if len(context.matrix) > currentStep && len(context.matrix[currentStep]) > context.groupIdx {
+		assignedTeamID = context.matrix[currentStep][context.groupIdx]
 	}
 
 	// Increment step for next call (whether this step was blank or not)
@@ -167,6 +185,37 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 	})
 	if err != nil {
 		return "", errmsg.InternalServerError(err)
+	}
+
+	if assignedTeamID == "" {
+		return "", errmsg.JudgeResting
+	}
+
+	return assignedTeamID, errmsg.EmptyStatusError
+}
+
+func (j *Judge) GetCurrentTeamID() (string, errmsg.StatusError) {
+	context, serr := j.resolveAssignmentContext()
+	if serr != errmsg.EmptyStatusError {
+		return "", serr
+	}
+
+	currentStep := j.CurrentTeam - 1
+	if currentStep < 0 {
+		return "", errmsg.JudgeResting
+	}
+
+	if currentStep >= context.steps {
+		return "", errmsg.JudgingFinished
+	}
+
+	assignedTeamID := ""
+	if len(context.matrix) > currentStep && len(context.matrix[currentStep]) > context.groupIdx {
+		assignedTeamID = context.matrix[currentStep][context.groupIdx]
+	}
+
+	if assignedTeamID == "" {
+		return "", errmsg.JudgeResting
 	}
 
 	return assignedTeamID, errmsg.EmptyStatusError

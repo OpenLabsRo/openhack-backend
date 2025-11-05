@@ -23,7 +23,7 @@ import (
 // @Failure 401 {object} errmsg._SuperUserNoToken
 // @Failure 404 {object} errmsg._JudgeNotFound
 // @Failure 500 {object} errmsg._InternalServerError
-// @Router /superusers/judges/connect [post]
+// @Router /superusers/judging/judge/connect [post]
 func judgeConnectHandler(c fiber.Ctx) error {
 	var body struct {
 		ID string `json:"id"`

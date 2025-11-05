@@ -105,6 +105,19 @@ func API_JudgeNextTeam(
 	)
 }
 
+func API_JudgeCurrentTeam(
+	t *testing.T,
+	app *fiber.App,
+	token string,
+) (bodyBytes []byte, statusCode int) {
+	return RequestRunner(t, app,
+		"GET",
+		"/judge/current-team",
+		[]byte{},
+		&token,
+	)
+}
+
 func API_JudgeTeamInfo(
 	t *testing.T,
 	app *fiber.App,

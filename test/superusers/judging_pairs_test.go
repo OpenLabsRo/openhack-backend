@@ -581,7 +581,6 @@ func TestJudgingPairsFullSimulation(t *testing.T) {
 				app,
 				judgeTokens[judge.ID],
 			)
-			require.Equal(t, http.StatusOK, statusCode)
 
 			var nextTeamResp struct {
 				TeamID  string `json:"teamID"`
@@ -590,18 +589,33 @@ func TestJudgingPairsFullSimulation(t *testing.T) {
 			require.NoError(t, json.Unmarshal(bodyBytes, &nextTeamResp))
 
 			groupIdx := judgeToGroupIdx[judge.ID]
+			var teamID string
 
-			if nextTeamResp.Message == "judging finished" {
+			switch statusCode {
+			case http.StatusOK:
+				teamID = nextTeamResp.TeamID
+				require.NotEmpty(t, teamID, "expected team assignment when status is 200")
+
+				currentBytes, currentStatus := helpers.API_JudgeCurrentTeam(
+					t,
+					app,
+					judgeTokens[judge.ID],
+				)
+				require.Equal(t, http.StatusOK, currentStatus)
+
+				var currentTeam models.Team
+				require.NoError(t, json.Unmarshal(currentBytes, &currentTeam))
+				require.Equal(t, teamID, currentTeam.ID, "current team should match recently assigned team")
+			case http.StatusAccepted:
+				require.Equal(t, errmsg.JudgeResting.Message, nextTeamResp.Message)
 				judgesResting++
 				continue
-			}
-
-			teamID := nextTeamResp.TeamID
-
-			// Empty teamID means rest step (blank cell in matrix)
-			if teamID == "" {
+			case http.StatusGone:
+				require.Equal(t, errmsg.JudgingFinished.Message, nextTeamResp.Message)
 				judgesResting++
 				continue
+			default:
+				require.Failf(t, "unexpected status from /judge/next-team", "status=%d body=%s", statusCode, string(bodyBytes))
 			}
 
 			stepStats.JudgeAssignments[judge.ID] = teamID

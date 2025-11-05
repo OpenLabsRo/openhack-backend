@@ -16,6 +16,11 @@ func Routes(r fiber.Router) {
 		models.FlagsMiddlewareBuilder([]string{"judging"}),
 		nextTeamHandler,
 	)
+	r.Get("/current-team",
+		models.JudgeMiddleware,
+		models.FlagsMiddlewareBuilder([]string{"judging"}),
+		currentTeamHandler,
+	)
 	r.Get("/team",
 		models.JudgeMiddleware,
 		models.FlagsMiddlewareBuilder([]string{"judging"}),

@@ -55,8 +55,9 @@ func JudgeUpgradeHandler(c fiber.Ctx) error {
 // @Security JudgeAuth
 // @Produce json
 // @Success 200 {object} NextTeamResponse
-// @Failure 200 {object} errmsg._JudgingFinished
+// @Failure 202 {object} errmsg._JudgeResting
 // @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 410 {object} errmsg._JudgingFinished
 // @Failure 500 {object} errmsg._InternalServerError
 // @Router /judge/next-team [post]
 func nextTeamHandler(c fiber.Ctx) error {
@@ -73,6 +74,44 @@ func nextTeamHandler(c fiber.Ctx) error {
 	return c.JSON(bson.M{
 		"teamID": teamID,
 	})
+}
+
+// currentTeamHandler retrieves the currently assigned team for the judge.
+// @Summary Get current team for judging
+// @Description Returns the full team details for the judge's current assignment based on their rotation state.
+// @Tags Judges
+// @Security JudgeAuth
+// @Produce json
+// @Success 200 {object} models.Team
+// @Failure 202 {object} errmsg._JudgeResting
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 404 {object} errmsg._TeamNotFound
+// @Failure 410 {object} errmsg._JudgingFinished
+// @Failure 500 {object} errmsg._InternalServerError
+// @Router /judge/current-team [get]
+func currentTeamHandler(c fiber.Ctx) error {
+	judge := models.Judge{}
+	utils.GetLocals(c, "judge", &judge)
+
+	if judge.ID == "" {
+		return utils.StatusError(c, errmsg.AccountNoToken)
+	}
+
+	if err := judge.Get(); err != nil {
+		return utils.StatusError(c, errmsg.JudgeNotFound)
+	}
+
+	teamID, serr := judge.GetCurrentTeamID()
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
+	}
+
+	team := models.Team{ID: teamID}
+	if err := team.Get(); err != nil {
+		return utils.StatusError(c, errmsg.TeamNotFound)
+	}
+
+	return c.JSON(team)
 }
 
 // getTeamHandler retrieves team information by team ID for the authenticated judge.
