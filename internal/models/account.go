@@ -47,6 +47,8 @@ type Account struct {
 	TeamID string `json:"teamID" bson:"teamID"`
 
 	HasVoted bool `json:"hasVoted" bson:"hasVoted"`
+
+	Promotionals map[string]string `json:"promotionals" bson:"promotionals"`
 }
 
 func (acc Account) GenToken() string {

@@ -29,6 +29,12 @@ func Routes(r fiber.Router) {
 	// flags
 	r.Get("/flags", models.AccountMiddleware, GetFlagsHandler)
 
+	// promotionals
+	r.Get("/promotionals", models.AccountMiddleware, GetPromotionalsHandler)
+
+	// vouchers
+	r.Get("/vouchers/:voucherType/:index", GetVoucherHandler)
+
 	// voting
 	r.Get("/voting/status", models.AccountMiddleware, votingStatusHandler)
 	r.Get("/voting/finalists", models.AccountMiddleware, models.FlagsMiddlewareBuilder([]string{"voting"}), votingFinalistsHandler)
