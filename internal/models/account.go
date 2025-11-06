@@ -16,6 +16,7 @@ import (
 )
 
 type Consumables struct {
+	Monster    int  `json:"monster" bson:"monster" example:"0"`
 	Water      int  `json:"water" bson:"water" example:"0"`
 	Pizza      bool `json:"pizza" bson:"pizza" example:"false"`
 	Coffee     bool `json:"coffee" bson:"coffee" example:"false"`

@@ -6,7 +6,6 @@ import (
 	"backend/internal/errmsg"
 	"backend/internal/utils"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -173,7 +172,6 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 		if result.MatchedCount == 0 {
 			return "", errmsg.InternalServerError(&errorMessage{message: "judge not found for update"})
 		}
-		fmt.Printf("[DEBUG] UpdateOne (judging finished) - MatchedCount: %d, ModifiedCount: %d\n", result.MatchedCount, result.ModifiedCount)
 
 		return "", errmsg.JudgingFinished
 	}
@@ -219,7 +217,6 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 	if result.MatchedCount == 0 {
 		return "", errmsg.InternalServerError(&errorMessage{message: "judge not found for update"})
 	}
-	fmt.Printf("[DEBUG] UpdateOne (normal) - Judge: %s, CurrentTeam: %d, MatchedCount: %d, ModifiedCount: %d\n", j.ID, j.CurrentTeam, result.MatchedCount, result.ModifiedCount)
 
 	if assignedTeamID == "" {
 		return "", errmsg.JudgeResting

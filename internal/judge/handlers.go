@@ -7,7 +7,6 @@ import (
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
-	"fmt"
 
 	"github.com/gofiber/fiber/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -72,14 +71,10 @@ func nextTeamHandler(c fiber.Ctx) error {
 		return utils.StatusError(c, errmsg.InternalServerError(err))
 	}
 
-	fmt.Printf("[DEBUG] Before GetNextTeam - Judge ID: %s, CurrentTeam: %d\n", judge.ID, judge.CurrentTeam)
-
 	teamID, serr := judge.GetNextTeam()
 	if serr != errmsg.EmptyStatusError {
 		return utils.StatusError(c, serr)
 	}
-
-	fmt.Printf("[DEBUG] After GetNextTeam - Judge ID: %s, CurrentTeam: %d, TeamID: %s\n", judge.ID, judge.CurrentTeam, teamID)
 
 	events.Em.JudgeNextTeamRequested(judge.ID, teamID)
 
