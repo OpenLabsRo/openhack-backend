@@ -7,6 +7,7 @@ import (
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
+	"fmt"
 
 	"github.com/gofiber/fiber/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -62,13 +63,23 @@ func JudgeUpgradeHandler(c fiber.Ctx) error {
 // @Failure 500 {object} errmsg._InternalServerError
 // @Router /judge/next-team [post]
 func nextTeamHandler(c fiber.Ctx) error {
-	judge := models.Judge{}
-	utils.GetLocals(c, "judge", &judge)
+	judgeID := c.Locals("id").(string)
+
+	judge := models.Judge{ID: judgeID}
+
+	// Fetch fresh judge state from database
+	if err := judge.Get(); err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
+	}
+
+	fmt.Printf("[DEBUG] Before GetNextTeam - Judge ID: %s, CurrentTeam: %d\n", judge.ID, judge.CurrentTeam)
 
 	teamID, serr := judge.GetNextTeam()
 	if serr != errmsg.EmptyStatusError {
 		return utils.StatusError(c, serr)
 	}
+
+	fmt.Printf("[DEBUG] After GetNextTeam - Judge ID: %s, CurrentTeam: %d, TeamID: %s\n", judge.ID, judge.CurrentTeam, teamID)
 
 	events.Em.JudgeNextTeamRequested(judge.ID, teamID)
 
@@ -97,8 +108,13 @@ func nextTeamHandler(c fiber.Ctx) error {
 // @Failure 500 {object} errmsg._InternalServerError
 // @Router /judge/current-team [get]
 func currentTeamHandler(c fiber.Ctx) error {
-	judge := models.Judge{}
-	utils.GetLocals(c, "judge", &judge)
+	judgeID := c.Locals("id").(string)
+	judge := models.Judge{ID: judgeID}
+
+	// Fetch fresh judge state from database
+	if err := judge.Get(); err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
+	}
 
 	teamID, serr := judge.GetCurrentTeamID()
 	if serr != errmsg.EmptyStatusError {
@@ -108,6 +124,44 @@ func currentTeamHandler(c fiber.Ctx) error {
 	team := models.Team{ID: teamID}
 	if err := team.Get(); err != nil {
 		return utils.StatusError(c, errmsg.TeamNotFound)
+	}
+
+	return c.JSON(team)
+}
+
+// previousTeamHandler retrieves the previous team for the authenticated judge.
+// @Summary Get previous team for judging
+// @Description Returns the previous team ID for the judge to evaluate. Moves backward in the judge's rotation.
+// @Tags Judges
+// @Security JudgeAuth
+// @Produce json
+// @Success 200 {object} models.Team
+// @Failure 202 {object} errmsg._JudgeResting
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 500 {object} errmsg._InternalServerError
+// @Router /judge/previous-team [get]
+func previousTeamHandler(c fiber.Ctx) error {
+	judgeID := c.Locals("id").(string)
+	judge := models.Judge{ID: judgeID}
+
+	// Fetch fresh judge state from database
+	if err := judge.Get(); err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
+	}
+
+	teamID, serr := judge.GetPreviousTeam()
+	if serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
+	}
+
+	events.Em.JudgeNextTeamRequested(judge.ID, teamID)
+
+	team := models.Team{ID: teamID}
+	if err := team.Get(); err != nil {
+		return utils.StatusError(
+			c,
+			errmsg.InternalServerError(err),
+		)
 	}
 
 	return c.JSON(team)
@@ -216,8 +270,13 @@ func getAllTeamsHandler(c fiber.Ctx) error {
 // @Failure 500 {object} errmsg._InternalServerError
 // @Router /judge/me [get]
 func judgeInfoHandler(c fiber.Ctx) error {
-	judge := models.Judge{}
-	utils.GetLocals(c, "judge", &judge)
+	judgeID := c.Locals("id").(string)
+	judge := models.Judge{ID: judgeID}
+
+	// Fetch fresh judge state from database
+	if err := judge.Get(); err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
+	}
 
 	return c.JSON(bson.M{
 		"currentTeam":  judge.CurrentTeam,

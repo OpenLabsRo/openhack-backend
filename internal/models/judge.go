@@ -6,6 +6,7 @@ import (
 	"backend/internal/errmsg"
 	"backend/internal/utils"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -157,6 +158,23 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 
 	nextStep := j.CurrentTeam + 1
 	if nextStep >= context.steps {
+		j.CurrentTeam = 9000
+
+		result, err := db.Judges.UpdateOne(db.Ctx, bson.M{
+			"id": j.ID,
+		}, bson.M{
+			"$set": bson.M{
+				"currentTeam": j.CurrentTeam,
+			},
+		})
+		if err != nil {
+			return "", errmsg.InternalServerError(err)
+		}
+		if result.MatchedCount == 0 {
+			return "", errmsg.InternalServerError(&errorMessage{message: "judge not found for update"})
+		}
+		fmt.Printf("[DEBUG] UpdateOne (judging finished) - MatchedCount: %d, ModifiedCount: %d\n", result.MatchedCount, result.ModifiedCount)
+
 		return "", errmsg.JudgingFinished
 	}
 
@@ -187,7 +205,7 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 	j.NextTeamTime = time.Now().Add(time.Duration(waitMinutes) * time.Minute)
 
 	// Update judge's CurrentTeam and NextTeamTime in database
-	_, err := db.Judges.UpdateOne(db.Ctx, bson.M{
+	result, err := db.Judges.UpdateOne(db.Ctx, bson.M{
 		"id": j.ID,
 	}, bson.M{
 		"$set": bson.M{
@@ -197,6 +215,35 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 	})
 	if err != nil {
 		return "", errmsg.InternalServerError(err)
+	}
+	if result.MatchedCount == 0 {
+		return "", errmsg.InternalServerError(&errorMessage{message: "judge not found for update"})
+	}
+	fmt.Printf("[DEBUG] UpdateOne (normal) - Judge: %s, CurrentTeam: %d, MatchedCount: %d, ModifiedCount: %d\n", j.ID, j.CurrentTeam, result.MatchedCount, result.ModifiedCount)
+
+	if assignedTeamID == "" {
+		return "", errmsg.JudgeResting
+	}
+
+	return assignedTeamID, errmsg.EmptyStatusError
+}
+
+func (j *Judge) GetPreviousTeam() (teamID string, serr errmsg.StatusError) {
+	context, serr := j.resolveAssignmentContext()
+	if serr != errmsg.EmptyStatusError {
+		return "", serr
+	}
+
+	previousStep := j.CurrentTeam - 1
+	if previousStep < 0 {
+		return "", errmsg.JudgeResting
+	}
+
+	// Read the assignment for this step from the matrix
+	// If blank, return empty string (rest), but don't modify state
+	assignedTeamID := ""
+	if len(context.matrix) > previousStep && len(context.matrix[previousStep]) > context.groupIdx {
+		assignedTeamID = context.matrix[previousStep][context.groupIdx]
 	}
 
 	if assignedTeamID == "" {
