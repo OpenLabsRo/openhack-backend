@@ -582,20 +582,21 @@ func TestJudgingPairsFullSimulation(t *testing.T) {
 				judgeTokens[judge.ID],
 			)
 
-			var nextTeamResp struct {
-				TeamID  string `json:"teamID"`
-				Message string `json:"message"`
-			}
-			require.NoError(t, json.Unmarshal(bodyBytes, &nextTeamResp))
-
 			groupIdx := judgeToGroupIdx[judge.ID]
 			var teamID string
 
 			switch statusCode {
 			case http.StatusOK:
-				teamID = nextTeamResp.TeamID
+				var nextTeam models.Team
+				require.NoError(t, json.Unmarshal(bodyBytes, &nextTeam))
+				teamID = nextTeam.ID
 				require.NotEmpty(t, teamID, "expected team assignment when status is 200")
 
+				refreshedJudge := models.Judge{ID: judge.ID}
+				require.NoError(t, refreshedJudge.Get())
+				require.Equal(t, step, refreshedJudge.CurrentTeam, "judge current step should match loop step when working")
+
+				currentTeam := nextTeam
 				currentBytes, currentStatus := helpers.API_JudgeCurrentTeam(
 					t,
 					app,
@@ -603,15 +604,25 @@ func TestJudgingPairsFullSimulation(t *testing.T) {
 				)
 				require.Equal(t, http.StatusOK, currentStatus)
 
-				var currentTeam models.Team
 				require.NoError(t, json.Unmarshal(currentBytes, &currentTeam))
 				require.Equal(t, teamID, currentTeam.ID, "current team should match recently assigned team")
 			case http.StatusAccepted:
-				require.Equal(t, errmsg.JudgeResting.Message, nextTeamResp.Message)
+				var restResp struct {
+					Message string `json:"message"`
+				}
+				require.NoError(t, json.Unmarshal(bodyBytes, &restResp))
+				require.Equal(t, errmsg.JudgeResting.Message, restResp.Message)
+				refreshedJudge := models.Judge{ID: judge.ID}
+				require.NoError(t, refreshedJudge.Get())
+				require.Equal(t, step, refreshedJudge.CurrentTeam, "judge current step should advance even when resting")
 				judgesResting++
 				continue
 			case http.StatusGone:
-				require.Equal(t, errmsg.JudgingFinished.Message, nextTeamResp.Message)
+				var finishedResp struct {
+					Message string `json:"message"`
+				}
+				require.NoError(t, json.Unmarshal(bodyBytes, &finishedResp))
+				require.Equal(t, errmsg.JudgingFinished.Message, finishedResp.Message)
 				judgesResting++
 				continue
 			default:

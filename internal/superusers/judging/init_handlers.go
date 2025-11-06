@@ -451,6 +451,15 @@ func judgeInitHandler(c fiber.Ctx) error {
 		return utils.StatusError(c, serr)
 	}
 
+	// Save waitMinutes setting (1 minute for testing)
+	waitMinutesSetting := models.Setting{
+		Name:  models.SettingWaitMinutes,
+		Value: "5",
+	}
+	if serr := waitMinutesSetting.Save(); serr != errmsg.EmptyStatusError {
+		return utils.StatusError(c, serr)
+	}
+
 	return c.JSON(bson.M{
 		"message":            "judging initialized with judge pairing",
 		"numTeams":           numTeams,
@@ -462,6 +471,7 @@ func judgeInitHandler(c fiber.Ctx) error {
 		"uniquePairs":        uniquePairsCount,
 		"totalPossiblePairs": totalPossiblePairs,
 		"averageRedundancy":  avgRedundancy,
+		"waitMinutes":        waitMinutesSetting.Value,
 	})
 }
 

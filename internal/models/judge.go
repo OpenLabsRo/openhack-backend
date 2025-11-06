@@ -6,6 +6,7 @@ import (
 	"backend/internal/errmsg"
 	"backend/internal/utils"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,10 +16,11 @@ import (
 )
 
 type Judge struct {
-	ID          string `bson:"id" json:"id"`
-	Name        string `bson:"name" json:"name"`
-	CurrentTeam int    `bson:"currentTeam" json:"currentTeam"`
-	Pair        string `bson:"pair" json:"pair"`
+	ID           string    `bson:"id" json:"id"`
+	Name         string    `bson:"name" json:"name"`
+	CurrentTeam  int       `bson:"currentTeam" json:"currentTeam"`
+	Pair         string    `bson:"pair" json:"pair"`
+	NextTeamTime time.Time `bson:"nextTeamTime" json:"nextTeamTime"`
 }
 
 func (j *Judge) IssueJudgeConnectToken() (token string) {
@@ -153,34 +155,44 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 		return "", serr
 	}
 
-	// Initialize on first call: -1 becomes 0
-	currentStep := j.CurrentTeam
-	if currentStep == -1 {
-		currentStep = 0
-		j.CurrentTeam = 0
-	}
-
-	// Check if we've exhausted all steps
-	if currentStep >= context.steps {
+	nextStep := j.CurrentTeam + 1
+	if nextStep >= context.steps {
 		return "", errmsg.JudgingFinished
 	}
 
 	// Read the assignment for this step from the matrix
 	// If blank, return empty string (rest), but don't skip forward
 	assignedTeamID := ""
-	if len(context.matrix) > currentStep && len(context.matrix[currentStep]) > context.groupIdx {
-		assignedTeamID = context.matrix[currentStep][context.groupIdx]
+	if len(context.matrix) > nextStep && len(context.matrix[nextStep]) > context.groupIdx {
+		assignedTeamID = context.matrix[nextStep][context.groupIdx]
 	}
 
-	// Increment step for next call (whether this step was blank or not)
-	j.CurrentTeam = currentStep + 1
+	// Persist the judge's current step (whether resting or working)
+	j.CurrentTeam = nextStep
 
-	// Update judge's CurrentTeam in database
+	// Get wait minutes from settings
+	waitSetting := &Setting{Name: SettingWaitMinutes}
+	if err := waitSetting.Get(); err != errmsg.EmptyStatusError {
+		return "", err
+	}
+
+	waitMinutes := 5 // default to 5 minutes
+	if val, ok := waitSetting.Value.(string); ok {
+		if parsed, err := strconv.Atoi(val); err == nil {
+			waitMinutes = parsed
+		}
+	}
+
+	// Set nextTeamTime to current time + waitMinutes
+	j.NextTeamTime = time.Now().Add(time.Duration(waitMinutes) * time.Minute)
+
+	// Update judge's CurrentTeam and NextTeamTime in database
 	_, err := db.Judges.UpdateOne(db.Ctx, bson.M{
 		"id": j.ID,
 	}, bson.M{
 		"$set": bson.M{
-			"currentTeam": j.CurrentTeam,
+			"currentTeam":  j.CurrentTeam,
+			"nextTeamTime": j.NextTeamTime,
 		},
 	})
 	if err != nil {
@@ -200,7 +212,7 @@ func (j *Judge) GetCurrentTeamID() (string, errmsg.StatusError) {
 		return "", serr
 	}
 
-	currentStep := j.CurrentTeam - 1
+	currentStep := j.CurrentTeam
 	if currentStep < 0 {
 		return "", errmsg.JudgeResting
 	}

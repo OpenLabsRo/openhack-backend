@@ -1,6 +1,7 @@
 package judge
 
 import (
+	"backend/internal/db"
 	"backend/internal/errmsg"
 	"backend/internal/events"
 	"backend/internal/models"
@@ -54,7 +55,7 @@ func JudgeUpgradeHandler(c fiber.Ctx) error {
 // @Tags Judges
 // @Security JudgeAuth
 // @Produce json
-// @Success 200 {object} NextTeamResponse
+// @Success 200 {object} models.Team
 // @Failure 202 {object} errmsg._JudgeResting
 // @Failure 401 {object} errmsg._AccountNoToken
 // @Failure 410 {object} errmsg._JudgingFinished
@@ -71,9 +72,15 @@ func nextTeamHandler(c fiber.Ctx) error {
 
 	events.Em.JudgeNextTeamRequested(judge.ID, teamID)
 
-	return c.JSON(bson.M{
-		"teamID": teamID,
-	})
+	team := models.Team{ID: teamID}
+	if err := team.Get(); err != nil {
+		return utils.StatusError(
+			c,
+			errmsg.InternalServerError(err),
+		)
+	}
+
+	return c.JSON(team)
 }
 
 // currentTeamHandler retrieves the currently assigned team for the judge.
@@ -92,14 +99,6 @@ func nextTeamHandler(c fiber.Ctx) error {
 func currentTeamHandler(c fiber.Ctx) error {
 	judge := models.Judge{}
 	utils.GetLocals(c, "judge", &judge)
-
-	if judge.ID == "" {
-		return utils.StatusError(c, errmsg.AccountNoToken)
-	}
-
-	if err := judge.Get(); err != nil {
-		return utils.StatusError(c, errmsg.JudgeNotFound)
-	}
 
 	teamID, serr := judge.GetCurrentTeamID()
 	if serr != errmsg.EmptyStatusError {
@@ -179,4 +178,49 @@ func createJudgmentHandler(c fiber.Ctx) error {
 	events.Em.JudgmentCreated(judge.ID, judgment.WinningTeamID, judgment.LosingTeamID)
 
 	return c.JSON(judgment)
+}
+
+// getAllTeamsHandler retrieves all teams from the database.
+// @Summary Get all teams
+// @Description Returns a list of all teams in the database.
+// @Tags Judges
+// @Security JudgeAuth
+// @Produce json
+// @Success 200 {array} models.Team
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 500 {object} errmsg._InternalServerError
+// @Router /judge/all-teams [get]
+func getAllTeamsHandler(c fiber.Ctx) error {
+	cursor, err := db.Teams.Find(db.Ctx, bson.M{})
+	if err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
+	}
+	defer cursor.Close(db.Ctx)
+
+	var teams []models.Team
+	if err = cursor.All(db.Ctx, &teams); err != nil {
+		return utils.StatusError(c, errmsg.InternalServerError(err))
+	}
+
+	return c.JSON(teams)
+}
+
+// judgeInfoHandler retrieves the authenticated judge's current progress information.
+// @Summary Get judge information
+// @Description Returns the judge's current team step and the next available time they can create a judgment.
+// @Tags Judges
+// @Security JudgeAuth
+// @Produce json
+// @Success 200 {object} JudgeInfoResponse
+// @Failure 401 {object} errmsg._AccountNoToken
+// @Failure 500 {object} errmsg._InternalServerError
+// @Router /judge/me [get]
+func judgeInfoHandler(c fiber.Ctx) error {
+	judge := models.Judge{}
+	utils.GetLocals(c, "judge", &judge)
+
+	return c.JSON(bson.M{
+		"currentTeam":  judge.CurrentTeam,
+		"nextTeamTime": judge.NextTeamTime,
+	})
 }

@@ -21,6 +21,7 @@ var SettingJudgeInitMatrix = "judgeInitMatrix"
 var SettingFinalist1 = "finalist_1"
 var SettingFinalist2 = "finalist_2"
 var SettingFinalist3 = "finalist_3"
+var SettingWaitMinutes = "waitMinutes"
 
 type Setting struct {
 	Name  string `json:"name" bson:"name"`

@@ -1,6 +1,9 @@
 package judge
 
-import "backend/internal/models"
+import (
+	"backend/internal/models"
+	"time"
+)
 
 // JudgeUpgradeRequest exchanges a connect token for a full 24-hour token.
 type JudgeUpgradeRequest struct {
@@ -22,4 +25,10 @@ type NextTeamResponse struct {
 type CreateJudgmentRequest struct {
 	WinningTeamID string `json:"winningTeamID" example:"team_001"`
 	LosingTeamID  string `json:"losingTeamID" example:"team_002"`
+}
+
+// JudgeInfoResponse returns the judge's current progress and timing information.
+type JudgeInfoResponse struct {
+	CurrentTeam  int       `json:"currentTeam" example:"0"`
+	NextTeamTime time.Time `json:"nextTeamTime" example:"2024-01-01T12:05:00Z"`
 }
