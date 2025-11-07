@@ -8,3 +8,6 @@ todo.txt
 flagstages_config.json
 flags_config.json
 cmd/batchinitialize/participants.csv
+prodenv/.
+cmd/assignvouchers
+elevenlabs_links.txt
