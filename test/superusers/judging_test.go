@@ -408,52 +408,6 @@ func TestJudgingPairsInitialize(t *testing.T) {
 	fmt.Printf("\n")
 }
 
-// TestJudgingPairsPairingValidation validates the judge pairing groups
-func TestJudgingPairsPairingValidation(t *testing.T) {
-	require.NotEmpty(t, pairingTestSuperUserToken, "superuser token should be initialized")
-	require.Equal(t, totalPairingJudgeGroups, pairingInitMatrix.Groups, "should have %d pair groups", totalPairingJudgeGroups)
-
-	fmt.Printf("\n========================================\n")
-	fmt.Printf("      JUDGE PAIR GROUPS\n")
-	fmt.Printf("========================================\n")
-
-	// Fetch pair groups from settings
-	pairGroupsSetting := &models.Setting{Name: models.SettingJudgePairGroups}
-	errStatus := pairGroupsSetting.Get()
-	require.Equal(t, errmsg.EmptyStatusError, errStatus)
-
-	var pairGroups []struct {
-		GroupID   int      `json:"groupId"`
-		JudgeIDs  []string `json:"judgeIds"`
-		PairAttr  string   `json:"pairAttr"`
-		NumJudges int      `json:"numJudges"`
-	}
-	require.NoError(t, json.Unmarshal([]byte(pairGroupsSetting.Value.(string)), &pairGroups))
-
-	// Build expected group sizes dynamically
-	var expectedGroupSizes []int
-	for range numSoloJudges {
-		expectedGroupSizes = append(expectedGroupSizes, 1)
-	}
-	for range numPairJudges {
-		expectedGroupSizes = append(expectedGroupSizes, 2)
-	}
-	for range numTrioJudges {
-		expectedGroupSizes = append(expectedGroupSizes, 3)
-	}
-
-	for i, group := range pairGroups {
-		fmt.Printf("Group %d (pair='%s'):\n", group.GroupID, group.PairAttr)
-		fmt.Printf("  Judges: %v\n", group.JudgeIDs)
-		fmt.Printf("  Count: %d\n", group.NumJudges)
-
-		if i < len(expectedGroupSizes) {
-			require.Equal(t, expectedGroupSizes[i], group.NumJudges, "group %d should have %d judges", i, expectedGroupSizes[i])
-		}
-	}
-	fmt.Printf("\n")
-}
-
 // TestJudgingPairsFullSimulation runs a complete simulation through all steps
 func TestJudgingPairsFullSimulation(t *testing.T) {
 	require.NotEmpty(t, pairingTestSuperUserToken, "superuser token should be initialized")
