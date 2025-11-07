@@ -12,10 +12,6 @@ import (
 )
 
 var SettingBadgePileSalt = "badgePileSalt"
-var SettingTeamOrder = "teamOrder"
-var SettingJudgePairGroups = "judgePairGroups"
-var SettingJudgePairOffset = "judgePairOffset"
-var SettingJudgePairMultiplier = "judgePairMultiplier"
 var SettingJudgeToGroupIndex = "judgeToGroupIndex"
 var SettingJudgeInitMatrix = "judgeInitMatrix"
 var SettingFinalist1 = "finalist_1"

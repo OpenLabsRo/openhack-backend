@@ -176,8 +176,40 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 		return "", errmsg.JudgingFinished
 	}
 
+	// Check if all remaining steps are empty
+	hasTeamInRemainingSteps := false
+	for checkStep := nextStep; checkStep < context.steps; checkStep++ {
+		if len(context.matrix) > checkStep && len(context.matrix[checkStep]) > context.groupIdx {
+			teamID := context.matrix[checkStep][context.groupIdx]
+			if teamID != "" {
+				hasTeamInRemainingSteps = true
+				break
+			}
+		}
+	}
+
+	// If all remaining steps are empty, judging is finished
+	if !hasTeamInRemainingSteps {
+		j.CurrentTeam = 9000
+
+		result, err := db.Judges.UpdateOne(db.Ctx, bson.M{
+			"id": j.ID,
+		}, bson.M{
+			"$set": bson.M{
+				"currentTeam": j.CurrentTeam,
+			},
+		})
+		if err != nil {
+			return "", errmsg.InternalServerError(err)
+		}
+		if result.MatchedCount == 0 {
+			return "", errmsg.InternalServerError(&errorMessage{message: "judge not found for update"})
+		}
+
+		return "", errmsg.JudgingFinished
+	}
+
 	// Read the assignment for this step from the matrix
-	// If blank, return empty string (rest), but don't skip forward
 	assignedTeamID := ""
 	if len(context.matrix) > nextStep && len(context.matrix[nextStep]) > context.groupIdx {
 		assignedTeamID = context.matrix[nextStep][context.groupIdx]
@@ -218,10 +250,6 @@ func (j *Judge) GetNextTeam() (teamID string, serr errmsg.StatusError) {
 		return "", errmsg.InternalServerError(&errorMessage{message: "judge not found for update"})
 	}
 
-	if assignedTeamID == "" {
-		return "", errmsg.JudgeResting
-	}
-
 	return assignedTeamID, errmsg.EmptyStatusError
 }
 
@@ -236,18 +264,21 @@ func (j *Judge) GetPreviousTeam() (teamID string, serr errmsg.StatusError) {
 		return "", errmsg.JudgeResting
 	}
 
-	// Read the assignment for this step from the matrix
-	// If blank, return empty string (rest), but don't modify state
-	assignedTeamID := ""
-	if len(context.matrix) > previousStep && len(context.matrix[previousStep]) > context.groupIdx {
-		assignedTeamID = context.matrix[previousStep][context.groupIdx]
+	// Keep going backward through the matrix until we find an actual team ID
+	for previousStep >= 0 {
+		assignedTeamID := ""
+		if len(context.matrix) > previousStep && len(context.matrix[previousStep]) > context.groupIdx {
+			assignedTeamID = context.matrix[previousStep][context.groupIdx]
+		}
+
+		if assignedTeamID != "" {
+			return assignedTeamID, errmsg.EmptyStatusError
+		}
+
+		previousStep--
 	}
 
-	if assignedTeamID == "" {
-		return "", errmsg.JudgeResting
-	}
-
-	return assignedTeamID, errmsg.EmptyStatusError
+	return "", errmsg.JudgeResting
 }
 
 func (j *Judge) GetCurrentTeamID() (string, errmsg.StatusError) {

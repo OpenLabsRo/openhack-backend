@@ -164,19 +164,6 @@ func judgeInitHandler(c fiber.Ctx) error {
 		})
 	}
 
-	baseOrders := [][]string{teamOrderA, teamOrderB}
-	baseOrdersJSON, err := json.Marshal(baseOrders)
-	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError(err))
-	}
-	teamOrderSetting := models.Setting{
-		Name:  models.SettingTeamOrder,
-		Value: string(baseOrdersJSON),
-	}
-	if serr := teamOrderSetting.Save(); serr != errmsg.EmptyStatusError {
-		return utils.StatusError(c, serr)
-	}
-
 	events.Em.JudgeInitTeamOrderSet(superuser.Username, teamOrderA)
 
 	// === PHASE 3: CALCULATE STEPS ===
@@ -376,41 +363,6 @@ func judgeInitHandler(c fiber.Ctx) error {
 	}
 
 	// === PHASE 6: SAVE SETTINGS ===
-	pairGroupsJSON, err := json.Marshal(judgePairGroups)
-	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError(err))
-	}
-	pairGroupsSetting := models.Setting{
-		Name:  models.SettingJudgePairGroups,
-		Value: string(pairGroupsJSON),
-	}
-	if serr := pairGroupsSetting.Save(); serr != errmsg.EmptyStatusError {
-		return utils.StatusError(c, serr)
-	}
-
-	pairOffsetJSON, err := json.Marshal(pairOffsets)
-	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError(err))
-	}
-	pairOffsetSetting := models.Setting{
-		Name:  models.SettingJudgePairOffset,
-		Value: string(pairOffsetJSON),
-	}
-	if serr := pairOffsetSetting.Save(); serr != errmsg.EmptyStatusError {
-		return utils.StatusError(c, serr)
-	}
-
-	pairMultiplierJSON, err := json.Marshal(pairMultipliers)
-	if err != nil {
-		return utils.StatusError(c, errmsg.InternalServerError(err))
-	}
-	pairMultiplierSetting := models.Setting{
-		Name:  models.SettingJudgePairMultiplier,
-		Value: string(pairMultiplierJSON),
-	}
-	if serr := pairMultiplierSetting.Save(); serr != errmsg.EmptyStatusError {
-		return utils.StatusError(c, serr)
-	}
 
 	judgeToGroupIndexJSON, err := json.Marshal(judgeIDToGroupIdx)
 	if err != nil {
