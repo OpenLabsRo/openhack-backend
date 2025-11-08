@@ -59,6 +59,15 @@ func pilesGetHandler(c fiber.Ctx) error {
 	return c.JSON(sieve)
 }
 
+// pilesGetHandler computes badge pile assignments for all accounts.
+// @Summary Retrieve badge pile assignments for all accounts
+// @Description Hashes each account into deterministic piles so on-site staff can stage badge pickup.
+// @Tags Superusers Badges
+// @Security SuperUserAuth
+// @Produce json
+// @Failure 401 {object} errmsg._SuperUserNoToken
+// @Failure 500 {object} errmsg._InternalServerError
+// @Router /superusers/badges [get]
 func pilesComputeHandler(c fiber.Ctx) error {
 	var body struct {
 		Trials int `json:"trials"`
