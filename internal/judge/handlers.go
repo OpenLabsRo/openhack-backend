@@ -7,6 +7,7 @@ import (
 	"backend/internal/models"
 	"backend/internal/utils"
 	"encoding/json"
+	"fmt"
 
 	"github.com/gofiber/fiber/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -76,13 +77,20 @@ func nextTeamHandler(c fiber.Ctx) error {
 		return utils.StatusError(c, serr)
 	}
 
+	// If teamID is empty, the judge is resting at this step
+	if teamID == "" {
+		return utils.StatusError(c, errmsg.JudgeResting)
+	}
+
 	events.Em.JudgeNextTeamRequested(judge.ID, teamID)
 
 	team := models.Team{ID: teamID}
 	if err := team.Get(); err != nil {
 		return utils.StatusError(
 			c,
-			errmsg.InternalServerError(err),
+			errmsg.InternalServerError(
+				fmt.Errorf("failed to get team '%s': %w", teamID, err),
+			),
 		)
 	}
 

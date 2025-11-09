@@ -22,6 +22,27 @@ func Routes(r fiber.Router) {
 		computeRankingsHandler,
 	)
 
+	r.Get("/judges",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		getAllJudgesHandler,
+	)
+
+	r.Get("/finalists",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		getFinalistsHandler,
+	)
+
+	r.Get("/voting-results",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		getVotingResultsHandler,
+	)
+
 	judge := r.Group("/judge")
 
 	judge.Post("",
@@ -36,5 +57,12 @@ func Routes(r fiber.Router) {
 			"admin",
 		}),
 		judgeConnectHandler,
+	)
+
+	judge.Delete("",
+		models.SuperUserMiddlewareBuilder([]string{
+			"admin",
+		}),
+		deleteJudgeHandler,
 	)
 }

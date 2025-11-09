@@ -147,6 +147,25 @@ func (e *Emitter) JudgeCreated(
 	e.Emit(evt)
 }
 
+func (e *Emitter) JudgeDeleted(
+	superuserID string,
+	judgeID string,
+) {
+	evt := models.Event{
+		Action: "judge.deleted",
+
+		ActorRole: ActorSuperUser,
+		ActorID:   superuserID,
+
+		TargetType: TargetJudge,
+		TargetID:   judgeID,
+
+		Props: nil,
+	}
+
+	e.Emit(evt)
+}
+
 func (e *Emitter) JudgmentCreated(
 	judgeID string,
 	winningTeamID string,

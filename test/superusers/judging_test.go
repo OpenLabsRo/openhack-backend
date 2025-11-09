@@ -55,13 +55,13 @@ var (
 
 // Configuration for judge pairing test (customize here)
 const (
-	numPairingParticipants = 52
-	numPairingTeams        = 16
-	numSoloJudges          = 8
-	numPairJudges          = 4  // number of pairs (each with 2 judges)
-	numTrioJudges          = 1  // number of trios (each with 3 judges)
-	numTeamsSize3          = 12 // teams with 3 members
-	numTeamsSize4          = 4  // teams with 4 members
+	numPairingParticipants = 36
+	numPairingTeams        = 17
+	numSoloJudges          = 6
+	numPairJudges          = 4 // number of pairs (each with 2 judges)
+	numTrioJudges          = 1 // number of trios (each with 3 judges)
+	numTeamsSize3          = 8 // teams with 3 members
+	numTeamsSize4          = 3 // teams with 4 members
 )
 
 // Calculated values based on configuration
@@ -1295,7 +1295,7 @@ func TestJudgingPairsParticipantVoting(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, statusResp.VotingOpen, "voting should be open")
 		require.False(t, statusResp.HasVoted, "participant should not have voted yet")
-		require.Equal(t, 3, len(statusResp.Finalists), "should have 3 finalists")
+		require.Equal(t, 5, len(statusResp.Finalists), "should have 5 finalists")
 
 		// Get finalists for this participant
 		finalistsBody, statusCode := helpers.API_AccountsVotingFinalists(
@@ -1310,7 +1310,7 @@ func TestJudgingPairsParticipantVoting(t *testing.T) {
 		}
 		err = json.Unmarshal(finalistsBody, &finalistsResp)
 		require.NoError(t, err)
-		require.Equal(t, 3, len(finalistsResp.Finalists), "should receive 3 finalists")
+		require.Equal(t, 5, len(finalistsResp.Finalists), "should receive 5 finalists")
 
 		// Randomly select a finalist to vote for
 		selectedFinalist := finalists[rand.Intn(len(finalists))]

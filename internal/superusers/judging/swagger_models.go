@@ -1,9 +1,16 @@
 package judging
 
+import "time"
+
 // JudgeCreateRequest contains the details for creating a new judge.
 type JudgeCreateRequest struct {
-	ID   string `json:"id" example:"judge_001"`
 	Name string `json:"name" example:"Judge Alice"`
+	Pair string `json:"pair" example:"pair_group_1"`
+}
+
+// JudgeDeleteRequest contains the judge ID to delete.
+type JudgeDeleteRequest struct {
+	ID string `json:"id" example:"abc123"`
 }
 
 // JudgeConnectRequest contains the judge ID to request a connect token.
@@ -14,6 +21,31 @@ type JudgeConnectRequest struct {
 // JudgeConnectResponse returns the ephemeral 2-minute connect token.
 type JudgeConnectResponse struct {
 	Token string `json:"token"`
+}
+
+// JudgeProgressResponse represents a judge with their current progress information.
+type JudgeProgressResponse struct {
+	ID           string    `json:"id" example:"abc123"`
+	Name         string    `json:"name" example:"Judge Alice"`
+	Pair         string    `json:"pair" example:"pair_1"`
+	CurrentTeam  int       `json:"currentTeam" example:"5"`
+	NextTeamTime time.Time `json:"nextTeamTime" example:"2024-01-15T14:30:00Z"`
+}
+
+// GetFinalistsResponse returns the current finalists with full team details.
+type GetFinalistsResponse struct {
+	Finalists []interface{} `json:"finalists" description:"Array of full team objects"`
+}
+
+// VotingResultItem represents a single finalist with its vote count.
+type VotingResultItem struct {
+	Team  interface{} `json:"team" description:"Full team object with all details"`
+	Count int64       `json:"count" example:"42"`
+}
+
+// GetVotingResultsResponse contains voting results for all finalists.
+type GetVotingResultsResponse struct {
+	Results []VotingResultItem `json:"results" description:"Array of voting results sorted by count descending"`
 }
 
 // JudgeInitResponse returns the result of judge initialization with judge pair groups.

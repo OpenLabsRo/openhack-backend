@@ -62,8 +62,9 @@ func judgeInitHandler(c fiber.Ctx) error {
 	superuser := models.SuperUser{}
 	utils.GetLocals(c, "superuser", &superuser)
 
-	// Fetch all teams and judges
-	cursor, err := db.Teams.Find(db.Ctx, bson.M{})
+	// Fetch all non-deleted teams and judges
+	// Use $ne to include teams without a deleted field (they're not deleted)
+	cursor, err := db.Teams.Find(db.Ctx, bson.M{"deleted": bson.M{"$ne": true}})
 	if err != nil {
 		return utils.StatusError(c, errmsg.InternalServerError(err))
 	}

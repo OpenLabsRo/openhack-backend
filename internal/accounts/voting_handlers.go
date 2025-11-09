@@ -15,6 +15,8 @@ var finalistSettingNames = []string{
 	models.SettingFinalist1,
 	models.SettingFinalist2,
 	models.SettingFinalist3,
+	models.SettingFinalist4,
+	models.SettingFinalist5,
 }
 
 func loadFinalistTeams(requireAll bool) ([]models.Team, error) {

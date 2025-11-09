@@ -17,6 +17,8 @@ var SettingJudgeInitMatrix = "judgeInitMatrix"
 var SettingFinalist1 = "finalist_1"
 var SettingFinalist2 = "finalist_2"
 var SettingFinalist3 = "finalist_3"
+var SettingFinalist4 = "finalist_4"
+var SettingFinalist5 = "finalist_5"
 var SettingWaitMinutes = "waitMinutes"
 
 type Setting struct {
