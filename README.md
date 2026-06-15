@@ -57,16 +57,43 @@ manage these at runtime through `/superusers/flags` and `/superusers/flagstages`
 
 ### Judging
 
-Judging uses a Crowd Bradley-Terry (Crowd-BT) pairwise comparison model that
-weights votes by inferred judge reliability rather than treating all votes
-equally. See `CROWDBT.md` for the algorithm details and `internal/utils/gavel.go`
-for the implementation.
+Judges don't score projects on an absolute scale; they make **pairwise
+comparisons** ("team A is better than team B"). Those comparisons are turned into
+a ranking by the Crowd Bradley-Terry (Crowd-BT) scorer in
+`internal/utils/gavel.go`.
+
+The model tracks, per team, a skill estimate `mu` and its uncertainty
+`sigma_sq`, and, per judge, a reliability described by a Beta distribution
+(`alpha`, `beta`). It fits these together with an EM-style loop (a fixed 10
+iterations) that alternates two passes over all recorded judgments:
+
+1. **Update judges** — each judge's `alpha`/`beta` is nudged based on how often
+   their calls agree with the current team estimates, then regularized back
+   toward a prior. Consistent judges gain reliability; erratic ones lose it.
+2. **Update teams** — each team's `mu`/`sigma_sq` is moved by a Bradley-Terry
+   update for every comparison it took part in, **weighted by the reliability of
+   the judge who made it**, so unreliable judges move the standings less.
+
+`win_probability` is the standard Bradley-Terry `exp(mu_w) / (exp(mu_w) +
+exp(mu_l))`, adjusted for uncertainty and clamped to `[0.01, 0.99]`. Final
+standings come from `RankTeams`, sorting by `mu` descending and breaking ties by
+lower deviation (higher confidence). `ScoreCrowdBT` is the one-call entry point.
 
 ### Badge piles
 
-Participant badges are partitioned into balanced "piles" using a salt-search
-algorithm (`internal/utils/badge_pile.go`). The chosen salt is persisted in the
-`settings` collection and reloaded at startup. See `badge_pile_salts_algorithm.md`.
+To spread badge pickup across multiple physical queues, each participant is
+deterministically assigned to one of `BADGE_PILES` "piles"
+(`internal/utils/badge_pile.go`). The pile is `(fnv32a(accountID) XOR salt) %
+BADGE_PILES`, so the same account always lands in the same pile and staff can
+pre-stage badges.
+
+The `salt` is chosen to keep the piles evenly sized. `ChooseBestSalt` scans salt
+values starting from 0, and for each one bins every account and scores the
+result with `BalanceScore` — a chi-squared statistic against an even split, plus
+a tiny `max−min` tie-breaker (lower is better, 0 is perfect). The search stops on
+a perfect split or when it hits its evaluation/time budget, returning the best
+salt found. That salt is persisted in the `settings` collection and reloaded
+into `BADGE_PILES_SALT` at startup (`initBadgePileSalt` in `internal/app.go`).
 
 ## Deployments & data isolation
 
@@ -102,8 +129,8 @@ Requires Go (see `go.mod` for the version), plus reachable MongoDB and Redis
 instances.
 
 ```bash
-# dev profile on port 9000 (see the RUNDEV script)
-./RUNDEV
+# dev profile on port 9000 (see the RUNDEV.sh script)
+./RUNDEV.sh
 
 # or invoke the binary directly
 go run ./cmd/server --deployment dev --port 9000
@@ -125,26 +152,29 @@ and run against the `test` profile (Redis DB 2). MongoDB and Redis must be
 running.
 
 ```bash
-./TEST                       # go test ./test/... -v -count=1 -p 1
+./TEST.sh                    # go test ./test/... -v -count=1 -p 1
 go test ./test/... -count=1  # equivalent core invocation
 ```
 
-`run_batchinitialize.sh` and `cmd/batchinitialize` seed participant data from a
+`BATCH_INITIALIZE.sh` and `cmd/batchinitialize` seed participant data from a
 CSV for end-to-end scenarios.
 
 ## Build & Release
 
-| Script    | Purpose |
-|-----------|---------|
-| `./BUILD`   | Builds a stripped, static `linux/amd64` binary into `bin/<VERSION>` |
-| `./TEST`    | Runs the Go test suite |
-| `./DEPLOY`  | Builds and ships the binary over SSH, restarting the `openhack-backend` systemd service |
-| `./RELEASE` | Bumps `VERSION` (to `YY.MM.DD.B`), stamps Swagger metadata, then commits, tags `v<version>`, and pushes |
-| `./API_SPEC`| Regenerates the Swagger docs via `swag init` |
+| Script        | Purpose |
+|---------------|---------|
+| `./BUILD.sh`    | Builds a stripped, static `linux/amd64` binary into `bin/<VERSION>` |
+| `./TEST.sh`     | Runs the Go test suite |
+| `./API_SPEC.sh` | Regenerates the Swagger docs via `swag init` |
 
 Versions follow a `YY.MM.DD.B` scheme (build number `B` increments within a
-day). `BUILD` names artifacts after the version, so multiple builds coexist in
+day). `BUILD.sh` names artifacts after the version, so multiple builds coexist in
 `bin/`.
+
+To cut a release, a developer runs `./RELEASE.sh`: it bumps `VERSION` (to the next
+`YY.MM.DD.B`), stamps the Swagger metadata for that version, then commits, tags
+`v<version>`, and pushes. The pushed tag is what the hypervisor picks up to build
+and deploy.
 
 ## API documentation
 
@@ -158,14 +188,13 @@ This service is intended to run as a managed instance under
 [openhack-hypervisor](https://github.com/openlabsro/openhack-hypervisor). A few
 conventions in this repo support that:
 
-- **Lifecycle scripts** (`BUILD`, `TEST`, `DEPLOY`, `RELEASE`) give the
-  hypervisor stable entrypoints to test, build, and ship a checkout.
+- **Lifecycle scripts** (`BUILD.sh`, `TEST.sh`) give the hypervisor stable
+  entrypoints to test and build a checkout.
 - **Version-named artifacts** (`bin/<VERSION>`) and the `VERSION` file let
   multiple versions be built and deployed side by side.
 - **Swagger version stamping**: by default the served OpenAPI doc has its
   `basePath` set to `/<VERSION>` so docs line up with the version-prefixed route
-  the hypervisor mounts. Setting `NO_HYPER=true` disables this stamping for
-  standalone runs.
+  the hypervisor mounts. Setting `NO_HYPER=true` disables this stamping.
 
-When running the backend outside the hypervisor, set `NO_HYPER=true` in your
-`.env`.
+For local development without the hypervisor, just use `./RUNDEV.sh` (see
+[Running locally](#running-locally)).

@@ -1,0 +1,80 @@
+[
+  {
+    "id": "0",
+    "name": "Initialize Flags",
+    "turnoff": [
+      "teams_read",
+      "teams_write",
+      "submissions_read",
+      "submissions_write",
+      "judging",
+      "voting",
+      "test",
+      "testing"
+    ],
+    "turnon": []
+  },
+  {
+    "id": "1",
+    "name": "Full - Testing",
+    "turnoff": [],
+    "turnon": [
+      "teams_read",
+      "teams_write",
+      "submissions_read",
+      "submissions_write",
+      "judging",
+      "voting",
+      "test",
+      "testing"
+    ]
+  },
+  {
+    "id": "2",
+    "name": "Checkin",
+    "turnoff": [
+      "teams_write",
+      "submissions_read",
+      "submissions_write",
+      "judging",
+      "voting"
+    ],
+    "turnon": ["teams_read"]
+  },
+  {
+    "id": "3",
+    "name": "Start Code",
+    "turnoff": ["submissions_read", "submissions_write", "judging", "voting"],
+    "turnon": ["teams_read", "teams_write"]
+  },
+  {
+    "id": "4",
+    "name": "Submissions Start",
+    "turnoff": ["judging", "voting"],
+    "turnon": ["teams_read", "submissions_read", "submissions_write"]
+  },
+  {
+    "id": "5",
+    "name": "Lock",
+    "turnoff": ["teams_write", "submissions_write", "voting"],
+    "turnon": ["teams_read", "submissions_read"]
+  },
+  {
+    "id": "6",
+    "name": "Judging Mode",
+    "turnoff": ["teams_write", "submissions_write", "voting"],
+    "turnon": ["teams_read", "submissions_read", "judging"]
+  },
+  {
+    "id": "7",
+    "name": "Judging Processing",
+    "turnoff": ["teams_write", "submissions_write", "judging", "voting"],
+    "turnon": ["teams_read", "submissions_read"]
+  },
+  {
+    "id": "8",
+    "name": "Public Voting",
+    "turnoff": ["teams_write", "submissions_write", "judging"],
+    "turnon": ["teams_read", "submissions_read", "voting"]
+  }
+]

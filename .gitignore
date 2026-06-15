@@ -3,10 +3,9 @@ bin
 .idea
 .env
 backend
+server
 todo.txt
 .air.toml
-flagstages_config.json
-flags_config.json
 cmd/batchinitialize/participants.csv
 prodenv/.
 cmd/assignvouchers

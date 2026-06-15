@@ -1,0 +1,12 @@
+{
+  "flags": [
+    "teams_read",
+    "teams_write",
+    "submissions_read",
+    "submissions_write",
+    "judging",
+    "voting",
+    "test",
+    "testing"
+  ]
+}
